@@ -8,9 +8,8 @@ class RecipeData {
     // ---------------- ไทย ----------------
     Recipe(
       id: '1',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Kapow_and_egg.jpg/1280px-Kapow_and_egg.jpg',
+      imageUrl: 'assets/images/recipes/pad_krapao.jpg',
       name: 'ผัดกะเพราหมูสับ',
-      emoji: '🌶️',
       category: 'อาหารจานเดียว',
       country: 'ไทย',
       cookTimeMinutes: 15,
@@ -40,9 +39,8 @@ class RecipeData {
     ),
     Recipe(
       id: '2',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Tom_yum_kung_mae_nam.jpg/1280px-Tom_yum_kung_mae_nam.jpg',
+      imageUrl: 'assets/images/recipes/tom_yum_kung.jpg',
       name: 'ต้มยำกุ้ง',
-      emoji: '🍤',
       category: 'ต้ม/แกง',
       country: 'ไทย',
       cookTimeMinutes: 25,
@@ -73,9 +71,8 @@ class RecipeData {
     ),
     Recipe(
       id: '3',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Som_tam_thai.jpg/1280px-Som_tam_thai.jpg',
+      imageUrl: 'assets/images/recipes/som_tum.jpg',
       name: 'ส้มตำไทย แซ่บนัวต้นตำรับ',
-      emoji: '🥗',
       category: 'ยำ/ตำ',
       country: 'ไทย',
       cookTimeMinutes: 15,
@@ -109,9 +106,8 @@ class RecipeData {
     // ---------------- อิตาลี ----------------
     Recipe(
       id: '4',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Fresh_made_pasta_Carbonara.jpg/1280px-Fresh_made_pasta_Carbonara.jpg',
+      imageUrl: 'assets/images/recipes/carbonara.jpg',
       name: 'สปาเก็ตตี้คาโบนาร่า',
-      emoji: '🍝',
       category: 'พาสต้า',
       country: 'อิตาลี',
       cookTimeMinutes: 20,
@@ -138,9 +134,8 @@ class RecipeData {
     ),
     Recipe(
       id: '5',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Eq_it-na_pizza-margherita_sep2005_sml.jpg/1280px-Eq_it-na_pizza-margherita_sep2005_sml.jpg',
+      imageUrl: 'assets/images/recipes/pizza_margherita.jpg',
       name: 'พิซซ่ามาร์เกอริต้า สูตรเตาฟืนบ้าน',
-      emoji: '🍕',
       category: 'เบเกอรี่/ขนมปัง',
       country: 'อิตาลี',
       cookTimeMinutes: 40,
@@ -168,9 +163,8 @@ class RecipeData {
     ),
     Recipe(
       id: '6',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Tiramisu_with_all_the_layers.jpg/1280px-Tiramisu_with_all_the_layers.jpg',
+      imageUrl: 'assets/images/recipes/tiramisu.png',
       name: 'ทีรามิสุ',
-      emoji: '🍰',
       category: 'ของหวาน',
       country: 'อิตาลี',
       cookTimeMinutes: 30,
@@ -199,9 +193,8 @@ class RecipeData {
     // ---------------- ญี่ปุ่น ----------------
     Recipe(
       id: '7',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Shoyu_ramen%2C_at_Kasukabe_Station_%282014.05.05%29.jpg/1280px-Shoyu_ramen%2C_at_Kasukabe_Station_%282014.05.05%29.jpg',
+      imageUrl: 'assets/images/recipes/shoyu_ramen.jpg',
       name: 'ราเมนซีอิ๊วดำ',
-      emoji: '🍜',
       category: 'เส้น/ซุป',
       country: 'ญี่ปุ่น',
       cookTimeMinutes: 45,
@@ -228,9 +221,8 @@ class RecipeData {
     ),
     Recipe(
       id: '8',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Salmon_and_shrimp_don_by_jetalone_in_Akihabara.jpg/1280px-Salmon_and_shrimp_don_by_jetalone_in_Akihabara.jpg',
+      imageUrl: 'assets/images/recipes/salmon_don.png',
       name: 'ข้าวหน้าปลาแซลมอน สไตล์บ้านฉัน',
-      emoji: '🍣',
       category: 'อาหารจานเดียว',
       country: 'ญี่ปุ่น',
       cookTimeMinutes: 15,
@@ -257,9 +249,8 @@ class RecipeData {
     ),
     Recipe(
       id: '9',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Takoyaki_in_Osaka.jpg/1280px-Takoyaki_in_Osaka.jpg',
-      name: 'ทาโคยากิ',
-      emoji: '🐙',
+      imageUrl: 'assets/images/recipes/takoyaki.png',
+      name: 'ทาโกยากิ',
       category: 'สแน็ค',
       country: 'ญี่ปุ่น',
       cookTimeMinutes: 30,
@@ -287,9 +278,8 @@ class RecipeData {
     // ---------------- จีน ----------------
     Recipe(
       id: '10',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Salted_egg_fried_rice.jpg/1280px-Salted_egg_fried_rice.jpg',
-      name: 'ข้าวผัดไข่เค็มจีน',
-      emoji: '🍳',
+      imageUrl: 'assets/images/recipes/salted_egg_fried_rice.png',
+      name: 'ข้าวผัดไข่เค็ม',
       category: 'อาหารจานเดียว',
       country: 'จีน',
       cookTimeMinutes: 20,
@@ -317,9 +307,8 @@ class RecipeData {
     ),
     Recipe(
       id: '11',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Sweet_and_sour_pork.jpg/1280px-Sweet_and_sour_pork.jpg',
+      imageUrl: 'assets/images/recipes/sweet_and_sour_pork.jpg',
       name: 'หมูผัดเปรี้ยวหวาน',
-      emoji: '🍖',
       category: 'อาหารจานเดียว',
       country: 'จีน',
       cookTimeMinutes: 25,
@@ -348,9 +337,8 @@ class RecipeData {
     ),
     Recipe(
       id: '12',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Pot-stickers.jpg/1280px-Pot-stickers.jpg',
+      imageUrl: 'assets/images/recipes/steamed_dumplings.jpg',
       name: 'เกี๊ยวซ่าจีนนึ่ง',
-      emoji: '🥟',
       category: 'สแน็ค',
       country: 'จีน',
       cookTimeMinutes: 35,
@@ -377,9 +365,8 @@ class RecipeData {
     // ---------------- เกาหลี ----------------
     Recipe(
       id: '13',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Bibimbap_салат.jpg/1280px-Bibimbap_салат.jpg',
+      imageUrl: 'assets/images/recipes/bibimbap.png',
       name: 'บิบิมบับ',
-      emoji: '🍲',
       category: 'อาหารจานเดียว',
       country: 'เกาหลี',
       cookTimeMinutes: 30,
@@ -409,9 +396,8 @@ class RecipeData {
     ),
     Recipe(
       id: '14',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Tteokbokki_02.jpg/1280px-Tteokbokki_02.jpg',
+      imageUrl: 'assets/images/recipes/tteokbokki.jpg',
       name: 'ต๊อกบกกี เผ็ดนัวสูตรป้าซอ',
-      emoji: '🌶️',
       category: 'สแน็ค',
       country: 'เกาหลี',
       cookTimeMinutes: 20,
@@ -439,9 +425,8 @@ class RecipeData {
     ),
     Recipe(
       id: '15',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Kimchi_jjigae.jpg/1280px-Kimchi_jjigae.jpg',
+      imageUrl: 'assets/images/recipes/kimchi_jjigae.jpg',
       name: 'กิมจิจิเก',
-      emoji: '🍲',
       category: 'ต้ม/แกง',
       country: 'เกาหลี',
       cookTimeMinutes: 30,
@@ -468,9 +453,8 @@ class RecipeData {
     ),
     Recipe(
       id: '16',
-      imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Korean.fried.chicken.jpg/1280px-Korean.fried.chicken.jpg',
+      imageUrl: 'assets/images/recipes/korean_fried_chicken.jpg',
       name: 'ไก่ทอดเกาหลีซอสยังนยอม',
-      emoji: '🍗',
       category: 'อาหารจานเดียว',
       country: 'เกาหลี',
       cookTimeMinutes: 40,
