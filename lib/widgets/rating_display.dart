@@ -31,7 +31,7 @@ class RatingDisplay extends StatelessWidget {
           style: TextStyle(
             fontSize: fontSize,
             fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
+            color: AppTheme.txtPrimary(context),
           ),
         ),
         if (showCount) ...[
@@ -40,7 +40,7 @@ class RatingDisplay extends StatelessWidget {
             '· $reviewCount รีวิว',
             style: TextStyle(
               fontSize: fontSize,
-              color: AppTheme.textSecondary,
+              color: AppTheme.txtSecondary(context),
             ),
           ),
         ],

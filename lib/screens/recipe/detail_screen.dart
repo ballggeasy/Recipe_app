@@ -417,27 +417,48 @@ class _NutritionGrid extends StatelessWidget {
       ('🧂', '${nutrition.sodium}mg', 'โซเดียม'),
     ];
 
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: items.map((item) {
-        return Container(
-          width: 95,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppTheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppTheme.divider),
-          ),
-          child: Column(
-            children: [
-              Text(item.$1, style: const TextStyle(fontSize: 18)),
-              Text(item.$2, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-              Text(item.$3, style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
-            ],
-          ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final itemWidth = (constraints.maxWidth - 10 * 2) / 3;
+        return Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: items.map((item) {
+            return Container(
+              width: itemWidth,
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+              decoration: BoxDecoration(
+                color: AppTheme.surf(context),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: AppTheme.shadow(context),
+              ),
+              child: Column(
+                children: [
+                  Text(item.$1, style: const TextStyle(fontSize: 20)),
+                  const SizedBox(height: 4),
+                  Text(
+                    item.$2,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                      color: AppTheme.txtPrimary(context),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    item.$3,
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      color: AppTheme.txtSecondary(context),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
     );
   }
 }
@@ -452,15 +473,22 @@ class _InfoTag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: AppTheme.primaryLight,
+        color: AppTheme.primLight(context),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: AppTheme.primary),
+          Icon(icon, size: 14, color: AppTheme.prim(context)),
           const SizedBox(width: 6),
-          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primary)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.prim(context),
+            ),
+          ),
         ],
       ),
     );
@@ -479,13 +507,25 @@ class _IngredientRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            margin: const EdgeInsets.only(top: 7),
-            width: 6,
-            height: 6,
-            decoration: const BoxDecoration(color: AppTheme.primary, shape: BoxShape.circle),
+            margin: const EdgeInsets.only(top: 8),
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              color: AppTheme.prim(context),
+              shape: BoxShape.circle,
+            ),
           ),
-          const SizedBox(width: 10),
-          Expanded(child: Text(text, style: const TextStyle(fontSize: 14.5, height: 1.4))),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 14.5,
+                height: 1.45,
+                color: AppTheme.txtPrimary(context),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -500,20 +540,53 @@ class _StepRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 26,
-            height: 26,
-            decoration: const BoxDecoration(color: AppTheme.primary, shape: BoxShape.circle),
-            child: Center(
-              child: Text('$number', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+          Column(
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: AppTheme.prim(context),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.prim(context).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    '$number',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontSize: 14.5,
+                  height: 1.5,
+                  color: AppTheme.txtPrimary(context),
+                ),
+              ),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(child: Text(text, style: const TextStyle(fontSize: 14.5, height: 1.45))),
         ],
       ),
     );
@@ -529,18 +602,32 @@ class _TipBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppTheme.primaryLight,
-        borderRadius: BorderRadius.circular(12),
+        color: AppTheme.primLight(context),
+        borderRadius: BorderRadius.circular(14),
+        border: Border(
+          left: BorderSide(color: AppTheme.prim(context), width: 4),
+        ),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 20, color: AppTheme.primary),
-          const SizedBox(width: 10),
-          Expanded(child: Text(text, style: const TextStyle(fontSize: 14, height: 1.4))),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 20, color: AppTheme.prim(context)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: AppTheme.txtPrimary(context),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

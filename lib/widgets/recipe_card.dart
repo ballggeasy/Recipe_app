@@ -22,12 +22,12 @@ class RecipeCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppTheme.radiusCard),
       child: Container(
         decoration: BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppTheme.divider),
+          color: AppTheme.surf(context),
+          borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+          boxShadow: AppTheme.shadow(context),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,36 +38,47 @@ class RecipeCard extends StatelessWidget {
                   Positioned.fill(
                     child: ClipRRect(
                       borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(16),
+                        top: Radius.circular(AppTheme.radiusCard),
                       ),
                       child: RecipeImage(recipe: recipe, emojiSize: 44),
                     ),
                   ),
+                  // gradient overlay สำหรับ source badge area
                   Positioned(
-                    top: 6,
-                    left: 6,
-                    right: 36,
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(AppTheme.radiusCard),
+                      ),
+                      child: Container(
+                        height: 56,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withOpacity(0.35),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    right: 40,
                     child: SourceBadge(recipe: recipe, compact: true),
                   ),
                   Positioned(
                     top: 6,
                     right: 6,
-                    child: GestureDetector(
+                    child: _FavoriteButton(
+                      isFav: isFav,
                       onTap: () => provider.toggleFavorite(recipe.id),
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          isFav ? Icons.favorite : Icons.favorite_border,
-                          size: 18,
-                          color: isFav
-                              ? AppTheme.accentRed
-                              : AppTheme.textSecondary,
-                        ),
-                      ),
                     ),
                   ),
                 ],
@@ -82,33 +93,34 @@ class RecipeCard extends StatelessWidget {
                     recipe.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.txtPrimary(context),
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 5),
                   RatingDisplay(
                     rating: recipe.rating,
                     reviewCount: recipe.reviewCount,
                     fontSize: 11.5,
                     starSize: 13,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 5),
                   Row(
                     children: [
-                      const Icon(
-                        Icons.access_time,
-                        size: 13,
-                        color: AppTheme.textSecondary,
+                      Icon(
+                        Icons.access_time_rounded,
+                        size: 12,
+                        color: AppTheme.txtSecondary(context),
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '${recipe.cookTimeMinutes} นาที',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.textSecondary,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: AppTheme.txtSecondary(context),
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -117,6 +129,75 @@ class RecipeCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FavoriteButton extends StatefulWidget {
+  final bool isFav;
+  final VoidCallback onTap;
+  const _FavoriteButton({required this.isFav, required this.onTap});
+
+  @override
+  State<_FavoriteButton> createState() => _FavoriteButtonState();
+}
+
+class _FavoriteButtonState extends State<_FavoriteButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+      lowerBound: 0.85,
+      upperBound: 1.0,
+      value: 1.0,
+    );
+    _scale = _controller;
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _onTap() async {
+    await _controller.reverse();
+    widget.onTap();
+    _controller.forward();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scale,
+      child: GestureDetector(
+        onTap: _onTap,
+        child: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.92),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.12),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Icon(
+            widget.isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+            size: 17,
+            color: widget.isFav ? AppTheme.accentRed : AppTheme.textSecondary,
+          ),
         ),
       ),
     );

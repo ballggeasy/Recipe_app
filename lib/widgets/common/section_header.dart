@@ -14,10 +14,11 @@ class SectionHeader extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.txtPrimary(context),
+              letterSpacing: 0.1,
             ),
           ),
         ),

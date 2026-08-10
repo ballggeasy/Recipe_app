@@ -13,7 +13,9 @@ class SourceBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isOfficial = recipe.isOfficial;
-    final bgColor = isOfficial ? AppTheme.primaryLight : const Color(0xFFFBEEDC);
+    final bgColor = isOfficial
+        ? Colors.white.withValues(alpha: 0.88)
+        : const Color(0xFFFBEEDC).withValues(alpha: 0.92);
     final fgColor = isOfficial ? AppTheme.primary : const Color(0xFFB97A2E);
     final icon = isOfficial ? Icons.verified_rounded : Icons.person_rounded;
     final label = isOfficial ? 'ทางการ' : (recipe.uploaderName ?? 'ผู้ใช้');

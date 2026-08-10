@@ -156,122 +156,251 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return Scaffold(
         appBar: AppBar(title: const Text('โปรไฟล์')),
         body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('👤', style: TextStyle(fontSize: 40)),
-              const SizedBox(height: 12),
-              Text('คุณกำลังใช้งานแบบผู้เยี่ยมชม', style: TextStyle(color: AppTheme.txtSecondary(context))),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  (route) => false,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 88,
+                  height: 88,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primLight(context),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Text('👤', style: TextStyle(fontSize: 40)),
+                  ),
                 ),
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.prim(context), foregroundColor: Colors.white),
-                child: const Text('เข้าสู่ระบบ'),
-              ),
-            ],
+                const SizedBox(height: 20),
+                Text(
+                  'คุณใช้งานแบบผู้เยี่ยมชม',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.txtPrimary(context),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'เข้าสู่ระบบเพื่อบันทึกสูตรโปรดและแผนมื้ออาหาร',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.txtSecondary(context),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      (route) => false,
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.prim(context),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppTheme.radiusButton),
+                      ),
+                      minimumSize: const Size(180, 50),
+                    ),
+                    child: const Text(
+                      'เข้าสู่ระบบ',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('โปรไฟล์')),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Center(
-            child: GestureDetector(
-              onTap: _pickImage,
-              child: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 48,
-                    backgroundColor: AppTheme.primLight(context),
-                    backgroundImage: user.profileImagePath != null
-                        ? FileImage(File(user.profileImagePath!))
-                        : null,
-                    child: user.profileImagePath == null
-                        ? Icon(Icons.person, size: 48, color: AppTheme.prim(context))
-                        : null,
+      body: CustomScrollView(
+        slivers: [
+          // Header banner with gradient
+          SliverAppBar(
+            expandedHeight: 200,
+            pinned: true,
+            backgroundColor: AppTheme.prim(context),
+            foregroundColor: Colors.white,
+            title: const Text('โปรไฟล์', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.prim(context),
+                      AppTheme.prim(context).withOpacity(0.75),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: AppTheme.prim(context),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppTheme.surf(context), width: 2),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    // Avatar with ring
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: Stack(
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.3),
+                            ),
+                            child: CircleAvatar(
+                              radius: 44,
+                              backgroundColor: AppTheme.primLight(context),
+                              backgroundImage: user.profileImagePath != null
+                                  ? FileImage(File(user.profileImagePath!))
+                                  : null,
+                              child: user.profileImagePath == null
+                                  ? Icon(Icons.person, size: 44, color: AppTheme.prim(context))
+                                  : null,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppTheme.prim(context),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.camera_alt_rounded,
+                              size: 14,
+                              color: AppTheme.prim(context),
+                            ),
+                          ),
+                        ],
                       ),
-                      child: const Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
                     ),
+                    const SizedBox(height: 10),
+                    Text(
+                      user.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      user.email,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 12.5,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Profile content
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SectionLabel(text: 'ข้อมูลบัญชี'),
+                  const SizedBox(height: 8),
+                  _SectionCard(
+                    children: [
+                      _ProfileTile(
+                        icon: Icons.edit_outlined,
+                        label: 'แก้ไขชื่อ',
+                        onTap: () => _editName(user.name),
+                      ),
+                      _ProfileTile(
+                        icon: Icons.lock_reset_rounded,
+                        label: 'เปลี่ยนรหัสผ่าน',
+                        onTap: _changePassword,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  _SectionLabel(text: 'การตั้งค่า'),
+                  const SizedBox(height: 8),
+                  _SectionCard(
+                    children: [
+                      SwitchListTile(
+                        secondary: Icon(
+                          themeProvider.isDarkMode
+                              ? Icons.dark_mode_outlined
+                              : Icons.light_mode_outlined,
+                          color: AppTheme.txtSecondary(context),
+                        ),
+                        title: Text(
+                          'โหมดมืด',
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.txtPrimary(context),
+                          ),
+                        ),
+                        value: themeProvider.isDarkMode,
+                        activeThumbColor: AppTheme.prim(context),
+                        activeTrackColor: AppTheme.primLight(context),
+                        onChanged: (value) => themeProvider.toggleTheme(value),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  _SectionLabel(text: 'จัดการบัญชี'),
+                  const SizedBox(height: 8),
+                  _SectionCard(
+                    children: [
+                      _ProfileTile(
+                        icon: Icons.logout_rounded,
+                        label: 'ออกจากระบบ',
+                        onTap: _logout,
+                      ),
+                      _ProfileTile(
+                        icon: Icons.delete_outline_rounded,
+                        label: 'ลบบัญชี',
+                        labelColor: AppTheme.accRed(context),
+                        onTap: _deleteAccount,
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          Center(
-            child: Text(
-              user.name,
-              style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: AppTheme.txtPrimary(context)),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Center(
-            child: Text(user.email, style: TextStyle(fontSize: 13.5, color: AppTheme.txtSecondary(context))),
-          ),
-          const SizedBox(height: 32),
-          _SectionCard(
-            children: [
-              _ProfileTile(
-                icon: Icons.edit_outlined,
-                label: 'แก้ไขชื่อ',
-                onTap: () => _editName(user.name),
-              ),
-              _ProfileTile(
-                icon: Icons.lock_reset_rounded,
-                label: 'เปลี่ยนรหัสผ่าน',
-                onTap: _changePassword,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _SectionCard(
-            children: [
-              SwitchListTile(
-                secondary: Icon(
-                  themeProvider.isDarkMode ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
-                  color: AppTheme.txtSecondary(context),
-                ),
-                title: Text('โหมดมืด', style: TextStyle(fontSize: 14.5, color: AppTheme.txtPrimary(context))),
-                value: themeProvider.isDarkMode,
-                activeThumbColor: AppTheme.prim(context),
-                onChanged: (value) => themeProvider.toggleTheme(value),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _SectionCard(
-            children: [
-              _ProfileTile(
-                icon: Icons.logout_rounded,
-                label: 'ออกจากระบบ',
-                onTap: _logout,
-              ),
-              _ProfileTile(
-                icon: Icons.delete_outline_rounded,
-                label: 'ลบบัญชี',
-                labelColor: AppTheme.accentRed,
-                onTap: _deleteAccount,
-              ),
-            ],
-          ),
         ],
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text.toUpperCase(),
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w800,
+        color: AppTheme.txtSecondary(context),
+        letterSpacing: 0.8,
       ),
     );
   }
@@ -287,7 +416,7 @@ class _SectionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.surf(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.div(context)),
+        boxShadow: AppTheme.shadow(context),
       ),
       child: Column(children: children),
     );
@@ -310,12 +439,24 @@ class _ProfileTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: labelColor ?? AppTheme.txtSecondary(context)),
+      leading: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: (labelColor ?? AppTheme.prim(context)).withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, size: 20, color: labelColor ?? AppTheme.prim(context)),
+      ),
       title: Text(
         label,
-        style: TextStyle(fontSize: 14.5, color: labelColor ?? AppTheme.txtPrimary(context)),
+        style: TextStyle(
+          fontSize: 14.5,
+          fontWeight: FontWeight.w600,
+          color: labelColor ?? AppTheme.txtPrimary(context),
+        ),
       ),
-      trailing: Icon(Icons.chevron_right_rounded, color: AppTheme.txtSecondary(context)),
+      trailing: Icon(Icons.chevron_right_rounded, color: AppTheme.txtSecondary(context), size: 20),
       onTap: onTap,
     );
   }
