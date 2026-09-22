@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -138,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 /// แผงแบรนด์ไล่สีที่ใช้ร่วมกันระหว่างหน้า login และ register
-class LoginBrandPanel extends StatelessWidget {
+class LoginBrandPanel extends StatefulWidget {
   final bool wide;
   final String title;
   final String subtitle;
@@ -151,45 +153,122 @@ class LoginBrandPanel extends StatelessWidget {
   });
 
   @override
+  State<LoginBrandPanel> createState() => _LoginBrandPanelState();
+}
+
+class _LoginBrandPanelState extends State<LoginBrandPanel> {
+  static const _images = [
+    'assets/images/recipes/tom_yum_kung.jpg',
+    'assets/images/recipes/som_tum.jpg',
+    'assets/images/recipes/pad_krapao.jpg',
+    'assets/images/recipes/bibimbap.png',
+    'assets/images/recipes/shoyu_ramen.jpg',
+    'assets/images/recipes/pizza_margherita.jpg',
+    'assets/images/recipes/carbonara.jpg',
+    'assets/images/recipes/korean_fried_chicken.jpg',
+    'assets/images/recipes/kimchi_jjigae.jpg',
+    'assets/images/recipes/salmon_don.png',
+    'assets/images/recipes/takoyaki.png',
+    'assets/images/recipes/steamed_dumplings.jpg',
+    'assets/images/recipes/sweet_and_sour_pork.jpg',
+    'assets/images/recipes/tteokbokki.jpg',
+    'assets/images/recipes/salted_egg_fried_rice.png',
+    'assets/images/recipes/tiramisu.png',
+  ];
+
+  late final PageController _controller;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PageController();
+    _timer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted || !_controller.hasClients) return;
+      final next = (_controller.page ?? 0).round() + 1;
+      _controller.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 900),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final base = AppTheme.prim(context);
     return Container(
-      height: wide ? double.infinity : 240,
+      height: widget.wide ? double.infinity : 240,
       width: double.infinity,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [base, Color.lerp(base, Colors.black, 0.4)!],
-        ),
-        borderRadius: wide ? null : const BorderRadius.vertical(bottom: Radius.circular(AppRadius.xxl)),
+        borderRadius: widget.wide ? null : const BorderRadius.vertical(bottom: Radius.circular(AppRadius.xxl)),
       ),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(AppRadius.xl),
-              ),
-              child: const Center(child: Text('🍳', style: TextStyle(fontSize: 36))),
-            ),
-            const SizedBox(height: AppSpacing.base),
-            Text(title, style: AppTypography.display(color: Colors.white).copyWith(fontSize: 26)),
-            const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-              child: Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                style: AppTypography.body(color: Colors.white.withValues(alpha: 0.85)),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          PageView.builder(
+            controller: _controller,
+            itemBuilder: (context, index) {
+              final path = _images[index % _images.length];
+              return Image.asset(path, fit: BoxFit.cover);
+            },
+          ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  base.withValues(alpha: 0.82),
+                  Color.lerp(base, Colors.black, 0.55)!.withValues(alpha: 0.88),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
+                  ),
+                  child: const Center(child: Text('🍳', style: TextStyle(fontSize: 36))),
+                ),
+                const SizedBox(height: AppSpacing.base),
+                Text(
+                  widget.title,
+                  style: AppTypography.display(color: Colors.white).copyWith(
+                    fontSize: 26,
+                    shadows: const [Shadow(color: Colors.black38, blurRadius: 10)],
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                  child: Text(
+                    widget.subtitle,
+                    textAlign: TextAlign.center,
+                    style: AppTypography.body(color: Colors.white.withValues(alpha: 0.9)).copyWith(
+                      shadows: const [Shadow(color: Colors.black38, blurRadius: 8)],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
