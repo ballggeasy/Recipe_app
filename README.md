@@ -1,17 +1,52 @@
-# recipe_app
+# Recipe App
 
-A new Flutter project.
+แอปสูตรอาหาร — Flutter frontend + NestJS backend อยู่ใน repo เดียวกัน
 
-## Getting Started
+```
+.
+├── lib/            # Flutter app (frontend)
+├── backend/        # NestJS API server (backend)
+└── ...
+```
 
-This project is a starting point for a Flutter application.
+## เริ่มต้นใช้งาน
 
-A few resources to get you started if this is your first Flutter project:
+ต้องรัน **backend ก่อน** แล้วค่อยรัน frontend ต่อ (frontend เรียก API จาก backend โดยตรง ไม่มี mock data แล้ว)
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+### 1. Backend (NestJS)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+ต้องมี [Node.js](https://nodejs.org/) (แนะนำ v18+)
+
+```bash
+cd backend
+npm install
+cp .env.example .env
+npm run start:dev
+```
+
+Server จะรันที่ `http://localhost:3000` และสร้างไฟล์ฐานข้อมูล SQLite ที่ `backend/data/app.sqlite` อัตโนมัติ (seed สูตรอาหารตัวอย่าง 16 สูตรให้เองตอนบูตครั้งแรก)
+
+รายละเอียด endpoint ทั้งหมดดูที่ [`backend/README.md`](backend/README.md)
+
+### 2. Frontend (Flutter)
+
+ต้องมี [Flutter SDK](https://docs.flutter.dev/get-started/install) ติดตั้งไว้แล้ว
+
+```bash
+flutter pub get
+flutter run
+```
+
+เลือกอุปกรณ์ตามที่ต้องการ (Chrome, Windows, emulator ฯลฯ) เมื่อ `flutter run` ถาม หรือระบุ `-d <device>` เช่น `flutter run -d chrome`
+
+**หมายเหตุเรื่องการเชื่อมต่อ backend:** แอปตั้งค่า base URL ให้อัตโนมัติตามแพลตฟอร์ม (`lib/services/api_client.dart`):
+- Web / Windows / iOS simulator → `http://localhost:3000`
+- Android emulator → `http://10.0.2.2:3000` (ตัว emulator เข้าถึง host เครื่องจริงผ่าน IP นี้เสมอ)
+- ถ้ารันบนมือถือจริง (ไม่ใช่ emulator) ต้องแก้ `baseUrl` ให้ชี้ไป IP เครื่องที่รัน backend เอง
+
+## ทดสอบ
+
+```bash
+flutter analyze
+flutter test
+```
