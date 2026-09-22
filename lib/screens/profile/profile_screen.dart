@@ -1,11 +1,16 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../theme/app_radius.dart';
+import '../../theme/app_spacing.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/app_typography.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../services/api_client.dart';
+import '../../widgets/common/app_button.dart';
+import '../../widgets/common/app_text_field.dart';
 import '../login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -22,9 +27,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? AppTheme.accentRed : AppTheme.primary,
+        backgroundColor: isError ? AppTheme.error(context) : AppTheme.prim(context),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
       ),
     );
   }
@@ -32,9 +37,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _pickImage() async {
     final XFile? picked = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
     if (picked == null) return;
-    await context.read<AuthProvider>().updateProfile(profileImagePath: picked.path);
-    if (!mounted) return;
-    _showMessage('อัปเดตรูปโปรไฟล์แล้ว');
+    try {
+      await context.read<AuthProvider>().uploadAvatar(picked);
+      if (!mounted) return;
+      _showMessage('อัปเดตรูปโปรไฟล์แล้ว');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      _showMessage(e.message, isError: true);
+    }
   }
 
   Future<void> _editName(String currentName) async {
@@ -43,7 +53,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('แก้ไขชื่อ'),
-        content: TextField(controller: controller, autofocus: true),
+        content: AppTextField(controller: controller),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('ยกเลิก')),
           TextButton(
@@ -55,9 +65,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (newName != null && newName.isNotEmpty) {
-      await context.read<AuthProvider>().updateProfile(name: newName);
-      if (!mounted) return;
-      _showMessage('อัปเดตชื่อแล้ว');
+      try {
+        await context.read<AuthProvider>().updateProfile(name: newName);
+        if (!mounted) return;
+        _showMessage('อัปเดตชื่อแล้ว');
+      } on ApiException catch (e) {
+        if (!mounted) return;
+        _showMessage(e.message, isError: true);
+      }
     }
   }
 
@@ -72,16 +87,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
+            AppTextField(
               controller: currentController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'รหัสผ่านปัจจุบัน'),
+              label: 'รหัสผ่านปัจจุบัน',
             ),
-            const SizedBox(height: 12),
-            TextField(
+            const SizedBox(height: AppSpacing.md),
+            AppTextField(
               controller: newController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'รหัสผ่านใหม่'),
+              label: 'รหัสผ่านใหม่',
             ),
           ],
         ),
@@ -121,7 +136,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('ยกเลิก')),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text('ลบบัญชี', style: TextStyle(color: AppTheme.accentRed)),
+            child: Text('ลบบัญชี', style: TextStyle(color: AppTheme.error(dialogContext))),
           ),
         ],
       ),
@@ -156,122 +171,202 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return Scaffold(
         appBar: AppBar(title: const Text('โปรไฟล์')),
         body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('👤', style: TextStyle(fontSize: 40)),
-              const SizedBox(height: 12),
-              Text('คุณกำลังใช้งานแบบผู้เยี่ยมชม', style: TextStyle(color: AppTheme.txtSecondary(context))),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  (route) => false,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 84,
+                  height: 84,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primLight(context),
+                    borderRadius: BorderRadius.circular(AppRadius.xxl),
+                  ),
+                  child: Icon(Icons.person_rounded, size: 40, color: AppTheme.prim(context)),
                 ),
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.prim(context), foregroundColor: Colors.white),
-                child: const Text('เข้าสู่ระบบ'),
-              ),
-            ],
+                const SizedBox(height: AppSpacing.lg),
+                Text(
+                  'คุณกำลังใช้งานแบบผู้เยี่ยมชม',
+                  style: AppTypography.body(color: AppTheme.txtSecondary(context)),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                AppButton.primary(
+                  label: 'เข้าสู่ระบบ',
+                  fullWidth: false,
+                  onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (route) => false,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('โปรไฟล์')),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Center(
-            child: GestureDetector(
-              onTap: _pickImage,
-              child: Stack(
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            backgroundColor: AppTheme.prim(context),
+            foregroundColor: Colors.white,
+            elevation: 0,
+            pinned: true,
+            expandedHeight: 240,
+            flexibleSpace: FlexibleSpaceBar(
+              background: _ProfileHeader(
+                name: user.name,
+                email: user.email,
+                imagePath: user.profileImagePath,
+                onEditPhoto: _pickImage,
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    radius: 48,
-                    backgroundColor: AppTheme.primLight(context),
-                    backgroundImage: user.profileImagePath != null
-                        ? FileImage(File(user.profileImagePath!))
-                        : null,
-                    child: user.profileImagePath == null
-                        ? Icon(Icons.person, size: 48, color: AppTheme.prim(context))
-                        : null,
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: AppTheme.prim(context),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppTheme.surf(context), width: 2),
+                  Text('บัญชี', style: AppTypography.overline(color: AppTheme.txtSecondary(context))),
+                  const SizedBox(height: AppSpacing.sm),
+                  _SectionCard(
+                    children: [
+                      _ProfileTile(
+                        icon: Icons.edit_outlined,
+                        label: 'แก้ไขชื่อ',
+                        onTap: () => _editName(user.name),
                       ),
-                      child: const Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
-                    ),
+                      _ProfileTile(
+                        icon: Icons.lock_reset_rounded,
+                        label: 'เปลี่ยนรหัสผ่าน',
+                        onTap: _changePassword,
+                        showDivider: false,
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Text('การแสดงผล', style: AppTypography.overline(color: AppTheme.txtSecondary(context))),
+                  const SizedBox(height: AppSpacing.sm),
+                  _SectionCard(
+                    children: [
+                      SwitchListTile(
+                        secondary: Icon(
+                          themeProvider.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                          color: AppTheme.txtSecondary(context),
+                        ),
+                        title: Text('โหมดมืด', style: AppTypography.body(color: AppTheme.txtPrimary(context))),
+                        value: themeProvider.isDarkMode,
+                        onChanged: (value) => themeProvider.toggleTheme(value),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Text('อื่น ๆ', style: AppTypography.overline(color: AppTheme.txtSecondary(context))),
+                  const SizedBox(height: AppSpacing.sm),
+                  _SectionCard(
+                    children: [
+                      _ProfileTile(
+                        icon: Icons.logout_rounded,
+                        label: 'ออกจากระบบ',
+                        onTap: _logout,
+                      ),
+                      _ProfileTile(
+                        icon: Icons.delete_outline_rounded,
+                        label: 'ลบบัญชี',
+                        labelColor: AppTheme.error(context),
+                        onTap: _deleteAccount,
+                        showDivider: false,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          Center(
-            child: Text(
-              user.name,
-              style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: AppTheme.txtPrimary(context)),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Center(
-            child: Text(user.email, style: TextStyle(fontSize: 13.5, color: AppTheme.txtSecondary(context))),
-          ),
-          const SizedBox(height: 32),
-          _SectionCard(
-            children: [
-              _ProfileTile(
-                icon: Icons.edit_outlined,
-                label: 'แก้ไขชื่อ',
-                onTap: () => _editName(user.name),
-              ),
-              _ProfileTile(
-                icon: Icons.lock_reset_rounded,
-                label: 'เปลี่ยนรหัสผ่าน',
-                onTap: _changePassword,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _SectionCard(
-            children: [
-              SwitchListTile(
-                secondary: Icon(
-                  themeProvider.isDarkMode ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
-                  color: AppTheme.txtSecondary(context),
-                ),
-                title: Text('โหมดมืด', style: TextStyle(fontSize: 14.5, color: AppTheme.txtPrimary(context))),
-                value: themeProvider.isDarkMode,
-                activeThumbColor: AppTheme.prim(context),
-                onChanged: (value) => themeProvider.toggleTheme(value),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _SectionCard(
-            children: [
-              _ProfileTile(
-                icon: Icons.logout_rounded,
-                label: 'ออกจากระบบ',
-                onTap: _logout,
-              ),
-              _ProfileTile(
-                icon: Icons.delete_outline_rounded,
-                label: 'ลบบัญชี',
-                labelColor: AppTheme.accentRed,
-                onTap: _deleteAccount,
-              ),
-            ],
-          ),
         ],
+      ),
+    );
+  }
+}
+
+class _ProfileHeader extends StatelessWidget {
+  final String name;
+  final String email;
+  final String? imagePath;
+  final VoidCallback onEditPhoto;
+
+  const _ProfileHeader({
+    required this.name,
+    required this.email,
+    required this.imagePath,
+    required this.onEditPhoto,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final base = AppTheme.prim(context);
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [base, Color.lerp(base, Colors.black, 0.25)!],
+        ),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.lg),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              GestureDetector(
+                onTap: onEditPhoto,
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 44,
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
+                      backgroundImage: imagePath != null ? NetworkImage(imagePath!) : null,
+                      child: imagePath == null
+                          ? const Icon(Icons.person_rounded, size: 44, color: Colors.white)
+                          : null,
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppTheme.prim(context), width: 2),
+                        ),
+                        child: Icon(Icons.camera_alt_rounded, size: 15, color: AppTheme.prim(context)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                name,
+                style: AppTypography.h1(color: Colors.white),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                email,
+                style: AppTypography.caption(color: Colors.white.withValues(alpha: 0.8)),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -286,9 +381,10 @@ class _SectionCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.surf(context),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppTheme.div(context)),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(children: children),
     );
   }
@@ -299,24 +395,31 @@ class _ProfileTile extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final Color? labelColor;
+  final bool showDivider;
 
   const _ProfileTile({
     required this.icon,
     required this.label,
     required this.onTap,
     this.labelColor,
+    this.showDivider = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: labelColor ?? AppTheme.txtSecondary(context)),
-      title: Text(
-        label,
-        style: TextStyle(fontSize: 14.5, color: labelColor ?? AppTheme.txtPrimary(context)),
-      ),
-      trailing: Icon(Icons.chevron_right_rounded, color: AppTheme.txtSecondary(context)),
-      onTap: onTap,
+    return Column(
+      children: [
+        ListTile(
+          leading: Icon(icon, color: labelColor ?? AppTheme.txtSecondary(context)),
+          title: Text(
+            label,
+            style: AppTypography.body(color: labelColor ?? AppTheme.txtPrimary(context)),
+          ),
+          trailing: Icon(Icons.chevron_right_rounded, color: AppTheme.txtSecondary(context)),
+          onTap: onTap,
+        ),
+        if (showDivider) Divider(height: 1, color: AppTheme.div(context)),
+      ],
     );
   }
 }

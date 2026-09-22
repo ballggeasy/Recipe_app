@@ -3,34 +3,18 @@ import 'package:flutter/foundation.dart';
 import '../models/favorite_folder.dart';
 import '../models/recipe.dart';
 import '../providers/recipe_provider.dart';
+import '../services/api_client.dart';
+import '../services/favorite_service.dart';
 
-/// จัดการโฟลเดอร์สูตรโปรด, แชร์, ดาวน์โหลด (mock)
+/// จัดการโฟลเดอร์สูตรโปรดผ่าน backend — ต้องล็อกอิน (guest จะเห็นรายการว่าง)
 class FavoriteProvider extends ChangeNotifier {
-  final List<FavoriteFolder> _folders = [
-    FavoriteFolder(
-      id: 'f1',
-      name: 'เมนูโปรด',
-      emoji: '❤️',
-      recipeIds: ['1', '2'],
-      createdAt: DateTime(2025, 6, 1),
-    ),
-    FavoriteFolder(
-      id: 'f2',
-      name: 'เมนูสุขภาพ',
-      emoji: '🥗',
-      recipeIds: ['2', '13'],
-      createdAt: DateTime(2025, 6, 15),
-    ),
-    FavoriteFolder(
-      id: 'f3',
-      name: 'เมนูเด็ก',
-      emoji: '👶',
-      recipeIds: ['10'],
-      createdAt: DateTime(2025, 7, 1),
-    ),
-  ];
+  final FavoriteService _favoriteService = FavoriteService();
+
+  List<FavoriteFolder> _folders = [];
+  bool _isLoading = false;
 
   List<FavoriteFolder> get folders => List.unmodifiable(_folders);
+  bool get isLoading => _isLoading;
 
   FavoriteFolder? getFolder(String id) {
     try {
@@ -49,40 +33,69 @@ class FavoriteProvider extends ChangeNotifier {
         .toList();
   }
 
-  void createFolder(String name, {String emoji = '📁'}) {
-    _folders.add(FavoriteFolder(
-      id: 'f${_folders.length + 1}',
-      name: name,
-      emoji: emoji,
-      createdAt: DateTime.now(),
-    ));
+  /// เรียกทุกครั้งที่สถานะล็อกอินเปลี่ยน
+  Future<void> onAuthChanged(bool isLoggedIn) async {
+    if (!isLoggedIn) {
+      _folders = [];
+      notifyListeners();
+      return;
+    }
+
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _folders = await _favoriteService.listFolders();
+    } on ApiException {
+      _folders = [];
+    }
+    _isLoading = false;
     notifyListeners();
   }
 
-  void deleteFolder(String id) {
-    _folders.removeWhere((f) => f.id == id);
-    notifyListeners();
+  Future<void> createFolder(String name, {String emoji = '📁'}) async {
+    try {
+      final folder = await _favoriteService.createFolder(name, emoji: emoji);
+      _folders.add(folder);
+      notifyListeners();
+    } on ApiException {
+      // ไม่สามารถสร้างโฟลเดอร์ได้ — เงียบไว้ ผู้ใช้ลองใหม่ได้
+    }
   }
 
-  void addRecipeToFolder(String folderId, String recipeId) {
-    final index = _folders.indexWhere((f) => f.id == folderId);
-    if (index == -1) return;
-    final folder = _folders[index];
-    if (folder.recipeIds.contains(recipeId)) return;
-    _folders[index] = folder.copyWith(
-      recipeIds: [...folder.recipeIds, recipeId],
-    );
-    notifyListeners();
+  Future<void> deleteFolder(String id) async {
+    try {
+      await _favoriteService.deleteFolder(id);
+      _folders.removeWhere((f) => f.id == id);
+      notifyListeners();
+    } on ApiException {
+      // ลบไม่สำเร็จ — คงรายการเดิมไว้
+    }
   }
 
-  void removeRecipeFromFolder(String folderId, String recipeId) {
-    final index = _folders.indexWhere((f) => f.id == folderId);
-    if (index == -1) return;
-    final folder = _folders[index];
-    _folders[index] = folder.copyWith(
-      recipeIds: folder.recipeIds.where((id) => id != recipeId).toList(),
-    );
-    notifyListeners();
+  Future<void> addRecipeToFolder(String folderId, String recipeId) async {
+    try {
+      final updated = await _favoriteService.addRecipeToFolder(folderId, recipeId);
+      final index = _folders.indexWhere((f) => f.id == folderId);
+      if (index != -1) {
+        _folders[index] = updated;
+        notifyListeners();
+      }
+    } on ApiException {
+      // เพิ่มไม่สำเร็จ
+    }
+  }
+
+  Future<void> removeRecipeFromFolder(String folderId, String recipeId) async {
+    try {
+      final updated = await _favoriteService.removeRecipeFromFolder(folderId, recipeId);
+      final index = _folders.indexWhere((f) => f.id == folderId);
+      if (index != -1) {
+        _folders[index] = updated;
+        notifyListeners();
+      }
+    } on ApiException {
+      // ลบไม่สำเร็จ
+    }
   }
 
   /// mock — แชร์สูตร (คืนลิงก์จำลอง)

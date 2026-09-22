@@ -27,4 +27,12 @@ class FavoriteFolder {
       createdAt: createdAt,
     );
   }
+
+  factory FavoriteFolder.fromApi(Map<String, dynamic> json) => FavoriteFolder(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        emoji: json['emoji'] as String? ?? '📁',
+        recipeIds: (json['recipeIds'] as List?)?.cast<String>() ?? const [],
+        createdAt: DateTime.parse(json['createdAt'] as String),
+      );
 }

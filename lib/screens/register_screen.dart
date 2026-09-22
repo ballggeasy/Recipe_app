@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../theme/app_radius.dart';
+import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/common/app_button.dart';
+import '../widgets/common/app_text_field.dart';
 import 'main/main_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -17,7 +21,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
-  bool _obscure = true;
 
   @override
   void dispose() {
@@ -32,9 +35,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: AppTheme.accentRed,
+        backgroundColor: AppTheme.error(context),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
       ),
     );
   }
@@ -85,109 +88,47 @@ class _RegisterScreenState extends State<RegisterScreen> {
       appBar: AppBar(title: const Text('สมัครสมาชิก')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _Field(label: 'ชื่อ', controller: _nameController, icon: Icons.person_outline_rounded),
-              const SizedBox(height: 18),
-              _Field(
+              AppTextField(
+                label: 'ชื่อ',
+                controller: _nameController,
+                prefixIcon: Icons.person_outline_rounded,
+                hint: 'ชื่อที่แสดงในแอป',
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              AppTextField(
                 label: 'อีเมล',
                 controller: _emailController,
-                icon: Icons.mail_outline_rounded,
+                prefixIcon: Icons.mail_outline_rounded,
                 keyboardType: TextInputType.emailAddress,
+                hint: 'example@email.com',
               ),
-              const SizedBox(height: 18),
-              _Field(
+              const SizedBox(height: AppSpacing.lg),
+              AppTextField(
                 label: 'รหัสผ่าน',
                 controller: _passwordController,
-                icon: Icons.lock_outline_rounded,
-                obscureText: _obscure,
-                suffixIcon: IconButton(
-                  icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 20),
-                  onPressed: () => setState(() => _obscure = !_obscure),
-                ),
+                prefixIcon: Icons.lock_outline_rounded,
+                obscureText: true,
+                hint: 'อย่างน้อย 6 ตัวอักษร',
               ),
-              const SizedBox(height: 18),
-              _Field(
+              const SizedBox(height: AppSpacing.lg),
+              AppTextField(
                 label: 'ยืนยันรหัสผ่าน',
                 controller: _confirmController,
-                icon: Icons.lock_outline_rounded,
-                obscureText: _obscure,
+                prefixIcon: Icons.lock_outline_rounded,
+                obscureText: true,
+                hint: '••••••••',
               ),
-              const SizedBox(height: 30),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: auth.isLoading ? null : _register,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.prim(context),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                  child: auth.isLoading
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                        )
-                      : const Text('สมัครสมาชิก', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                ),
-              ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.xxl),
+              AppButton.primary(label: 'สมัครสมาชิก', onPressed: _register, loading: auth.isLoading),
+              const SizedBox(height: AppSpacing.lg),
             ],
           ),
         ),
       ),
-    );
-  }
-}
-
-class _Field extends StatelessWidget {
-  final String label;
-  final TextEditingController controller;
-  final IconData icon;
-  final bool obscureText;
-  final TextInputType? keyboardType;
-  final Widget? suffixIcon;
-
-  const _Field({
-    required this.label,
-    required this.controller,
-    required this.icon,
-    this.obscureText = false,
-    this.keyboardType,
-    this.suffixIcon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.txtPrimary(context))),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: AppTheme.surf(context),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppTheme.div(context)),
-          ),
-          child: TextField(
-            controller: controller,
-            obscureText: obscureText,
-            keyboardType: keyboardType,
-            style: TextStyle(fontSize: 14.5, color: AppTheme.txtPrimary(context)),
-            decoration: InputDecoration(
-              prefixIcon: Icon(icon, size: 20, color: AppTheme.txtSecondary(context)),
-              suffixIcon: suffixIcon,
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

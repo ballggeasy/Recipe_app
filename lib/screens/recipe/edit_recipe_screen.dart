@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/recipe.dart';
+import '../../theme/app_radius.dart';
+import '../../theme/app_spacing.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/app_typography.dart';
 import '../../providers/recipe_provider.dart';
+import '../../widgets/common/app_text_field.dart';
 
-/// แก้ไขสูตรอาหาร (mock)
+/// แก้ไขสูตรอาหาร
 class EditRecipeScreen extends StatefulWidget {
   final Recipe recipe;
   const EditRecipeScreen({super.key, required this.recipe});
@@ -43,53 +47,57 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
         actions: [
           TextButton(
             onPressed: _save,
-            child: const Text('บันทึก', style: TextStyle(color: AppTheme.primary)),
+            child: Text('บันทึก', style: TextStyle(color: AppTheme.prim(context), fontWeight: FontWeight.w700)),
           ),
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
           Container(
             height: 120,
+            width: double.infinity,
             decoration: BoxDecoration(
-              color: AppTheme.primaryLight,
-              borderRadius: BorderRadius.circular(14),
+              color: AppTheme.primLight(context),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             child: Center(child: Text(widget.recipe.emoji, style: const TextStyle(fontSize: 48))),
           ),
-          const SizedBox(height: 20),
-          TextField(
-            controller: _nameController,
-            decoration: const InputDecoration(labelText: 'ชื่อเมนู'),
-          ),
-          const SizedBox(height: 12),
-          TextField(
+          const SizedBox(height: AppSpacing.xl),
+          Text('ข้อมูลพื้นฐาน', style: AppTypography.h2(color: AppTheme.txtPrimary(context))),
+          const SizedBox(height: AppSpacing.md),
+          AppTextField(label: 'ชื่อเมนู', controller: _nameController),
+          const SizedBox(height: AppSpacing.md),
+          AppTextField(
+            label: 'เวลาปรุง (นาที)',
             controller: _cookTimeController,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'เวลาปรุง (นาที)'),
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _tipsController,
-            decoration: const InputDecoration(labelText: 'เคล็ดลับ'),
-          ),
+          const SizedBox(height: AppSpacing.md),
+          AppTextField(label: 'เคล็ดลับ', controller: _tipsController, maxLines: 3),
         ],
       ),
     );
   }
 
-  void _save() {
+  Future<void> _save() async {
     final cookTime = int.tryParse(_cookTimeController.text) ?? widget.recipe.cookTimeMinutes;
     final updated = widget.recipe.copyWith(
       name: _nameController.text.trim(),
       cookTimeMinutes: cookTime,
       tips: _tipsController.text.trim().isEmpty ? null : _tipsController.text.trim(),
     );
-    context.read<RecipeProvider>().updateRecipe(updated);
+    final error = await context.read<RecipeProvider>().updateRecipe(updated);
+    if (!mounted) return;
+
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('แก้ไขสูตรเรียบร้อย (mock)')),
+      const SnackBar(content: Text('แก้ไขสูตรเรียบร้อย')),
     );
   }
 }

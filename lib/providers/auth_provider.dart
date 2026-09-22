@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../models/user.dart';
 import '../services/auth_service.dart';
@@ -44,34 +45,34 @@ class AuthProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    final error = await _authService.register(name: name, email: email, password: password);
-    if (error == null) {
-      _currentUser = AppUser(
-        email: email.trim().toLowerCase(),
-        passwordHash: '',
-        name: name.trim(),
-      );
+    final result = await _authService.register(name: name, email: email, password: password);
+    if (result.error == null) {
+      _currentUser = result.user;
       _status = AuthStatus.loggedIn;
     }
 
     _isLoading = false;
     notifyListeners();
-    return error;
+    return result.error;
   }
 
-  Future<String?> login({required String email, required String password}) async {
+  Future<String?> login({
+    required String email,
+    required String password,
+    bool remember = true,
+  }) async {
     _isLoading = true;
     notifyListeners();
 
-    final error = await _authService.login(email: email, password: password);
-    if (error == null) {
-      _currentUser = await _authService.restoreSession();
+    final result = await _authService.login(email: email, password: password, remember: remember);
+    if (result.error == null) {
+      _currentUser = result.user;
       _status = AuthStatus.loggedIn;
     }
 
     _isLoading = false;
     notifyListeners();
-    return error;
+    return result.error;
   }
 
   void continueAsGuest() {
@@ -94,25 +95,26 @@ class AuthProvider extends ChangeNotifier {
   }) async {
     if (_currentUser == null) return 'ไม่พบผู้ใช้ที่ล็อกอินอยู่';
     return _authService.changePassword(
-      email: _currentUser!.email,
       currentPassword: currentPassword,
       newPassword: newPassword,
     );
   }
 
-  Future<void> updateProfile({String? name, String? profileImagePath}) async {
+  Future<void> updateProfile({required String name}) async {
     if (_currentUser == null) return;
-    _currentUser = await _authService.updateProfile(
-      email: _currentUser!.email,
-      name: name,
-      profileImagePath: profileImagePath,
-    );
+    _currentUser = await _authService.updateProfile(name: name);
+    notifyListeners();
+  }
+
+  Future<void> uploadAvatar(XFile file) async {
+    if (_currentUser == null) return;
+    _currentUser = await _authService.uploadAvatar(file);
     notifyListeners();
   }
 
   Future<void> deleteAccount() async {
     if (_currentUser == null) return;
-    await _authService.deleteAccount(_currentUser!.email);
+    await _authService.deleteAccount();
     _currentUser = null;
     _status = AuthStatus.loggedOut;
     notifyListeners();

@@ -11,6 +11,7 @@ import '../../providers/comment_provider.dart';
 import '../../providers/meal_planner_provider.dart';
 import '../screens/login_screen.dart';
 import '../screens/main/main_screen.dart';
+import '../widgets/common/loading_state.dart';
 
 void main() {
   runApp(const RecipeApp());
@@ -57,12 +58,15 @@ class _AuthGate extends StatefulWidget {
 class _AuthGateState extends State<_AuthGate> {
   String? _lastSyncedKey = 'unset';
 
-  void _syncFavoritesIfNeeded(AuthProvider auth) {
+  void _syncOnAuthChange(AuthProvider auth) {
     String? key;
+    bool isLoggedIn;
     if (auth.status == AuthStatus.loggedIn) {
-      key = auth.currentUser?.email;
+      key = auth.currentUser?.id;
+      isLoggedIn = true;
     } else if (auth.status == AuthStatus.guest) {
       key = 'guest';
+      isLoggedIn = false;
     } else {
       return;
     }
@@ -72,19 +76,21 @@ class _AuthGateState extends State<_AuthGate> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<RecipeProvider>().loadFavoritesForUser(key);
+      context.read<RecipeProvider>().onAuthChanged(isLoggedIn);
+      context.read<FavoriteProvider>().onAuthChanged(isLoggedIn);
+      context.read<MealPlannerProvider>().onAuthChanged(isLoggedIn);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    _syncFavoritesIfNeeded(auth);
+    _syncOnAuthChange(auth);
 
     if (auth.status == AuthStatus.unknown) {
       return Scaffold(
         backgroundColor: AppTheme.bg(context),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const LoadingState(),
       );
     }
 

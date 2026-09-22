@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/comment.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/app_typography.dart';
 
 class CommentTile extends StatelessWidget {
   final Comment comment;
@@ -19,7 +20,7 @@ class CommentTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(left: isNested ? 24 : 0, bottom: 12),
+      padding: EdgeInsets.only(left: isNested ? 24 : 0, bottom: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -27,11 +28,11 @@ class CommentTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CircleAvatar(
-                radius: 14,
-                backgroundColor: AppTheme.primaryLight,
+                radius: 15,
+                backgroundColor: AppTheme.primLight(context),
                 child: Text(
-                  comment.userName[0],
-                  style: const TextStyle(fontSize: 12, color: AppTheme.primary),
+                  comment.userName.isNotEmpty ? comment.userName[0] : '?',
+                  style: AppTypography.bodyStrong(color: AppTheme.prim(context)).copyWith(fontSize: 12),
                 ),
               ),
               const SizedBox(width: 10),
@@ -43,33 +44,27 @@ class CommentTile extends StatelessWidget {
                       children: [
                         Text(
                           comment.userName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
+                          style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context)).copyWith(fontSize: 13),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           _formatDate(comment.createdAt),
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppTheme.textSecondary,
-                          ),
+                          style: AppTypography.caption(color: AppTheme.txtSecondary(context)).copyWith(fontSize: 11),
                         ),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    _buildContent(),
+                    _buildContent(context),
                     if (comment.imageUrl != null) ...[
                       const SizedBox(height: 8),
                       Container(
                         height: 60,
                         width: 60,
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryLight,
+                          color: AppTheme.primLight(context),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(Icons.image, color: AppTheme.primary),
+                        child: Icon(Icons.image_rounded, color: AppTheme.prim(context)),
                       ),
                     ],
                     const SizedBox(height: 6),
@@ -83,7 +78,7 @@ class CommentTile extends StatelessWidget {
                         if (onDelete != null) ...[
                           const SizedBox(width: 12),
                           _SmallButton(
-                            icon: Icons.delete_outline,
+                            icon: Icons.delete_outline_rounded,
                             label: 'ลบ',
                             onTap: onDelete,
                           ),
@@ -108,9 +103,11 @@ class CommentTile extends StatelessWidget {
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(BuildContext context) {
+    final primary = AppTheme.txtPrimary(context);
+    final accent = AppTheme.prim(context);
     if (comment.mentions.isEmpty) {
-      return Text(comment.content, style: const TextStyle(fontSize: 13.5, height: 1.4));
+      return Text(comment.content, style: AppTypography.body(color: primary).copyWith(fontSize: 13.5));
     }
     var text = comment.content;
     final spans = <InlineSpan>[];
@@ -121,10 +118,7 @@ class CommentTile extends StatelessWidget {
         if (idx > 0) spans.add(TextSpan(text: text.substring(0, idx)));
         spans.add(TextSpan(
           text: tag,
-          style: const TextStyle(
-            color: AppTheme.primary,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(color: accent, fontWeight: FontWeight.w600),
         ));
         text = text.substring(idx + tag.length);
       }
@@ -132,7 +126,7 @@ class CommentTile extends StatelessWidget {
     if (text.isNotEmpty) spans.add(TextSpan(text: text));
     return RichText(
       text: TextSpan(
-        style: const TextStyle(fontSize: 13.5, color: AppTheme.textPrimary, height: 1.4),
+        style: AppTypography.body(color: primary).copyWith(fontSize: 13.5),
         children: spans,
       ),
     );
@@ -152,12 +146,13 @@ class _SmallButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: AppTheme.textSecondary),
+          Icon(icon, size: 14, color: AppTheme.txtSecondary(context)),
           const SizedBox(width: 4),
-          Text(label, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+          Text(label, style: AppTypography.caption(color: AppTheme.txtSecondary(context)).copyWith(fontSize: 11)),
         ],
       ),
     );

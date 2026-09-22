@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../theme/app_radius.dart';
+import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_typography.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/common/app_button.dart';
+import '../widgets/common/app_text_field.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -22,9 +27,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? AppTheme.accentRed : AppTheme.primary,
+        backgroundColor: isError ? AppTheme.error(context) : AppTheme.prim(context),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
       ),
     );
   }
@@ -78,98 +83,38 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       appBar: AppBar(title: const Text('ลืมรหัสผ่าน')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'ระบบนี้ทำงานแบบ local บนเครื่องเท่านั้น จึงไม่มีการส่งอีเมลยืนยันจริง '
                 'กรอกอีเมลของบัญชีเพื่อรีเซ็ตรหัสผ่านได้โดยตรง',
-                style: TextStyle(fontSize: 13, color: AppTheme.txtSecondary(context), height: 1.4),
+                style: AppTypography.body(color: AppTheme.txtSecondary(context)),
               ),
-              const SizedBox(height: 24),
-              Text('อีเมล', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.txtPrimary(context))),
-              const SizedBox(height: 8),
-              Container(
-                decoration: BoxDecoration(
-                  color: AppTheme.surf(context),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppTheme.div(context)),
-                ),
-                child: TextField(
-                  controller: _emailController,
-                  enabled: !_emailVerified,
-                  keyboardType: TextInputType.emailAddress,
-                  style: TextStyle(fontSize: 14.5, color: AppTheme.txtPrimary(context)),
-                  decoration: InputDecoration(
-                    hintText: 'example@email.com',
-                    prefixIcon: Icon(Icons.mail_outline_rounded, size: 20, color: AppTheme.txtSecondary(context)),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                ),
+              const SizedBox(height: AppSpacing.xl),
+              AppTextField(
+                label: 'อีเมล',
+                controller: _emailController,
+                enabled: !_emailVerified,
+                keyboardType: TextInputType.emailAddress,
+                prefixIcon: Icons.mail_outline_rounded,
+                hint: 'example@email.com',
               ),
               if (!_emailVerified) ...[
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: _isChecking ? null : _checkEmail,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.prim(context),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                    child: _isChecking
-                        ? const SizedBox(
-                            width: 22, height: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                          )
-                        : const Text('ตรวจสอบอีเมล', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                  ),
-                ),
+                const SizedBox(height: AppSpacing.xl),
+                AppButton.primary(label: 'ตรวจสอบอีเมล', onPressed: _checkEmail, loading: _isChecking),
               ] else ...[
-                const SizedBox(height: 24),
-                Text('รหัสผ่านใหม่', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.txtPrimary(context))),
-                const SizedBox(height: 8),
-                Container(
-                  decoration: BoxDecoration(
-                    color: AppTheme.surf(context),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppTheme.div(context)),
-                  ),
-                  child: TextField(
-                    controller: _newPasswordController,
-                    obscureText: true,
-                    style: TextStyle(fontSize: 14.5, color: AppTheme.txtPrimary(context)),
-                    decoration: InputDecoration(
-                      hintText: '••••••••',
-                      prefixIcon: Icon(Icons.lock_outline_rounded, size: 20, color: AppTheme.txtSecondary(context)),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                  ),
+                const SizedBox(height: AppSpacing.xl),
+                AppTextField(
+                  label: 'รหัสผ่านใหม่',
+                  controller: _newPasswordController,
+                  obscureText: true,
+                  prefixIcon: Icons.lock_outline_rounded,
+                  hint: '••••••••',
                 ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: _isSaving ? null : _resetPassword,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.prim(context),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                    child: _isSaving
-                        ? const SizedBox(
-                            width: 22, height: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                          )
-                        : const Text('ตั้งรหัสผ่านใหม่', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                  ),
-                ),
+                const SizedBox(height: AppSpacing.xl),
+                AppButton.primary(label: 'ตั้งรหัสผ่านใหม่', onPressed: _resetPassword, loading: _isSaving),
               ],
             ],
           ),

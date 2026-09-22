@@ -21,7 +21,7 @@ class RecipeImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final content = recipe.imageUrl.isEmpty
-        ? _buildEmojiFallback()
+        ? _buildEmojiFallback(context)
         : Image.network(
             recipe.imageUrl,
             fit: BoxFit.cover,
@@ -30,14 +30,14 @@ class RecipeImage extends StatelessWidget {
             loadingBuilder: (context, child, loadingProgress) {
               if (loadingProgress == null) return child;
               return Container(
-                color: AppTheme.primaryLight,
+                color: AppTheme.primLight(context),
                 child: Center(
                   child: SizedBox(
                     width: 24,
                     height: 24,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      color: AppTheme.primary,
+                      color: AppTheme.prim(context),
                       value: loadingProgress.expectedTotalBytes != null
                           ? loadingProgress.cumulativeBytesLoaded /
                               loadingProgress.expectedTotalBytes!
@@ -47,7 +47,7 @@ class RecipeImage extends StatelessWidget {
                 ),
               );
             },
-            errorBuilder: (context, error, stackTrace) => _buildEmojiFallback(),
+            errorBuilder: (context, error, stackTrace) => _buildEmojiFallback(context),
           );
 
     if (borderRadius != null) {
@@ -56,11 +56,11 @@ class RecipeImage extends StatelessWidget {
     return content;
   }
 
-  Widget _buildEmojiFallback() {
+  Widget _buildEmojiFallback(BuildContext context) {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      color: AppTheme.primaryLight,
+      color: AppTheme.primLight(context),
       child: Center(
         child: Text(recipe.emoji, style: TextStyle(fontSize: emojiSize)),
       ),

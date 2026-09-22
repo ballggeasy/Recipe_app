@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/recipe_provider.dart';
+import '../../theme/app_radius.dart';
+import '../../theme/app_shadows.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/app_typography.dart';
 
 class SearchBarWidget extends StatelessWidget {
   final String hint;
@@ -11,7 +14,7 @@ class SearchBarWidget extends StatelessWidget {
 
   const SearchBarWidget({
     super.key,
-    this.hint = 'ค้นหาเมนูหรือวัตถุดิบ',
+    this.hint = 'ค้นหาเมนู, วัตถุดิบ, หมวดหมู่...',
     this.showHistory = false,
     this.onSubmitted,
   });
@@ -25,9 +28,10 @@ class SearchBarWidget extends StatelessWidget {
       children: [
         Container(
           decoration: BoxDecoration(
-            color: AppTheme.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppTheme.divider),
+            color: AppTheme.surf(context),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppTheme.div(context)),
+            boxShadow: AppShadows.softFor(context),
           ),
           child: Autocomplete<String>(
             optionsBuilder: (textEditingValue) {
@@ -47,21 +51,18 @@ class SearchBarWidget extends StatelessWidget {
                   provider.addToSearchHistory(value);
                   onSubmitted?.call();
                 },
+                style: AppTypography.body(color: AppTheme.txtPrimary(context)),
                 decoration: InputDecoration(
                   hintText: hint,
-                  hintStyle: const TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 14,
-                  ),
-                  prefixIcon: const Icon(
-                    Icons.search,
-                    color: AppTheme.textSecondary,
-                    size: 20,
-                  ),
+                  hintStyle: AppTypography.body(color: AppTheme.txtSecondary(context)),
+                  prefixIcon: Icon(Icons.search_rounded, color: AppTheme.txtSecondary(context), size: 22),
                   suffixIcon: provider.searchQuery.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.close, size: 18),
-                          onPressed: provider.clearSearch,
+                          icon: Icon(Icons.close_rounded, size: 18, color: AppTheme.txtSecondary(context)),
+                          onPressed: () {
+                            controller.clear();
+                            provider.clearSearch();
+                          },
                         )
                       : null,
                   border: InputBorder.none,
@@ -79,13 +80,17 @@ class SearchBarWidget extends StatelessWidget {
             children: [
               ...provider.searchHistory.map(
                 (h) => ActionChip(
-                  label: Text(h, style: const TextStyle(fontSize: 12)),
-                  avatar: const Icon(Icons.history, size: 16),
+                  label: Text(h, style: AppTypography.caption(color: AppTheme.txtPrimary(context))),
+                  avatar: Icon(Icons.history_rounded, size: 16, color: AppTheme.txtSecondary(context)),
+                  backgroundColor: AppTheme.surfMuted(context),
+                  side: BorderSide.none,
                   onPressed: () => provider.updateSearchQuery(h),
                 ),
               ),
               ActionChip(
-                label: const Text('ล้างประวัติ', style: TextStyle(fontSize: 12)),
+                label: Text('ล้างประวัติ', style: AppTypography.caption(color: AppTheme.txtSecondary(context))),
+                backgroundColor: AppTheme.surfMuted(context),
+                side: BorderSide.none,
                 onPressed: provider.clearSearchHistory,
               ),
             ],

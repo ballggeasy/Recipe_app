@@ -28,6 +28,14 @@ class MealPlanEntry {
       servings: servings ?? this.servings,
     );
   }
+
+  factory MealPlanEntry.fromApi(Map<String, dynamic> json) => MealPlanEntry(
+        id: json['id'] as String,
+        recipeId: json['recipeId'] as String,
+        date: DateTime.parse(json['date'] as String),
+        mealType: MealType.values.byName(json['mealType'] as String),
+        servings: json['servings'] as int? ?? 1,
+      );
 }
 
 enum MealType {

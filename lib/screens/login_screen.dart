@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../theme/app_radius.dart';
+import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
+import '../theme/app_typography.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/common/app_button.dart';
+import '../widgets/common/app_text_field.dart';
 import 'main/main_screen.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
@@ -17,7 +22,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
+  bool _rememberMe = true;
 
   @override
   void dispose() {
@@ -26,13 +31,13 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _showMessage(String message) {
+  void _showMessage(String message, {bool isError = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: AppTheme.accentRed,
+        backgroundColor: isError ? AppTheme.error(context) : AppTheme.prim(context),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
       ),
     );
   }
@@ -47,6 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final error = await auth.login(
       email: _emailController.text,
       password: _passwordController.text,
+      remember: _rememberMe,
     );
 
     if (!mounted) return;
@@ -67,6 +73,10 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  void _comingSoon(String provider) {
+    _showMessage('เข้าสู่ระบบด้วย $provider ยังไม่รองรับในขณะนี้', isError: false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -74,154 +84,248 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: AppTheme.bg(context),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 60),
-              Center(
-                child: Column(
-                  children: [
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primLight(context),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Center(child: Text('🍳', style: TextStyle(fontSize: 36))),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'สูตรอาหาร',
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.txtPrimary(context),
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'เข้าสู่ระบบเพื่อบันทึกสูตรอาหารที่ชอบ',
-                      style: TextStyle(fontSize: 13.5, color: AppTheme.txtSecondary(context)),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 48),
-              _FieldLabel(text: 'อีเมล'),
-              const SizedBox(height: 8),
-              _InputField(
-                controller: _emailController,
-                hint: 'example@email.com',
-                keyboardType: TextInputType.emailAddress,
-                prefixIcon: Icons.mail_outline_rounded,
-              ),
-              const SizedBox(height: 20),
-              _FieldLabel(text: 'รหัสผ่าน'),
-              const SizedBox(height: 8),
-              _InputField(
-                controller: _passwordController,
-                hint: '••••••••',
-                obscureText: _obscurePassword,
-                prefixIcon: Icons.lock_outline_rounded,
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                    size: 20,
-                    color: AppTheme.txtSecondary(context),
-                  ),
-                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
-                  ),
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    'ลืมรหัสผ่าน?',
-                    style: TextStyle(fontSize: 13, color: AppTheme.prim(context), fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 28),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: auth.isLoading ? null : _login,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.prim(context),
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: AppTheme.prim(context).withOpacity(0.6),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                  child: auth.isLoading
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                        )
-                      : const Text('เข้าสู่ระบบ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth >= 760;
+            final form = _LoginForm(
+              emailController: _emailController,
+              passwordController: _passwordController,
+              rememberMe: _rememberMe,
+              onRememberChanged: (v) => setState(() => _rememberMe = v),
+              isLoading: auth.isLoading,
+              onSubmit: _login,
+              onGuest: _loginAsGuest,
+              onSocial: _comingSoon,
+            );
+
+            if (isWide) {
+              return Row(
                 children: [
-                  Expanded(child: Divider(color: AppTheme.div(context))),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    child: Text('หรือ', style: TextStyle(fontSize: 13, color: AppTheme.txtSecondary(context))),
+                  const Expanded(flex: 5, child: _BrandPanel(wide: true)),
+                  Expanded(
+                    flex: 6,
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 420),
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xl),
+                          child: form,
+                        ),
+                      ),
+                    ),
                   ),
-                  Expanded(child: Divider(color: AppTheme.div(context))),
+                ],
+              );
+            }
+
+            return SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const _BrandPanel(wide: false),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xl),
+                    child: form,
+                  ),
                 ],
               ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: OutlinedButton(
-                  onPressed: _loginAsGuest,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.txtPrimary(context),
-                    side: BorderSide(color: AppTheme.div(context)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                  child: const Text('ดูสูตรอาหารโดยไม่เข้าสู่ระบบ', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-                ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _BrandPanel extends StatelessWidget {
+  final bool wide;
+  const _BrandPanel({required this.wide});
+
+  @override
+  Widget build(BuildContext context) {
+    final base = AppTheme.prim(context);
+    return Container(
+      height: wide ? double.infinity : 240,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [base, Color.lerp(base, Colors.black, 0.4)!],
+        ),
+        borderRadius: wide ? null : const BorderRadius.vertical(bottom: Radius.circular(AppRadius.xxl)),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(AppRadius.xl),
               ),
-              const SizedBox(height: 32),
-              Center(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('ยังไม่มีบัญชี?  ', style: TextStyle(fontSize: 13.5, color: AppTheme.txtSecondary(context))),
-                    GestureDetector(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                      ),
-                      child: Text(
-                        'สมัครสมาชิก',
-                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppTheme.prim(context)),
-                      ),
-                    ),
-                  ],
-                ),
+              child: const Center(child: Text('🍳', style: TextStyle(fontSize: 36))),
+            ),
+            const SizedBox(height: AppSpacing.base),
+            Text('สูตรอาหาร', style: AppTypography.display(color: Colors.white).copyWith(fontSize: 26)),
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+              child: Text(
+                'บันทึก แบ่งปัน และค้นพบสูตรอาหารที่คุณรัก',
+                textAlign: TextAlign.center,
+                style: AppTypography.body(color: Colors.white.withValues(alpha: 0.85)),
               ),
-              const SizedBox(height: 24),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LoginForm extends StatelessWidget {
+  final TextEditingController emailController;
+  final TextEditingController passwordController;
+  final bool rememberMe;
+  final ValueChanged<bool> onRememberChanged;
+  final bool isLoading;
+  final VoidCallback onSubmit;
+  final VoidCallback onGuest;
+  final ValueChanged<String> onSocial;
+
+  const _LoginForm({
+    required this.emailController,
+    required this.passwordController,
+    required this.rememberMe,
+    required this.onRememberChanged,
+    required this.isLoading,
+    required this.onSubmit,
+    required this.onGuest,
+    required this.onSocial,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('ยินดีต้อนรับกลับ', style: AppTypography.display(color: AppTheme.txtPrimary(context)).copyWith(fontSize: 24)),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Text('ยังไม่มีบัญชี? ', style: AppTypography.body(color: AppTheme.txtSecondary(context))),
+            GestureDetector(
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
+              child: Text('สมัครสมาชิก', style: AppTypography.bodyStrong(color: AppTheme.prim(context))),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        AppTextField(
+          label: 'อีเมล',
+          controller: emailController,
+          hint: 'example@email.com',
+          keyboardType: TextInputType.emailAddress,
+          prefixIcon: Icons.mail_outline_rounded,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        AppTextField(
+          label: 'รหัสผ่าน',
+          controller: passwordController,
+          hint: '••••••••',
+          obscureText: true,
+          prefixIcon: Icons.lock_outline_rounded,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Row(
+          children: [
+            SizedBox(
+              width: 22,
+              height: 22,
+              child: Checkbox(
+                value: rememberMe,
+                onChanged: (v) => onRememberChanged(v ?? true),
+                activeColor: AppTheme.prim(context),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            GestureDetector(
+              onTap: () => onRememberChanged(!rememberMe),
+              child: Text('จดจำฉันไว้', style: AppTypography.body(color: AppTheme.txtSecondary(context))),
+            ),
+            const Spacer(),
+            TextButton(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPasswordScreen())),
+              style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+              child: const Text('ลืมรหัสผ่าน?'),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        AppButton.primary(label: 'เข้าสู่ระบบ', onPressed: onSubmit, loading: isLoading),
+        const SizedBox(height: AppSpacing.lg),
+        Row(
+          children: [
+            Expanded(child: Divider(color: AppTheme.div(context))),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              child: Text('หรือ', style: AppTypography.caption(color: AppTheme.txtSecondary(context))),
+            ),
+            Expanded(child: Divider(color: AppTheme.div(context))),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        _SocialButton(
+          label: 'ดำเนินการต่อด้วย Google',
+          onTap: () => onSocial('Google'),
+          badge: const _GoogleBadge(),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _SocialButton(
+          label: 'ดำเนินการต่อด้วย GitHub',
+          onTap: () => onSocial('GitHub'),
+          badge: Icon(Icons.code_rounded, size: 18, color: AppTheme.txtPrimary(context)),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        AppButton.outline(label: 'ดูสูตรอาหารโดยไม่เข้าสู่ระบบ', onPressed: onGuest),
+        const SizedBox(height: AppSpacing.md),
+      ],
+    );
+  }
+}
+
+class _SocialButton extends StatelessWidget {
+  final String label;
+  final Widget badge;
+  final VoidCallback onTap;
+
+  const _SocialButton({required this.label, required this.badge, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppTheme.surf(context),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: Container(
+          height: 52,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppTheme.div(context)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              badge,
+              const SizedBox(width: AppSpacing.sm),
+              Text(label, style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context)).copyWith(fontSize: 14)),
             ],
           ),
         ),
@@ -230,57 +334,19 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-class _FieldLabel extends StatelessWidget {
-  final String text;
-  const _FieldLabel({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppTheme.txtPrimary(context)),
-    );
-  }
-}
-
-class _InputField extends StatelessWidget {
-  final TextEditingController controller;
-  final String hint;
-  final bool obscureText;
-  final TextInputType? keyboardType;
-  final IconData prefixIcon;
-  final Widget? suffixIcon;
-
-  const _InputField({
-    required this.controller,
-    required this.hint,
-    required this.prefixIcon,
-    this.obscureText = false,
-    this.keyboardType,
-    this.suffixIcon,
-  });
+class _GoogleBadge extends StatelessWidget {
+  const _GoogleBadge();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surf(context),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.div(context)),
-      ),
-      child: TextField(
-        controller: controller,
-        obscureText: obscureText,
-        keyboardType: keyboardType,
-        style: TextStyle(fontSize: 14.5, color: AppTheme.txtPrimary(context)),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(color: AppTheme.txtSecondary(context), fontSize: 14),
-          prefixIcon: Icon(prefixIcon, size: 20, color: AppTheme.txtSecondary(context)),
-          suffixIcon: suffixIcon,
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16),
-        ),
+      width: 18,
+      height: 18,
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF4285F4)),
+      child: const Text(
+        'G',
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white, height: 1),
       ),
     );
   }

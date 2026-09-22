@@ -1,119 +1,204 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../data/recipe_data.dart';
+import '../../models/recipe.dart';
+import '../../theme/app_radius.dart';
+import '../../theme/app_shadows.dart';
+import '../../theme/app_spacing.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/app_typography.dart';
 import '../../providers/recipe_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../utils/constants.dart';
 import '../../widgets/recipe_card.dart';
+import '../../widgets/recipe_image.dart';
+import '../../widgets/rating_display.dart';
 import '../../widgets/common/filter_chip_widget.dart';
 import '../../widgets/common/empty_state.dart';
+import '../../widgets/common/section_header.dart';
 import '../../widgets/search/search_bar_widget.dart';
+import '../profile/profile_screen.dart';
 import '../recipe/detail_screen.dart';
 import '../recipe/add_recipe_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
+  Recipe? _featuredRecipe(RecipeProvider provider) {
+    if (provider.allRecipes.isEmpty) return null;
+    final recommended = provider.allRecipes.where((r) => r.isRecommended).toList();
+    final pool = recommended.isNotEmpty ? recommended : provider.allRecipes;
+    final sorted = [...pool]..sort((a, b) => b.rating.compareTo(a.rating));
+    return sorted.first;
+  }
+
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 11) return 'สวัสดีตอนเช้า';
+    if (hour < 17) return 'สวัสดีตอนบ่าย';
+    return 'สวัสดีตอนเย็น';
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<RecipeProvider>();
+    final auth = context.watch<AuthProvider>();
     final recipes = provider.filteredRecipes;
+    final featured = provider.searchQuery.isEmpty ? _featuredRecipe(provider) : null;
+    final resultsTitle = provider.searchQuery.isNotEmpty || provider.selectedCategory != 'ทั้งหมด'
+        ? 'ผลการค้นหา'
+        : 'เมนูแนะนำสำหรับคุณ';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('สูตรอาหาร'),
-        actions: [
-          PopupMenuButton<SortOption>(
-            icon: const Icon(Icons.sort),
-            tooltip: 'เรียงลำดับ',
-            onSelected: provider.updateSortOption,
-            itemBuilder: (_) => AppConstants.sortOptions
-                .map((o) => PopupMenuItem(value: _sortFromKey(o.$1), child: Text(o.$2)))
-                .toList(),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'home_add_recipe_fab',
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const AddRecipeScreen()),
         ),
-        backgroundColor: AppTheme.primary,
-        icon: const Icon(Icons.add, color: Colors.white),
+        backgroundColor: AppTheme.prim(context),
+        icon: const Icon(Icons.add_rounded, color: Colors.white),
         label: const Text('เพิ่มสูตร', style: TextStyle(color: Colors.white)),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-            child: SearchBarWidget(showHistory: true),
-          ),
-          _HomeSections(provider: provider),
-          const SizedBox(height: 8),
-          _DietTagsRow(provider: provider),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _SourceFilterRow(provider: provider),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 36,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: RecipeData.categories.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (context, index) {
-                final category = RecipeData.categories[index];
-                return FilterChipWidget(
-                  label: category,
-                  isSelected: provider.selectedCategory == category,
-                  onTap: () => provider.updateSelectedCategory(category),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 36,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: RecipeData.countries.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (context, index) {
-                final country = RecipeData.countries[index];
-                return FilterChipWidget(
-                  label: country == 'ทั้งหมด' ? '🌏 ทั้งหมด' : '${_countryFlag(country)} $country',
-                  isSelected: provider.selectedCountry == country,
-                  onTap: () => provider.updateSelectedCountry(country),
-                  filled: false,
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: recipes.isEmpty
-                ? EmptyState(
-                    message: 'ไม่พบเมนูที่ตรงกับการค้นหา',
-                    actionLabel: 'ล้างตัวกรอง',
-                    onAction: provider.clearFilters,
-                  )
-                : GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 14,
-                      mainAxisSpacing: 14,
-                      childAspectRatio: 0.78,
+      body: SafeArea(
+        bottom: false,
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${_greeting()} 👋',
+                            style: AppTypography.caption(color: AppTheme.txtSecondary(context)),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            auth.currentUser != null
+                                ? 'วันนี้ ${auth.currentUser!.name} จะทำอะไรดี?'
+                                : 'วันนี้กินอะไรดี?',
+                            style: AppTypography.display(color: AppTheme.txtPrimary(context))
+                                .copyWith(fontSize: 22),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
-                    itemCount: recipes.length,
+                    const SizedBox(width: AppSpacing.md),
+                    GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                      ),
+                      child: Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppTheme.primLight(context),
+                          border: Border.all(color: AppTheme.surf(context), width: 2),
+                          boxShadow: AppShadows.softFor(context),
+                        ),
+                        child: Icon(Icons.person_rounded, color: AppTheme.prim(context)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
+                child: Row(
+                  children: [
+                    const Expanded(child: SearchBarWidget()),
+                    const SizedBox(width: AppSpacing.sm),
+                    _FilterButton(onTap: () => _openFilterSheet(context)),
+                  ],
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.lg),
+                child: SizedBox(
+                  height: 38,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    itemCount: provider.categories.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
                     itemBuilder: (context, index) {
+                      final category = provider.categories[index];
+                      return FilterChipWidget(
+                        label: category,
+                        isSelected: provider.selectedCategory == category,
+                        onTap: () => provider.updateSelectedCategory(category),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.sm),
+                child: _QuickPicksRow(provider: provider),
+              ),
+            ),
+            if (featured != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, 0),
+                  child: _FeaturedRecipeCard(
+                    recipe: featured,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => DetailScreen(recipe: featured)),
+                    ),
+                  ),
+                ),
+              ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.md),
+                child: SectionHeader(
+                  title: resultsTitle,
+                  actionLabel: recipes.isNotEmpty ? '${recipes.length} เมนู' : null,
+                ),
+              ),
+            ),
+            if (recipes.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: EmptyState(
+                  emoji: '🍽️',
+                  message: 'ไม่พบเมนูที่ตรงกับการค้นหา',
+                  description: 'ลองเปลี่ยนคำค้นหาหรือล้างตัวกรองดูนะ',
+                  actionLabel: 'ล้างตัวกรอง',
+                  onAction: provider.clearFilters,
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, 100),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: AppSpacing.md,
+                    mainAxisSpacing: AppSpacing.md,
+                    childAspectRatio: 0.72,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
                       final recipe = recipes[index];
                       return RecipeCard(
                         recipe: recipe,
@@ -123,46 +208,75 @@ class HomeScreen extends StatelessWidget {
                         ),
                       );
                     },
+                    childCount: recipes.length,
                   ),
-          ),
-        ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 
-  SortOption _sortFromKey(String key) => switch (key) {
-        'name_asc' => SortOption.nameAsc,
-        'name_desc' => SortOption.nameDesc,
-        'rating_desc' => SortOption.ratingDesc,
-        'time_asc' => SortOption.timeAsc,
-        'time_desc' => SortOption.timeDesc,
-        'newest' => SortOption.newest,
-        _ => SortOption.popular,
-      };
+  void _openFilterSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _FilterSheet(),
+    );
+  }
 }
 
-String _countryFlag(String country) => switch (country) {
-      'ไทย' => '🇹🇭',
-      'อิตาลี' => '🇮🇹',
-      'ญี่ปุ่น' => '🇯🇵',
-      'จีน' => '🇨🇳',
-      'เกาหลี' => '🇰🇷',
-      _ => '🌏',
-    };
+class _FilterButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _FilterButton({required this.onTap});
 
-class _HomeSections extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<RecipeProvider>();
+    final isActive = provider.selectedSource != SourceFilter.all ||
+        provider.selectedDietTag != null ||
+        provider.selectedCountry != 'ทั้งหมด' ||
+        provider.sortOption != SortOption.ratingDesc;
+
+    return Material(
+      color: isActive ? AppTheme.prim(context) : AppTheme.surf(context),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: isActive ? Colors.transparent : AppTheme.div(context)),
+          ),
+          child: Icon(
+            Icons.tune_rounded,
+            color: isActive ? Colors.white : AppTheme.txtSecondary(context),
+            size: 22,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickPicksRow extends StatelessWidget {
   final RecipeProvider provider;
-  const _HomeSections({required this.provider});
+  const _QuickPicksRow({required this.provider});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 40,
+      height: 38,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         itemCount: AppConstants.homeSections.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
         itemBuilder: (context, index) {
           final (key, label, emoji) = AppConstants.homeSections[index];
           final mode = switch (key) {
@@ -176,6 +290,7 @@ class _HomeSections extends StatelessWidget {
           return FilterChipWidget(
             label: '$emoji $label',
             isSelected: isSelected,
+            filled: false,
             onTap: () => provider.updateListMode(
               isSelected ? RecipeListMode.all : mode,
             ),
@@ -186,91 +301,299 @@ class _HomeSections extends StatelessWidget {
   }
 }
 
-class _DietTagsRow extends StatelessWidget {
-  final RecipeProvider provider;
-  const _DietTagsRow({required this.provider});
+class _FeaturedRecipeCard extends StatelessWidget {
+  final Recipe recipe;
+  final VoidCallback onTap;
+
+  const _FeaturedRecipeCard({required this.recipe, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 36,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: AppConstants.dietTags.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final tag = AppConstants.dietTags[index];
-          final isSelected = provider.selectedDietTag == tag;
-          return FilterChipWidget(
-            label: tag,
-            isSelected: isSelected,
-            onTap: () => provider.updateListMode(
-              isSelected ? RecipeListMode.all : RecipeListMode.diet,
-              dietTag: isSelected ? null : tag,
+    final provider = context.watch<RecipeProvider>();
+    final isFav = provider.isFavorite(recipe.id);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 220,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
+          boxShadow: AppShadows.cardFor(context),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            RecipeImage(recipe: recipe, emojiSize: 72),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Colors.black.withValues(alpha: 0.72)],
+                  stops: const [0.35, 1],
+                ),
+              ),
             ),
-            filled: false,
-          );
-        },
+            Positioned(
+              top: 14,
+              left: 14,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+                child: Text(
+                  'เมนูแนะนำวันนี้',
+                  style: AppTypography.overline(color: AppTheme.prim(context)),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: GestureDetector(
+                onTap: () => provider.toggleFavorite(recipe.id),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.22),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              left: 18,
+              right: 18,
+              bottom: 16,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    recipe.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.h1(color: Colors.white),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _Pill(
+                        icon: Icons.access_time_rounded,
+                        label: '${recipe.totalTimeMinutes} นาที',
+                      ),
+                      const SizedBox(width: 8),
+                      _Pill(icon: Icons.bar_chart_rounded, label: recipe.difficulty),
+                      const SizedBox(width: 8),
+                      RatingDisplay(
+                        rating: recipe.rating,
+                        reviewCount: recipe.reviewCount,
+                        fontSize: 12,
+                        starSize: 14,
+                        showCount: false,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _SourceFilterRow extends StatelessWidget {
-  final RecipeProvider provider;
-  const _SourceFilterRow({required this.provider});
+class _Pill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _Pill({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
-    final options = [
-      (SourceFilter.all, 'ทั้งหมด', null),
-      (SourceFilter.official, 'ทางการ', Icons.verified_rounded),
-      (SourceFilter.user, 'ผู้ใช้', Icons.person_rounded),
-    ];
-
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.divider),
+        color: Colors.white.withValues(alpha: 0.22),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Row(
-        children: options.map((option) {
-          final (value, label, icon) = option;
-          final isSelected = provider.selectedSource == value;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => provider.updateSelectedSource(value),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 9),
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+        ],
+      ),
+    );
+  }
+}
+
+/// แผ่นตัวกรองเพิ่มเติม — แหล่งที่มา, แท็กโภชนาการ, ประเทศ, การเรียงลำดับ
+class _FilterSheet extends StatelessWidget {
+  const _FilterSheet();
+
+  static const _sourceOptions = [
+    (SourceFilter.all, 'ทั้งหมด', null),
+    (SourceFilter.official, 'ทางการ', Icons.verified_rounded),
+    (SourceFilter.user, 'ผู้ใช้', Icons.person_rounded),
+  ];
+
+  SortOption _sortFromKey(String key) => switch (key) {
+        'name_asc' => SortOption.nameAsc,
+        'name_desc' => SortOption.nameDesc,
+        'rating_desc' => SortOption.ratingDesc,
+        'time_asc' => SortOption.timeAsc,
+        'time_desc' => SortOption.timeDesc,
+        'newest' => SortOption.newest,
+        _ => SortOption.popular,
+      };
+
+  String _countryFlag(String country) => switch (country) {
+        'ไทย' => '🇹🇭',
+        'อิตาลี' => '🇮🇹',
+        'ญี่ปุ่น' => '🇯🇵',
+        'จีน' => '🇨🇳',
+        'เกาหลี' => '🇰🇷',
+        _ => '🌏',
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<RecipeProvider>();
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      minChildSize: 0.4,
+      maxChildSize: 0.92,
+      expand: false,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: BoxDecoration(
+            color: AppTheme.surf(context),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: AppSpacing.sm),
+              Container(
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
-                  color: isSelected ? AppTheme.primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(9),
+                  color: AppTheme.div(context),
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
                 ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.base, AppSpacing.lg, 0),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if (icon != null) ...[
-                      Icon(icon, size: 14, color: isSelected ? Colors.white : AppTheme.textSecondary),
-                      const SizedBox(width: 5),
-                    ],
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: isSelected ? Colors.white : AppTheme.textSecondary,
-                      ),
+                    Expanded(child: Text('ตัวกรอง', style: AppTypography.h2(color: AppTheme.txtPrimary(context)))),
+                    TextButton(
+                      onPressed: provider.clearFilters,
+                      child: const Text('ล้างทั้งหมด'),
                     ),
                   ],
                 ),
               ),
-            ),
-          );
-        }).toList(),
-      ),
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.base, AppSpacing.lg, AppSpacing.xxl),
+                  children: [
+                    Text('แหล่งที่มา', style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context))),
+                    const SizedBox(height: AppSpacing.sm),
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.sm,
+                      children: _sourceOptions.map((o) {
+                        final (value, label, icon) = o;
+                        return FilterChipWidget(
+                          label: label,
+                          icon: icon,
+                          isSelected: provider.selectedSource == value,
+                          onTap: () => provider.updateSelectedSource(value),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text('แท็กโภชนาการ', style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context))),
+                    const SizedBox(height: AppSpacing.sm),
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.sm,
+                      children: AppConstants.dietTags.map((tag) {
+                        final isSelected = provider.selectedDietTag == tag;
+                        return FilterChipWidget(
+                          label: tag,
+                          isSelected: isSelected,
+                          filled: false,
+                          onTap: () => provider.updateListMode(
+                            isSelected ? RecipeListMode.all : RecipeListMode.diet,
+                            dietTag: isSelected ? null : tag,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text('ประเทศ', style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context))),
+                    const SizedBox(height: AppSpacing.sm),
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.sm,
+                      children: provider.countries.map((c) {
+                        return FilterChipWidget(
+                          label: c == 'ทั้งหมด' ? '🌏 ทั้งหมด' : '${_countryFlag(c)} $c',
+                          isSelected: provider.selectedCountry == c,
+                          filled: false,
+                          onTap: () => provider.updateSelectedCountry(c),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text('เรียงตาม', style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context))),
+                    const SizedBox(height: AppSpacing.sm),
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.sm,
+                      children: AppConstants.sortOptions.map((o) {
+                        final opt = _sortFromKey(o.$1);
+                        return FilterChipWidget(
+                          label: o.$2,
+                          isSelected: provider.sortOption == opt,
+                          filled: false,
+                          onTap: () => provider.updateSortOption(opt),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('ดูผลลัพธ์'),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -1,41 +1,44 @@
-/// ข้อมูลผู้ใช้ที่เก็บแบบ local (SharedPreferences) — ไม่มี backend จริง
+import '../services/api_client.dart';
+
+/// ข้อมูลผู้ใช้ที่ได้จาก backend API — รหัสผ่านไม่ถูกเก็บฝั่ง client อีกต่อไป
 class AppUser {
+  final String id;
   final String email;
-  final String passwordHash;
   final String name;
   final String? profileImagePath;
 
   const AppUser({
+    required this.id,
     required this.email,
-    required this.passwordHash,
     required this.name,
     this.profileImagePath,
   });
 
   AppUser copyWith({
     String? name,
-    String? passwordHash,
     String? profileImagePath,
   }) {
     return AppUser(
+      id: id,
       email: email,
-      passwordHash: passwordHash ?? this.passwordHash,
       name: name ?? this.name,
       profileImagePath: profileImagePath ?? this.profileImagePath,
     );
   }
 
-  Map<String, dynamic> toJson() => {
-        'email': email,
-        'passwordHash': passwordHash,
-        'name': name,
-        'profileImagePath': profileImagePath,
-      };
+  /// map จาก response ของ backend (field ชื่อ profileImageUrl)
+  /// path ที่ backend ส่งมาเป็น relative (เช่น /uploads/avatars/xxx.jpg) ต้องต่อ baseUrl ก่อนใช้แสดงผล
+  factory AppUser.fromApi(Map<String, dynamic> json) {
+    final rawPath = json['profileImageUrl'] as String?;
+    final resolvedPath = (rawPath != null && rawPath.startsWith('/'))
+        ? '${ApiClient().baseUrl}$rawPath'
+        : rawPath;
 
-  factory AppUser.fromJson(Map<String, dynamic> json) => AppUser(
-        email: json['email'] as String,
-        passwordHash: json['passwordHash'] as String,
-        name: json['name'] as String,
-        profileImagePath: json['profileImagePath'] as String?,
-      );
+    return AppUser(
+      id: json['id'] as String,
+      email: json['email'] as String,
+      name: json['name'] as String,
+      profileImagePath: resolvedPath,
+    );
+  }
 }

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../models/review.dart';
+import '../../theme/app_radius.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/app_typography.dart';
 import '../rating_display.dart';
 
 class ReviewCard extends StatelessWidget {
   final Review review;
+  final bool isLiked;
   final VoidCallback? onLike;
   final VoidCallback? onReport;
   final VoidCallback? onReply;
@@ -12,6 +15,7 @@ class ReviewCard extends StatelessWidget {
   const ReviewCard({
     super.key,
     required this.review,
+    this.isLiked = false,
     this.onLike,
     this.onReport,
     this.onReply,
@@ -23,9 +27,9 @@ class ReviewCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.divider),
+        color: AppTheme.surf(context),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppTheme.div(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -34,14 +38,10 @@ class ReviewCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 16,
-                backgroundColor: AppTheme.primaryLight,
+                backgroundColor: AppTheme.primLight(context),
                 child: Text(
-                  review.userName[0],
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.primary,
-                  ),
+                  review.userName.isNotEmpty ? review.userName[0] : '?',
+                  style: AppTypography.bodyStrong(color: AppTheme.prim(context)).copyWith(fontSize: 13),
                 ),
               ),
               const SizedBox(width: 10),
@@ -51,10 +51,7 @@ class ReviewCard extends StatelessWidget {
                   children: [
                     Text(
                       review.userName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13.5,
-                      ),
+                      style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context)).copyWith(fontSize: 13.5),
                     ),
                     RatingDisplay(
                       rating: review.rating,
@@ -68,35 +65,32 @@ class ReviewCard extends StatelessWidget {
               ),
               Text(
                 _formatDate(review.createdAt),
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppTheme.textSecondary,
-                ),
+                style: AppTypography.caption(color: AppTheme.txtSecondary(context)).copyWith(fontSize: 11),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          Text(review.content, style: const TextStyle(fontSize: 14, height: 1.4)),
+          Text(review.content, style: AppTypography.body(color: AppTheme.txtPrimary(context))),
           if (review.imageUrls.isNotEmpty) ...[
             const SizedBox(height: 10),
             Container(
               height: 80,
               width: 80,
               decoration: BoxDecoration(
-                color: AppTheme.primaryLight,
-                borderRadius: BorderRadius.circular(8),
+                color: AppTheme.primLight(context),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
-              child: const Icon(Icons.image_outlined, color: AppTheme.primary),
+              child: Icon(Icons.image_outlined, color: AppTheme.prim(context)),
             ),
           ],
           const SizedBox(height: 10),
           Row(
             children: [
               _ActionButton(
-                icon: review.isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
+                icon: isLiked ? Icons.thumb_up_rounded : Icons.thumb_up_outlined,
                 label: '${review.likeCount}',
                 onTap: onLike,
-                active: review.isLiked,
+                active: isLiked,
               ),
               const SizedBox(width: 16),
               _ActionButton(
@@ -120,16 +114,12 @@ class ReviewCard extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.subdirectory_arrow_right, size: 16),
+                    Icon(Icons.subdirectory_arrow_right_rounded, size: 16, color: AppTheme.txtSecondary(context)),
                     const SizedBox(width: 6),
                     Expanded(
                       child: RichText(
                         text: TextSpan(
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppTheme.textPrimary,
-                            height: 1.4,
-                          ),
+                          style: AppTypography.body(color: AppTheme.txtPrimary(context)).copyWith(fontSize: 13),
                           children: [
                             TextSpan(
                               text: '${r.userName}: ',
@@ -170,6 +160,7 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = active ? AppTheme.prim(context) : AppTheme.txtSecondary(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -178,19 +169,9 @@ class _ActionButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 16,
-              color: active ? AppTheme.primary : AppTheme.textSecondary,
-            ),
+            Icon(icon, size: 16, color: color),
             const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                color: active ? AppTheme.primary : AppTheme.textSecondary,
-              ),
-            ),
+            Text(label, style: AppTypography.caption(color: color)),
           ],
         ),
       ),

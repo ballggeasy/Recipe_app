@@ -6,17 +6,22 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/recipe.dart';
 import '../models/ingredient.dart';
 import '../models/nutrition.dart';
-import '../data/recipe_data.dart';
+import '../services/api_client.dart';
+import '../services/favorite_service.dart';
+import '../services/recipe_service.dart';
 import '../utils/constants.dart';
 
-/// จัดการ state หลัก: CRUD สูตร, ค้นหา, กรอง, เรียง, favorites
+/// จัดการ state หลัก: รายการสูตร (จาก backend), ค้นหา, กรอง, เรียง, favorites
 class RecipeProvider extends ChangeNotifier {
-  static const _favoritesKeyPrefix = 'favorites_';
   static const _searchHistoryKey = 'search_history';
 
-  List<Recipe> _allRecipes = RecipeData.recipes.map((r) => r).toList();
+  final RecipeService _recipeService = RecipeService();
+  final FavoriteService _favoriteService = FavoriteService();
+
+  List<Recipe> _allRecipes = [];
   Set<String> _favoriteIds = {};
-  String _currentUserKey = 'guest';
+  bool _isLoading = false;
+  bool _canSyncFavorites = false;
 
   String _searchQuery = '';
   String _selectedCategory = 'ทั้งหมด';
@@ -30,6 +35,7 @@ class RecipeProvider extends ChangeNotifier {
   List<String> _searchHistory = [];
 
   List<Recipe> get allRecipes => _allRecipes;
+  bool get isLoading => _isLoading;
   String get searchQuery => _searchQuery;
   String get selectedCategory => _selectedCategory;
   String get selectedCountry => _selectedCountry;
@@ -40,6 +46,16 @@ class RecipeProvider extends ChangeNotifier {
   int? get maxCookTime => _maxCookTime;
   String? get selectedDifficulty => _selectedDifficulty;
   List<String> get searchHistory => List.unmodifiable(_searchHistory);
+
+  List<String> get categories {
+    final cats = _allRecipes.map((r) => r.category).toSet().toList()..sort();
+    return ['ทั้งหมด', ...cats];
+  }
+
+  List<String> get countries {
+    final list = _allRecipes.map((r) => r.country).toSet().toList()..sort();
+    return ['ทั้งหมด', ...list];
+  }
 
   Recipe? getById(String id) {
     try {
@@ -146,27 +162,40 @@ class RecipeProvider extends ChangeNotifier {
     return {...names, ...ingredients}.take(8).toList();
   }
 
+  /// เรียกตอนเปิดแอป — โหลดรายการสูตรจาก backend + ประวัติค้นหาจากเครื่อง
   Future<void> init() async {
+    _isLoading = true;
+    notifyListeners();
+
     final prefs = await SharedPreferences.getInstance();
     _searchHistory = prefs.getStringList(_searchHistoryKey) ?? [];
+
+    try {
+      _allRecipes = await _recipeService.fetchAll();
+    } on ApiException {
+      _allRecipes = [];
+    }
+
+    _isLoading = false;
     notifyListeners();
   }
 
-  Future<void> loadFavoritesForUser(String? userKey) async {
-    _currentUserKey = userKey ?? 'guest';
-    final prefs = await SharedPreferences.getInstance();
-    final stored =
-        prefs.getStringList('$_favoritesKeyPrefix$_currentUserKey') ?? [];
-    _favoriteIds = stored.toSet();
-    notifyListeners();
-  }
+  /// เรียกทุกครั้งที่สถานะล็อกอินเปลี่ยน — favorites sync ได้เฉพาะบัญชีจริง ไม่รองรับ guest
+  Future<void> onAuthChanged(bool isLoggedIn) async {
+    _canSyncFavorites = isLoggedIn;
+    if (!isLoggedIn) {
+      _favoriteIds = {};
+      notifyListeners();
+      return;
+    }
 
-  Future<void> _persistFavorites() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(
-      '$_favoritesKeyPrefix$_currentUserKey',
-      _favoriteIds.toList(),
-    );
+    try {
+      final ids = await _favoriteService.listFavoriteIds();
+      _favoriteIds = ids.toSet();
+      notifyListeners();
+    } on ApiException {
+      // เชื่อมต่อไม่ได้ — คงรายการเดิมไว้
+    }
   }
 
   Future<void> _persistSearchHistory() async {
@@ -175,13 +204,27 @@ class RecipeProvider extends ChangeNotifier {
   }
 
   void toggleFavorite(String recipeId) {
-    if (_favoriteIds.contains(recipeId)) {
+    final wasFavorite = _favoriteIds.contains(recipeId);
+    if (wasFavorite) {
       _favoriteIds.remove(recipeId);
     } else {
       _favoriteIds.add(recipeId);
     }
     notifyListeners();
-    _persistFavorites();
+
+    if (!_canSyncFavorites) return;
+    final future = wasFavorite
+        ? _favoriteService.removeFavorite(recipeId)
+        : _favoriteService.addFavorite(recipeId);
+    future.catchError((_) {
+      // ย้อน state กลับถ้าซิงก์ไม่สำเร็จ
+      if (wasFavorite) {
+        _favoriteIds.add(recipeId);
+      } else {
+        _favoriteIds.remove(recipeId);
+      }
+      notifyListeners();
+    });
   }
 
   void addToSearchHistory(String query) {
@@ -260,40 +303,8 @@ class RecipeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// เพิ่มสูตรใหม่ (mock — เก็บใน memory)
-  void addRecipe(Recipe recipe) {
-    _allRecipes.insert(0, recipe);
-    notifyListeners();
-  }
-
-  /// แก้ไขสูตร
-  void updateRecipe(Recipe recipe) {
-    final index = _allRecipes.indexWhere((r) => r.id == recipe.id);
-    if (index != -1) {
-      _allRecipes[index] = recipe;
-      notifyListeners();
-    }
-  }
-
-  /// ลบสูตร
-  void deleteRecipe(String id) {
-    _allRecipes.removeWhere((r) => r.id == id);
-    _favoriteIds.remove(id);
-    notifyListeners();
-    _persistFavorites();
-  }
-
-  /// สร้าง ID ใหม่
-  String generateId() {
-    final maxId = _allRecipes
-        .map((r) => int.tryParse(r.id) ?? 0)
-        .fold(0, (a, b) => a > b ? a : b);
-    return '${maxId + 1}';
-  }
-
-  /// สร้างสูตรจากฟอร์ม
-  Recipe buildRecipeFromForm({
-    required String id,
+  /// เพิ่มสูตรใหม่ผ่าน backend — คืน error message ถ้าไม่สำเร็จ
+  Future<String?> addRecipe({
     required String name,
     required String emoji,
     required String category,
@@ -308,30 +319,74 @@ class RecipeProvider extends ChangeNotifier {
     String? platingTips,
     List<String> dietTags = const [],
     NutritionInfo? nutrition,
-    bool isOfficial = false,
-    String? uploaderName,
-  }) {
-    return Recipe(
-      id: id,
-      name: name,
-      emoji: emoji,
-      imageUrl: '',
-      category: category,
-      country: country,
-      prepTimeMinutes: prepTime,
-      cookTimeMinutes: cookTime,
-      difficulty: difficulty,
-      servings: servings,
-      steps: steps,
-      ingredients: items.map((i) => i.display).toList(),
-      ingredientItems: items,
-      tips: tips,
-      platingTips: platingTips,
-      dietTags: dietTags,
-      nutrition: nutrition,
-      isOfficial: isOfficial,
-      uploaderName: uploaderName,
-      createdAt: DateTime.now(),
-    );
+  }) async {
+    try {
+      final recipe = await _recipeService.create(
+        name: name,
+        emoji: emoji,
+        category: category,
+        country: country,
+        cookTimeMinutes: cookTime,
+        prepTimeMinutes: prepTime,
+        difficulty: difficulty,
+        servings: servings,
+        ingredients: items.map((i) => i.display).toList(),
+        ingredientItems: items,
+        steps: steps,
+        tips: tips,
+        platingTips: platingTips,
+        dietTags: dietTags,
+        nutrition: nutrition,
+      );
+      _allRecipes.insert(0, recipe);
+      notifyListeners();
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
+    }
+  }
+
+  /// แก้ไขสูตร (เฉพาะสูตรที่ตัวเองอัปโหลด — backend ตรวจสอบสิทธิ์)
+  Future<String?> updateRecipe(Recipe recipe) async {
+    try {
+      final updated = await _recipeService.update(recipe.id, {
+        'name': recipe.name,
+        'emoji': recipe.emoji,
+        'category': recipe.category,
+        'country': recipe.country,
+        'cookTimeMinutes': recipe.cookTimeMinutes,
+        'prepTimeMinutes': recipe.prepTimeMinutes,
+        'difficulty': recipe.difficulty,
+        'servings': recipe.servings,
+        'ingredients': recipe.ingredients,
+        'ingredientItems': recipe.ingredientItems.map((i) => i.toJson()).toList(),
+        'steps': recipe.steps,
+        'tips': recipe.tips,
+        'platingTips': recipe.platingTips,
+        'dietTags': recipe.dietTags,
+        if (recipe.nutrition != null) 'nutrition': recipe.nutrition!.toJson(),
+      });
+      final index = _allRecipes.indexWhere((r) => r.id == recipe.id);
+      if (index != -1) {
+        _allRecipes[index] = updated;
+        notifyListeners();
+      }
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
+    }
+  }
+
+  /// ลบสูตร (เฉพาะสูตรที่ตัวเองอัปโหลด — backend ตรวจสอบสิทธิ์)
+  Future<String?> deleteRecipe(String id) async {
+    try {
+      await _recipeService.delete(id);
+      _allRecipes.removeWhere((r) => r.id == id);
+      _favoriteIds.remove(id);
+      notifyListeners();
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
+    }
   }
 }

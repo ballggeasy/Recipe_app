@@ -3,31 +3,18 @@ import 'package:flutter/foundation.dart';
 import '../models/meal_plan.dart';
 import '../models/recipe.dart';
 import '../models/nutrition.dart';
+import '../services/api_client.dart';
+import '../services/meal_plan_service.dart';
 
-/// วางแผนมื้ออาหาร รายวัน/สัปดาห์/เดือน + คำนวณแคลอรี/สารอาหาร
+/// วางแผนมื้ออาหาร รายวัน/สัปดาห์/เดือน + คำนวณแคลอรี/สารอาหาร — ข้อมูลอยู่บน backend ต่อผู้ใช้
 class MealPlannerProvider extends ChangeNotifier {
-  final List<MealPlanEntry> _entries = [
-    MealPlanEntry(
-      id: 'mp1',
-      recipeId: '1',
-      date: DateTime.now(),
-      mealType: MealType.lunch,
-    ),
-    MealPlanEntry(
-      id: 'mp2',
-      recipeId: '2',
-      date: DateTime.now(),
-      mealType: MealType.dinner,
-    ),
-    MealPlanEntry(
-      id: 'mp3',
-      recipeId: '4',
-      date: DateTime.now().add(const Duration(days: 1)),
-      mealType: MealType.lunch,
-    ),
-  ];
+  final MealPlanService _mealPlanService = MealPlanService();
+
+  List<MealPlanEntry> _entries = [];
+  bool _isLoading = false;
 
   List<MealPlanEntry> get entries => List.unmodifiable(_entries);
+  bool get isLoading => _isLoading;
 
   List<MealPlanEntry> entriesForDate(DateTime date) {
     return _entries.where((e) =>
@@ -48,25 +35,53 @@ class MealPlannerProvider extends ChangeNotifier {
         e.date.year == year && e.date.month == month).toList();
   }
 
-  void addEntry({
+  /// เรียกทุกครั้งที่สถานะล็อกอินเปลี่ยน
+  Future<void> onAuthChanged(bool isLoggedIn) async {
+    if (!isLoggedIn) {
+      _entries = [];
+      notifyListeners();
+      return;
+    }
+
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _entries = await _mealPlanService.fetchAll();
+    } on ApiException {
+      _entries = [];
+    }
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> addEntry({
     required String recipeId,
     required DateTime date,
     required MealType mealType,
     int servings = 1,
-  }) {
-    _entries.add(MealPlanEntry(
-      id: 'mp${_entries.length + 1}',
-      recipeId: recipeId,
-      date: date,
-      mealType: mealType,
-      servings: servings,
-    ));
-    notifyListeners();
+  }) async {
+    try {
+      final entry = await _mealPlanService.create(
+        recipeId: recipeId,
+        date: date,
+        mealType: mealType,
+        servings: servings,
+      );
+      _entries.add(entry);
+      notifyListeners();
+    } on ApiException {
+      // เพิ่มไม่สำเร็จ
+    }
   }
 
-  void removeEntry(String id) {
-    _entries.removeWhere((e) => e.id == id);
-    notifyListeners();
+  Future<void> removeEntry(String id) async {
+    try {
+      await _mealPlanService.delete(id);
+      _entries.removeWhere((e) => e.id == id);
+      notifyListeners();
+    } on ApiException {
+      // ลบไม่สำเร็จ
+    }
   }
 
   /// คำนวณแคลอรีรวมของวัน

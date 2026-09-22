@@ -1,11 +1,22 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
 
+import '../../theme/app_theme.dart';
+import '../../theme/app_typography.dart';
+
+/// หัวข้อของแต่ละ section พร้อมปุ่ม "ดูทั้งหมด" หรือ widget อื่นด้านขวา (ถ้ามี)
 class SectionHeader extends StatelessWidget {
   final String title;
+  final String? actionLabel;
+  final VoidCallback? onAction;
   final Widget? trailing;
 
-  const SectionHeader({super.key, required this.title, this.trailing});
+  const SectionHeader({
+    super.key,
+    required this.title,
+    this.actionLabel,
+    this.onAction,
+    this.trailing,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -14,14 +25,18 @@ class SectionHeader extends StatelessWidget {
         Expanded(
           child: Text(
             title,
-            style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
-            ),
+            style: AppTypography.h2(color: AppTheme.txtPrimary(context)),
           ),
         ),
-        if (trailing != null) trailing!,
+        ?trailing,
+        if (trailing == null && actionLabel != null)
+          GestureDetector(
+            onTap: onAction,
+            child: Text(
+              actionLabel!,
+              style: AppTypography.bodyStrong(color: AppTheme.prim(context)),
+            ),
+          ),
       ],
     );
   }

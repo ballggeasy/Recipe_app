@@ -16,6 +16,7 @@ class Recipe {
   final List<String> steps;
   final String country;
   final bool isOfficial;
+  final String? uploaderId;
   final String? uploaderName;
   final double rating;
   final int reviewCount;
@@ -45,6 +46,7 @@ class Recipe {
     this.prepTimeMinutes = 10,
     this.ingredientItems = const [],
     this.isOfficial = true,
+    this.uploaderId,
     this.uploaderName,
     this.rating = 0.0,
     this.reviewCount = 0,
@@ -147,4 +149,39 @@ class Recipe {
       videoUrl: videoUrl ?? this.videoUrl,
     );
   }
+
+  factory Recipe.fromApi(Map<String, dynamic> json) => Recipe(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        emoji: json['emoji'] as String,
+        imageUrl: json['imageUrl'] as String? ?? '',
+        imageUrls: (json['imageUrls'] as List?)?.cast<String>() ?? const [],
+        category: json['category'] as String,
+        country: json['country'] as String,
+        cookTimeMinutes: json['cookTimeMinutes'] as int,
+        prepTimeMinutes: json['prepTimeMinutes'] as int? ?? 10,
+        difficulty: json['difficulty'] as String,
+        servings: json['servings'] as int? ?? 2,
+        ingredients: (json['ingredients'] as List?)?.cast<String>() ?? const [],
+        ingredientItems: (json['ingredientItems'] as List? ?? [])
+            .map((e) => IngredientItem.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        steps: (json['steps'] as List?)?.cast<String>() ?? const [],
+        isOfficial: json['isOfficial'] as bool? ?? true,
+        uploaderId: json['uploaderId'] as String?,
+        uploaderName: json['uploaderName'] as String?,
+        rating: (json['rating'] as num?)?.toDouble() ?? 0,
+        reviewCount: json['reviewCount'] as int? ?? 0,
+        tips: json['tips'] as String?,
+        platingTips: json['platingTips'] as String?,
+        nutrition: json['nutrition'] != null
+            ? NutritionInfo.fromJson(json['nutrition'] as Map<String, dynamic>)
+            : null,
+        dietTags: (json['dietTags'] as List?)?.cast<String>() ?? const [],
+        season: json['season'] as String? ?? 'ตลอดปี',
+        createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+        viewCount: json['viewCount'] as int? ?? 0,
+        isRecommended: json['isRecommended'] as bool? ?? false,
+        videoUrl: json['videoUrl'] as String?,
+      );
 }
