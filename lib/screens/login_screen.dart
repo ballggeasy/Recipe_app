@@ -101,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
             if (isWide) {
               return Row(
                 children: [
-                  const Expanded(flex: 5, child: _BrandPanel(wide: true)),
+                  const Expanded(flex: 5, child: LoginBrandPanel(wide: true)),
                   Expanded(
                     flex: 6,
                     child: Center(
@@ -122,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const _BrandPanel(wide: false),
+                  const LoginBrandPanel(wide: false),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xl),
                     child: form,
@@ -137,9 +137,18 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-class _BrandPanel extends StatelessWidget {
+/// แผงแบรนด์ไล่สีที่ใช้ร่วมกันระหว่างหน้า login และ register
+class LoginBrandPanel extends StatelessWidget {
   final bool wide;
-  const _BrandPanel({required this.wide});
+  final String title;
+  final String subtitle;
+
+  const LoginBrandPanel({
+    super.key,
+    required this.wide,
+    this.title = 'สูตรอาหาร',
+    this.subtitle = 'บันทึก แบ่งปัน และค้นพบสูตรอาหารที่คุณรัก',
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -169,12 +178,12 @@ class _BrandPanel extends StatelessWidget {
               child: const Center(child: Text('🍳', style: TextStyle(fontSize: 36))),
             ),
             const SizedBox(height: AppSpacing.base),
-            Text('สูตรอาหาร', style: AppTypography.display(color: Colors.white).copyWith(fontSize: 26)),
+            Text(title, style: AppTypography.display(color: Colors.white).copyWith(fontSize: 26)),
             const SizedBox(height: 6),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
               child: Text(
-                'บันทึก แบ่งปัน และค้นพบสูตรอาหารที่คุณรัก',
+                subtitle,
                 textAlign: TextAlign.center,
                 style: AppTypography.body(color: Colors.white.withValues(alpha: 0.85)),
               ),
@@ -280,13 +289,13 @@ class _LoginForm extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AppSpacing.lg),
-        _SocialButton(
+        SocialLoginButton(
           label: 'ดำเนินการต่อด้วย Google',
           onTap: () => onSocial('Google'),
-          badge: const _GoogleBadge(),
+          badge: const GoogleBadge(),
         ),
         const SizedBox(height: AppSpacing.md),
-        _SocialButton(
+        SocialLoginButton(
           label: 'ดำเนินการต่อด้วย GitHub',
           onTap: () => onSocial('GitHub'),
           badge: Icon(Icons.code_rounded, size: 18, color: AppTheme.txtPrimary(context)),
@@ -299,12 +308,13 @@ class _LoginForm extends StatelessWidget {
   }
 }
 
-class _SocialButton extends StatelessWidget {
+/// ปุ่มล็อกอินโซเชียลแบบ placeholder — ใช้ร่วมกันระหว่างหน้า login และ register
+class SocialLoginButton extends StatelessWidget {
   final String label;
   final Widget badge;
   final VoidCallback onTap;
 
-  const _SocialButton({required this.label, required this.badge, required this.onTap});
+  const SocialLoginButton({super.key, required this.label, required this.badge, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -334,8 +344,8 @@ class _SocialButton extends StatelessWidget {
   }
 }
 
-class _GoogleBadge extends StatelessWidget {
-  const _GoogleBadge();
+class GoogleBadge extends StatelessWidget {
+  const GoogleBadge({super.key});
 
   @override
   Widget build(BuildContext context) {

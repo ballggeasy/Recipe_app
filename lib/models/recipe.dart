@@ -35,7 +35,7 @@ class Recipe {
   Recipe({
     required this.id,
     required this.name,
-    required this.emoji,
+    this.emoji = '🍽️',
     required this.imageUrl,
     required this.category,
     required this.cookTimeMinutes,
