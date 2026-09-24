@@ -1,12 +1,11 @@
 # Recipe App
 
-แอปสูตรอาหาร — Flutter frontend + NestJS backend อยู่ใน repo เดียวกัน
+แอปสูตรอาหาร — Flutter frontend + NestJS backend อยู่ใน repo เดียวกัน แต่แยกโฟลเดอร์ชัดเจน
 
 ```
 .
-├── lib/            # Flutter app (frontend)
-├── backend/        # NestJS API server (backend)
-└── ...
+├── frontend/       # Flutter app
+└── backend/        # NestJS API server
 ```
 
 ## เริ่มต้นใช้งาน
@@ -33,13 +32,14 @@ Server จะรันที่ `http://localhost:3000` และสร้าง
 ต้องมี [Flutter SDK](https://docs.flutter.dev/get-started/install) ติดตั้งไว้แล้ว
 
 ```bash
+cd frontend
 flutter pub get
 flutter run
 ```
 
 เลือกอุปกรณ์ตามที่ต้องการ (Chrome, Windows, emulator ฯลฯ) เมื่อ `flutter run` ถาม หรือระบุ `-d <device>` เช่น `flutter run -d chrome`
 
-**หมายเหตุเรื่องการเชื่อมต่อ backend:** แอปตั้งค่า base URL ให้อัตโนมัติตามแพลตฟอร์ม (`lib/services/api_client.dart`):
+**หมายเหตุเรื่องการเชื่อมต่อ backend:** แอปตั้งค่า base URL ให้อัตโนมัติตามแพลตฟอร์ม (`frontend/lib/services/api_client.dart`):
 - Web / Windows / iOS simulator → `http://localhost:3000`
 - Android emulator → `http://10.0.2.2:3000` (ตัว emulator เข้าถึง host เครื่องจริงผ่าน IP นี้เสมอ)
 - ถ้ารันบนมือถือจริง (ไม่ใช่ emulator) ต้องแก้ `baseUrl` ให้ชี้ไป IP เครื่องที่รัน backend เอง
@@ -47,6 +47,7 @@ flutter run
 ## ทดสอบ
 
 ```bash
+cd frontend
 flutter analyze
 flutter test
 ```
