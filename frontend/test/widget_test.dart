@@ -1,11 +1,15 @@
 // Smoke test — ยืนยันว่าแอปตั้งค่า Provider ครบและขึ้นหน้าล็อกอินได้โดยไม่ crash
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:recipe_app/main.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  GoogleFonts.config.allowRuntimeFetching = false;
+
   testWidgets('App boots and shows the login screen', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
 

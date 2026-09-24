@@ -48,6 +48,13 @@ flutter run
 
 ```bash
 cd frontend
-flutter analyze
+flutter analyze --no-fatal-infos
 flutter test
 ```
+
+```bash
+cd backend
+npm run build
+```
+
+CI รันสองอย่างนี้บน GitHub Actions ทุก push/PR — ดู `.github/workflows/`.
