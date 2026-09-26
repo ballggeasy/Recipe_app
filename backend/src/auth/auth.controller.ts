@@ -6,7 +6,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
   Patch,
   Post,
   UploadedFile,
@@ -21,6 +20,7 @@ import { LoginDto } from './dto/login.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { CurrentUser } from './current-user.decorator';
 import { User } from '../users/user.entity';
@@ -39,16 +39,18 @@ export class AuthController {
     return this.authService.login(dto.email, dto.password);
   }
 
-  @Get('exists/:email')
-  async exists(@Param('email') email: string) {
-    const exists = await this.authService.checkUserExists(email);
-    return { exists };
+  /** ขอรหัสยืนยันสำหรับตั้งรหัสผ่านใหม่ — ตอบเหมือนกันเสมอ ไม่บอกว่ามีบัญชีนี้หรือไม่ */
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    await this.authService.requestPasswordReset(dto.email);
+    return { success: true };
   }
 
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() dto: ResetPasswordDto) {
-    await this.authService.resetPassword(dto.email, dto.newPassword);
+    await this.authService.resetPassword(dto.email, dto.code, dto.newPassword);
     return { success: true };
   }
 
@@ -61,7 +63,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Patch('profile')
   updateProfile(@CurrentUser() user: User, @Body() dto: UpdateProfileDto) {
-    return this.authService.updateProfile(user, dto.name, dto.profileImageUrl);
+    return this.authService.updateProfile(user, dto.name);
   }
 
   @UseGuards(JwtAuthGuard)

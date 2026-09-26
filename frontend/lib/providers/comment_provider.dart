@@ -30,7 +30,8 @@ class CommentProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addComment({
+  /// คืน error message ถ้าส่งไม่สำเร็จ (เช่น ยังไม่ได้ล็อกอิน) ไม่งั้นคืน null
+  Future<String?> addComment({
     required String recipeId,
     required String content,
     String? parentId,
@@ -46,17 +47,19 @@ class CommentProvider extends ChangeNotifier {
         imageUrl: imageUrl,
       );
       await loadForRecipe(recipeId);
-    } on ApiException {
-      // ส่งคอมเมนต์ไม่สำเร็จ
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
     }
   }
 
-  Future<void> deleteComment(String recipeId, String commentId) async {
+  Future<String?> deleteComment(String recipeId, String commentId) async {
     try {
       await _commentService.delete(commentId);
       await loadForRecipe(recipeId);
-    } on ApiException {
-      // ลบไม่สำเร็จ (เช่น ไม่ใช่เจ้าของคอมเมนต์)
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
     }
   }
 }

@@ -69,6 +69,15 @@ void main() {
       expect(e.message, 'เกิดข้อผิดพลาด (500)');
     });
 
+    test('turns a non-JSON body into an ApiException instead of a FormatException', () async {
+      final htmlError = await errorFrom(http.Response('<html>Bad gateway</html>', 502));
+      expect(htmlError.message, 'เกิดข้อผิดพลาด (502)');
+      expect(htmlError.statusCode, 502);
+
+      final htmlSuccess = await errorFrom(http.Response('<html>captive portal</html>', 200));
+      expect(htmlSuccess.message, 'ข้อมูลจากเซิร์ฟเวอร์ไม่ถูกต้อง');
+    });
+
     test('turns network failures into a friendly connection error', () async {
       final api = ApiClient.forTesting(MockClient((_) => throw http.ClientException('offline')));
       await expectLater(

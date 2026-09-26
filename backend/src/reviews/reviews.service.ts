@@ -9,6 +9,9 @@ import { RecipesService } from '../recipes/recipes.service';
 
 @Injectable()
 export class ReviewsService {
+  // คิวของ create ที่ค้างอยู่ต่อ key (สูตร:ผู้ใช้) — ดู runExclusive
+  private readonly pendingByKey = new Map<string, Promise<unknown>>();
+
   constructor(
     @InjectRepository(Review)
     private readonly reviewsRepository: Repository<Review>,
@@ -32,19 +35,40 @@ export class ReviewsService {
     return review;
   }
 
-  async create(recipeId: string, dto: CreateReviewDto, user: User): Promise<Review> {
-    const review = await this.reviewsRepository.save(
-      this.reviewsRepository.create({
-        recipeId,
-        userId: user.id,
-        userName: user.name,
-        rating: dto.rating,
-        content: dto.content,
-        imageUrls: dto.imageUrls ?? [],
-      }),
-    );
+  /**
+   * ผู้ใช้หนึ่งคนมีรีวิวได้หนึ่งรีวิวต่อสูตร — รีวิวซ้ำจะแก้รีวิวเดิมแทน เพื่อไม่ให้ปั่นคะแนนเฉลี่ยได้
+   * รันทีละ request ต่อ (สูตร, ผู้ใช้) เพราะ find-แล้ว-insert ที่ยิงพร้อมกันจะไม่เจอกันแล้วสร้างซ้ำ
+   * (ใส่ unique index ไม่ได้ เพราะรีวิวจาก seed ใช้ userId 'seed' ซ้ำกันหลายรีวิว)
+   */
+  create(recipeId: string, dto: CreateReviewDto, user: User): Promise<Review> {
+    return this.runExclusive(`${recipeId}:${user.id}`, () => this.upsertReview(recipeId, dto, user));
+  }
+
+  private async upsertReview(recipeId: string, dto: CreateReviewDto, user: User): Promise<Review> {
+    await this.recipesService.findOne(recipeId);
+
+    const existing = await this.reviewsRepository.findOne({ where: { recipeId, userId: user.id } });
+    const review = existing ?? this.reviewsRepository.create({ recipeId, userId: user.id });
+    review.userName = user.name;
+    review.rating = dto.rating;
+    review.content = dto.content;
+    review.imageUrls = dto.imageUrls ?? [];
+
+    const saved = await this.reviewsRepository.save(review);
     await this.refreshRecipeAggregate(recipeId);
-    return review;
+    return saved;
+  }
+
+  /** ต่อคิว task ที่ key เดียวกันให้รันทีละตัว (backend เป็น process เดียวบน sqlite จึงล็อกในหน่วยความจำได้) */
+  private async runExclusive<T>(key: string, task: () => Promise<T>): Promise<T> {
+    const previous = this.pendingByKey.get(key) ?? Promise.resolve();
+    const current = previous.catch(() => undefined).then(task);
+    this.pendingByKey.set(key, current);
+    try {
+      return await current;
+    } finally {
+      if (this.pendingByKey.get(key) === current) this.pendingByKey.delete(key);
+    }
   }
 
   private async refreshRecipeAggregate(recipeId: string): Promise<void> {

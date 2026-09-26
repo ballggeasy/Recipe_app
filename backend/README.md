@@ -25,10 +25,10 @@ Server default: `http://localhost:3000`, DB: SQLite ไฟล์ที่ `./dat
 |--------|-----------------------|------|------------------------------------------|
 | POST   | /auth/register         | -    | `{ name, email, password }`              |
 | POST   | /auth/login             | -    | `{ email, password }`                    |
-| GET    | /auth/exists/:email     | -    | -                                         |
-| POST   | /auth/reset-password    | -    | `{ email, newPassword }`                 |
+| POST   | /auth/forgot-password   | -    | `{ email }` — สร้างรหัสยืนยัน 6 หลัก (ยังไม่ส่งอีเมล: รหัสแสดงใน log ของ backend) ตอบเหมือนกันเสมอไม่ว่ามีบัญชีหรือไม่ |
+| POST   | /auth/reset-password    | -    | `{ email, code, newPassword }` — รหัสใช้ได้ 15 นาที เดาผิดได้รวม 5 ครั้งต่อช่วง |
 | GET    | /auth/me                 | JWT  | -                                         |
-| PATCH  | /auth/profile            | JWT  | `{ name?, profileImageUrl? }`            |
+| PATCH  | /auth/profile            | JWT  | `{ name? }` (เปลี่ยนรูปผ่าน /auth/avatar เท่านั้น) |
 | POST   | /auth/avatar              | JWT  | multipart/form-data field `file` (JPG/PNG/WebP/GIF, ≤5MB) |
 | POST   | /auth/change-password    | JWT  | `{ currentPassword, newPassword }`       |
 | DELETE | /auth/account             | JWT  | -                                         |
@@ -39,7 +39,7 @@ Server default: `http://localhost:3000`, DB: SQLite ไฟล์ที่ `./dat
 |--------|-------------------|------|--------------------------------------------------------|
 | GET    | /recipes           | -    | รายการทั้งหมด (16 สูตร seed ครั้งแรกที่บูต)              |
 | GET    | /recipes/:id       | -    | -                                                        |
-| POST   | /recipes           | JWT  | สร้างสูตรใหม่ (isOfficial=false, uploaderId=ผู้สร้าง)     |
+| POST   | /recipes           | JWT  | สร้างสูตรใหม่ (isOfficial=false, isRecommended=false, uploaderId=ผู้สร้าง) |
 | PATCH  | /recipes/:id       | JWT  | แก้ได้เฉพาะสูตรที่ตัวเองอัปโหลด (403 ถ้าไม่ใช่เจ้าของ)      |
 | POST   | /recipes/:id/image | JWT  | multipart/form-data field `file` (JPG/PNG/WebP/GIF, ≤5MB) — ตั้งเป็นรูปเมนูแทนรูปเดิม, เฉพาะเจ้าของ, คืนสูตรที่อัปเดตแล้ว |
 | DELETE | /recipes/:id       | JWT  | ลบได้เฉพาะสูตรที่ตัวเองอัปโหลด                            |
@@ -62,7 +62,7 @@ Server default: `http://localhost:3000`, DB: SQLite ไฟล์ที่ `./dat
 | Method | Path                          | Auth | หมายเหตุ                                                  |
 |--------|-------------------------------|------|--------------------------------------------------------------|
 | GET    | /recipes/:recipeId/reviews    | -    | -                                                              |
-| POST   | /recipes/:recipeId/reviews    | JWT  | `{ rating, content, imageUrls? }` — อัปเดต recipe.rating/reviewCount อัตโนมัติ |
+| POST   | /recipes/:recipeId/reviews    | JWT  | `{ rating, content, imageUrls? }` — ผู้ใช้ 1 คนมี 1 รีวิวต่อสูตร (ส่งซ้ำ = แก้รีวิวเดิม), อัปเดต recipe.rating/reviewCount อัตโนมัติ |
 | POST   | /reviews/:id/like              | JWT  | toggle like (เก็บ `likedByUserIds`, client คำนวณ isLiked เอง) |
 | POST   | /reviews/:id/report             | JWT  | -                                                              |
 | POST   | /reviews/:id/replies            | JWT  | `{ content }`                                                  |
@@ -72,7 +72,7 @@ Server default: `http://localhost:3000`, DB: SQLite ไฟล์ที่ `./dat
 | Method | Path                            | Auth | หมายเหตุ                                    |
 |--------|----------------------------------|------|------------------------------------------------|
 | GET    | /recipes/:recipeId/comments      | -    | คืนเป็น tree (nested `replies`) พร้อมใช้        |
-| POST   | /recipes/:recipeId/comments      | JWT  | `{ content, parentId?, mentions?, imageUrl? }`  |
+| POST   | /recipes/:recipeId/comments      | JWT  | `{ content, parentId?, mentions?, imageUrl? }` — parentId ต้องเป็นคอมเมนต์ของสูตรเดียวกัน |
 | DELETE | /comments/:id                     | JWT  | เฉพาะเจ้าของ, ลบ reply ที่ซ้อนอยู่ข้างใต้ทั้งหมดด้วย (cascade) |
 
 ### Meal Planner

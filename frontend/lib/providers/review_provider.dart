@@ -36,7 +36,8 @@ class ReviewProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addReview({
+  /// คืน error message ถ้าส่งไม่สำเร็จ (เช่น ยังไม่ได้ล็อกอิน) ไม่งั้นคืน null
+  Future<String?> addReview({
     required String recipeId,
     required double rating,
     required String content,
@@ -49,38 +50,44 @@ class ReviewProvider extends ChangeNotifier {
         content: content,
         imageUrls: imageUrls,
       );
+      // backend เก็บรีวิวเดียวต่อผู้ใช้ต่อสูตร — รีวิวซ้ำคือการแก้รีวิวเดิม จึงเอาอันเก่าออกก่อน
       final list = _reviewsByRecipe.putIfAbsent(recipeId, () => []);
+      list.removeWhere((r) => r.id == review.id);
       list.insert(0, review);
       notifyListeners();
-    } on ApiException {
-      // ส่งรีวิวไม่สำเร็จ
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
     }
   }
 
-  Future<void> toggleLike(String reviewId) async {
+  Future<String?> toggleLike(String reviewId) async {
     try {
       final updated = await _reviewService.toggleLike(reviewId);
       _replaceReview(updated);
-    } on ApiException {
-      // ไม่สำเร็จ — คงเดิม
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
     }
   }
 
-  Future<void> reportReview(String reviewId) async {
+  Future<String?> reportReview(String reviewId) async {
     try {
       final updated = await _reviewService.report(reviewId);
       _replaceReview(updated);
-    } on ApiException {
-      // ไม่สำเร็จ
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
     }
   }
 
-  Future<void> addReply(String reviewId, String content) async {
+  Future<String?> addReply(String reviewId, String content) async {
     try {
       final updated = await _reviewService.addReply(reviewId, content);
       _replaceReview(updated);
-    } on ApiException {
-      // ไม่สำเร็จ
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
     }
   }
 

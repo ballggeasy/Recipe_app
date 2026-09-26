@@ -4,7 +4,9 @@ import { existsSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import { basename, join } from 'path';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { AuthService } from '../src/auth/auth.service';
 import { uploadsRoot } from '../src/common/image-upload';
+import { UsersService } from '../src/users/users.service';
 import { recipeSeeds } from '../src/seed/seed-data';
 
 const newRecipe = {
@@ -80,6 +82,36 @@ describe('Recipe API (e2e)', () => {
       await http().post('/auth/login').send({ email: 'bob@example.com', password: 'nope-nope' }).expect(401);
     });
 
+    it('does not reveal whether an email has an account', async () => {
+      await registerUser('carol@example.com');
+      const wrong = await http().post('/auth/login').send({ email: 'carol@example.com', password: 'nope-nope' });
+      const unknown = await http().post('/auth/login').send({ email: 'nobody@example.com', password: 'nope-nope' });
+
+      expect(unknown.status).toBe(401);
+      expect(unknown.body.message).toBe(wrong.body.message);
+      await http().get('/auth/exists/carol@example.com').expect(404);
+    });
+
+    it('does not let the client set its own avatar URL', async () => {
+      const { token } = await registerUser('avatar@example.com');
+      await http()
+        .patch('/auth/profile')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ profileImageUrl: '/uploads/../data/app.sqlite' })
+        .expect(400);
+    });
+
+    it('rejects avatar uploads whose type is not a supported image, including prototype keys', async () => {
+      const { token } = await registerUser('upload@example.com');
+      for (const contentType of ['text/html', 'image/svg+xml', 'constructor']) {
+        await http()
+          .post('/auth/avatar')
+          .set('Authorization', `Bearer ${token}`)
+          .attach('file', Buffer.from('<script>alert(1)</script>'), { filename: 'x.png', contentType })
+          .expect(400);
+      }
+    });
+
     it('rejects invalid bodies and unknown fields with 400', async () => {
       await http().post('/auth/register').send({ name: 'X', email: 'not-an-email', password: 'secret123' }).expect(400);
       await http().post('/auth/register').send({ name: 'X', email: 'x@example.com', password: '123' }).expect(400);
@@ -92,6 +124,59 @@ describe('Recipe API (e2e)', () => {
     it('requires a valid token for protected routes', async () => {
       await http().get('/auth/me').expect(401);
       await http().get('/auth/me').set('Authorization', 'Bearer not-a-real-token').expect(401);
+    });
+
+    it('never resets a password from the email alone', async () => {
+      await registerUser('victim@example.com');
+
+      await http()
+        .post('/auth/reset-password')
+        .send({ email: 'victim@example.com', newPassword: 'hacked123' })
+        .expect(400);
+      await http()
+        .post('/auth/reset-password')
+        .send({ email: 'victim@example.com', code: '123456', newPassword: 'hacked123' })
+        .expect(400);
+      await http().post('/auth/login').send({ email: 'victim@example.com', password: 'secret123' }).expect(201);
+    });
+
+    it('resets the password with the issued code', async () => {
+      await registerUser('forgetful@example.com');
+      const code = (await app.get(AuthService).requestPasswordReset('forgetful@example.com'))!;
+
+      await http()
+        .post('/auth/reset-password')
+        .send({ email: 'forgetful@example.com', code, newPassword: 'newpass123' })
+        .expect(200);
+      await http().post('/auth/login').send({ email: 'forgetful@example.com', password: 'newpass123' }).expect(201);
+    });
+
+    it('caps guesses per reset window even when wrong codes are sent concurrently', async () => {
+      const email = 'race@example.com';
+      await registerUser(email);
+      const auth = app.get(AuthService);
+      const code = (await auth.requestPasswordReset(email))!;
+      const wrong = code === '000000' ? '111111' : '000000';
+
+      const results = await Promise.all(
+        Array.from({ length: 8 }, () =>
+          http().post('/auth/reset-password').send({ email, code: wrong, newPassword: 'hacked123' }),
+        ),
+      );
+      expect(results.map((r) => r.status)).toEqual(Array(8).fill(400));
+
+      // โควตา 5 ครั้งหมดแล้ว: รหัสที่ถูกก็ใช้ไม่ได้ และขอรหัสใหม่ในช่วงเดิมไม่ได้
+      await http().post('/auth/reset-password').send({ email, code, newPassword: 'newpass123' }).expect(400);
+      await expect(auth.requestPasswordReset(email)).resolves.toBeNull();
+      await http().post('/auth/login').send({ email, password: 'secret123' }).expect(201);
+    });
+
+    it('answers forgot-password the same way whether or not the account exists', async () => {
+      await registerUser('known@example.com');
+      const known = await http().post('/auth/forgot-password').send({ email: 'known@example.com' }).expect(200);
+      const unknown = await http().post('/auth/forgot-password').send({ email: 'ghost@example.com' }).expect(200);
+      expect(known.body).toEqual({ success: true });
+      expect(unknown.body).toEqual(known.body);
     });
 
     it('invalidates the token after the account is deleted', async () => {
@@ -141,6 +226,17 @@ describe('Recipe API (e2e)', () => {
         .delete(`/recipes/${created.body.id}`)
         .set('Authorization', `Bearer ${other.token}`)
         .expect(403);
+    });
+
+    it('does not let users mark their own recipe as recommended', async () => {
+      const { token } = await registerUser('promoter@example.com');
+      const auth = { Authorization: `Bearer ${token}` };
+
+      await http().post('/recipes').set(auth).send({ ...newRecipe, isRecommended: true }).expect(400);
+
+      const created = await http().post('/recipes').set(auth).send(newRecipe).expect(201);
+      expect(created.body.isRecommended).toBe(false);
+      await http().patch(`/recipes/${created.body.id}`).set(auth).send({ isRecommended: true }).expect(400);
     });
 
     it('requires a token to create a recipe', async () => {
@@ -242,16 +338,17 @@ describe('Recipe API (e2e)', () => {
   });
 
   describe('avatar cleanup', () => {
-    it('never deletes files outside the uploads folder, even if profileImageUrl points there', async () => {
+    it('never deletes files outside the uploads folder, even if a stored profileImageUrl points there', async () => {
       const outside = join(uploadsRoot(), '..', `keep-me-${Date.now()}.txt`);
       writeFileSync(outside, 'important');
-      const { token } = await registerUser('traversal@example.com');
+      const { token, id } = await registerUser('traversal@example.com');
 
-      await http()
-        .patch('/auth/profile')
-        .set('Authorization', `Bearer ${token}`)
-        .send({ profileImageUrl: `/uploads/../${basename(outside)}` })
-        .expect(200);
+      // client ตั้ง profileImageUrl เองไม่ได้แล้ว แต่ข้อมูลเก่าในฐานข้อมูลอาจมีค่าแบบนี้ค้างอยู่
+      const users = app.get(UsersService);
+      const user = (await users.findById(id))!;
+      user.profileImageUrl = `/uploads/../${basename(outside)}`;
+      await users.save(user);
+
       await http()
         .post('/auth/avatar')
         .set('Authorization', `Bearer ${token}`)
@@ -261,6 +358,104 @@ describe('Recipe API (e2e)', () => {
       await new Promise((r) => setTimeout(r, 50));
       expect(existsSync(outside)).toBe(true);
       rmSync(outside);
+    });
+  });
+
+  describe('editing a recipe', () => {
+    it('lets the owner edit every field, and rejects an empty name', async () => {
+      const { token } = await registerUser('editor@example.com');
+      const auth = { Authorization: `Bearer ${token}` };
+      const created = await http().post('/recipes').set(auth).send({ ...newRecipe, tips: 'ไฟแรง' }).expect(201);
+
+      const edited = await http()
+        .patch(`/recipes/${created.body.id}`)
+        .set(auth)
+        .send({
+          name: 'กะเพราทะเล',
+          emoji: '🦐',
+          category: 'อาหารทะเล',
+          country: 'ไทย',
+          cookTimeMinutes: 12,
+          prepTimeMinutes: 8,
+          difficulty: 'ปานกลาง',
+          servings: 3,
+          ingredients: ['กุ้ง'],
+          ingredientItems: [{ name: 'กุ้ง', amount: '200', unit: 'กรัม' }],
+          steps: ['ผัดกุ้ง', 'ใส่กะเพรา'],
+          tips: null,
+          dietTags: ['ฮาลาล'],
+        })
+        .expect(200);
+
+      expect(edited.body).toMatchObject({
+        name: 'กะเพราทะเล',
+        servings: 3,
+        steps: ['ผัดกุ้ง', 'ใส่กะเพรา'],
+        tips: null,
+        dietTags: ['ฮาลาล'],
+      });
+      await http().patch(`/recipes/${created.body.id}`).set(auth).send({ name: '' }).expect(400);
+    });
+  });
+
+  describe('comments', () => {
+    it("rejects a reply whose parent belongs to another recipe", async () => {
+      const { token } = await registerUser('commenter@example.com');
+      const auth = { Authorization: `Bearer ${token}` };
+      const [a, b] = (await http().get('/recipes').expect(200)).body;
+
+      const parent = await http().post(`/recipes/${a.id}/comments`).set(auth).send({ content: 'หลัก' }).expect(201);
+      await http()
+        .post(`/recipes/${b.id}/comments`)
+        .set(auth)
+        .send({ content: 'ตอบผิดสูตร', parentId: parent.body.id })
+        .expect(404);
+    });
+  });
+
+  describe('reviews', () => {
+    it('keeps one review per user per recipe so the average cannot be stuffed', async () => {
+      const { token } = await registerUser('critic@example.com');
+      const auth = { Authorization: `Bearer ${token}` };
+      const [recipe] = (await http().get('/recipes').expect(200)).body;
+      const before = (await http().get(`/recipes/${recipe.id}/reviews`).expect(200)).body.length;
+
+      const first = await http().post(`/recipes/${recipe.id}/reviews`).set(auth).send({ rating: 1, content: 'แย่' });
+      expect(first.status).toBe(201);
+      const second = await http().post(`/recipes/${recipe.id}/reviews`).set(auth).send({ rating: 4, content: 'ดีขึ้น' });
+      expect(second.status).toBe(201);
+
+      expect(second.body.id).toBe(first.body.id);
+      expect(second.body).toMatchObject({ rating: 4, content: 'ดีขึ้น' });
+      const reviews = (await http().get(`/recipes/${recipe.id}/reviews`).expect(200)).body;
+      expect(reviews).toHaveLength(before + 1);
+    });
+
+    it('does not create two reviews when the same user posts twice at once', async () => {
+      const { token } = await registerUser('doubletap@example.com');
+      const auth = { Authorization: `Bearer ${token}` };
+      const [, , recipe] = (await http().get('/recipes').expect(200)).body;
+
+      const [first, second] = await Promise.all([
+        http().post(`/recipes/${recipe.id}/reviews`).set(auth).send({ rating: 5, content: 'หนึ่ง' }),
+        http().post(`/recipes/${recipe.id}/reviews`).set(auth).send({ rating: 3, content: 'สอง' }),
+      ]);
+      expect([first.status, second.status]).toEqual([201, 201]);
+      expect(second.body.id).toBe(first.body.id);
+
+      const mine = (await http().get(`/recipes/${recipe.id}/reviews`).expect(200)).body.filter(
+        (r: { userId: string }) => r.userId === first.body.userId,
+      );
+      expect(mine).toHaveLength(1);
+    });
+
+    it('rejects a review for a recipe that does not exist', async () => {
+      const { token } = await registerUser('ghostcritic@example.com');
+      await http()
+        .post('/recipes/no-such-recipe/reviews')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ rating: 5, content: 'ดี' })
+        .expect(404);
     });
   });
 });

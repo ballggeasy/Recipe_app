@@ -14,6 +14,8 @@ class MealPlannerProvider extends ChangeNotifier {
 
   List<MealPlanEntry> _entries = [];
   bool _isLoading = false;
+  // เพิ่มทุกครั้งที่ onAuthChanged ถูกเรียก — ใช้ทิ้งผลของ request ที่ยิงตอนสถานะล็อกอินก่อนหน้า
+  int _authGeneration = 0;
 
   List<MealPlanEntry> get entries => List.unmodifiable(_entries);
   bool get isLoading => _isLoading;
@@ -25,11 +27,11 @@ class MealPlannerProvider extends ChangeNotifier {
         e.date.day == date.day).toList();
   }
 
+  /// มื้อตั้งแต่เที่ยงคืนของ [weekStart] ถึงก่อนเที่ยงคืนของวันที่ 8 — ตัดเวลาใน [weekStart] ทิ้งก่อนเทียบ
   List<MealPlanEntry> entriesForWeek(DateTime weekStart) {
-    final end = weekStart.add(const Duration(days: 7));
-    return _entries.where((e) =>
-        e.date.isAfter(weekStart.subtract(const Duration(days: 1))) &&
-        e.date.isBefore(end)).toList();
+    final start = DateTime(weekStart.year, weekStart.month, weekStart.day);
+    final end = DateTime(weekStart.year, weekStart.month, weekStart.day + 7);
+    return _entries.where((e) => !e.date.isBefore(start) && e.date.isBefore(end)).toList();
   }
 
   List<MealPlanEntry> entriesForMonth(int year, int month) {
@@ -39,24 +41,30 @@ class MealPlannerProvider extends ChangeNotifier {
 
   /// เรียกทุกครั้งที่สถานะล็อกอินเปลี่ยน
   Future<void> onAuthChanged(bool isLoggedIn) async {
+    final generation = ++_authGeneration;
     if (!isLoggedIn) {
       _entries = [];
+      _isLoading = false;
       notifyListeners();
       return;
     }
 
     _isLoading = true;
     notifyListeners();
+    List<MealPlanEntry> entries;
     try {
-      _entries = await _mealPlanService.fetchAll();
+      entries = await _mealPlanService.fetchAll();
     } on ApiException {
-      _entries = [];
+      entries = [];
     }
+    if (generation != _authGeneration) return; // logout/เปลี่ยนบัญชีระหว่างรอ — ผลนี้เป็นของคนก่อน
+    _entries = entries;
     _isLoading = false;
     notifyListeners();
   }
 
-  Future<void> addEntry({
+  /// คืน error message ถ้าเพิ่มไม่สำเร็จ ไม่งั้นคืน null
+  Future<String?> addEntry({
     required String recipeId,
     required DateTime date,
     required MealType mealType,
@@ -71,18 +79,20 @@ class MealPlannerProvider extends ChangeNotifier {
       );
       _entries.add(entry);
       notifyListeners();
-    } on ApiException {
-      // เพิ่มไม่สำเร็จ
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
     }
   }
 
-  Future<void> removeEntry(String id) async {
+  Future<String?> removeEntry(String id) async {
     try {
       await _mealPlanService.delete(id);
       _entries.removeWhere((e) => e.id == id);
       notifyListeners();
-    } on ApiException {
-      // ลบไม่สำเร็จ
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
     }
   }
 

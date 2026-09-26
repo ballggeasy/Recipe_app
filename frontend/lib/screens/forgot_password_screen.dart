@@ -18,10 +18,19 @@ class ForgotPasswordScreen extends StatefulWidget {
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _emailController = TextEditingController();
+  final _codeController = TextEditingController();
   final _newPasswordController = TextEditingController();
-  bool _emailVerified = false;
-  bool _isChecking = false;
+  bool _codeRequested = false;
+  bool _isRequesting = false;
   bool _isSaving = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _codeController.dispose();
+    _newPasswordController.dispose();
+    super.dispose();
+  }
 
   void _showMessage(String message, {bool isError = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -34,27 +43,34 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  Future<void> _checkEmail() async {
+  Future<void> _requestCode() async {
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
       _showMessage('กรุณากรอกอีเมลที่ถูกต้อง');
       return;
     }
 
-    setState(() => _isChecking = true);
-    final exists = await context.read<AuthProvider>().checkUserExists(email);
+    setState(() => _isRequesting = true);
+    // backend ตอบเหมือนกันเสมอไม่ว่าจะมีบัญชีหรือไม่ จึงไปขั้นกรอกรหัสได้เลย
+    final error = await context.read<AuthProvider>().requestPasswordReset(email);
     if (!mounted) return;
     setState(() {
-      _isChecking = false;
-      _emailVerified = exists;
+      _isRequesting = false;
+      _codeRequested = error == null;
     });
 
-    if (!exists) {
-      _showMessage('ไม่พบบัญชีที่ใช้อีเมลนี้');
+    if (error != null) {
+      _showMessage(error);
+    } else {
+      _showMessage('ถ้าอีเมลนี้มีบัญชี รหัสยืนยัน 6 หลักจะแสดงใน log ของ backend', isError: false);
     }
   }
 
   Future<void> _resetPassword() async {
+    if (!RegExp(r'^\d{6}$').hasMatch(_codeController.text.trim())) {
+      _showMessage('กรุณากรอกรหัสยืนยัน 6 หลัก');
+      return;
+    }
     if (_newPasswordController.text.length < 6) {
       _showMessage('รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร');
       return;
@@ -63,6 +79,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     setState(() => _isSaving = true);
     final error = await context.read<AuthProvider>().resetPassword(
           email: _emailController.text.trim(),
+          code: _codeController.text.trim(),
           newPassword: _newPasswordController.text,
         );
     if (!mounted) return;
@@ -88,24 +105,32 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'ระบบนี้ทำงานแบบ local บนเครื่องเท่านั้น จึงไม่มีการส่งอีเมลยืนยันจริง '
-                'กรอกอีเมลของบัญชีเพื่อรีเซ็ตรหัสผ่านได้โดยตรง',
+                'กรอกอีเมลของบัญชีเพื่อขอรหัสยืนยัน 6 หลัก (อายุ 15 นาที) '
+                'ระบบยังไม่ส่งอีเมลจริง รหัสจะแสดงใน log ของ backend แทน',
                 style: AppTypography.body(color: AppTheme.txtSecondary(context)),
               ),
               const SizedBox(height: AppSpacing.xl),
               AppTextField(
                 label: 'อีเมล',
                 controller: _emailController,
-                enabled: !_emailVerified,
+                enabled: !_codeRequested,
                 keyboardType: TextInputType.emailAddress,
                 prefixIcon: Icons.mail_outline_rounded,
                 hint: 'example@email.com',
               ),
-              if (!_emailVerified) ...[
+              if (!_codeRequested) ...[
                 const SizedBox(height: AppSpacing.xl),
-                AppButton.primary(label: 'ตรวจสอบอีเมล', onPressed: _checkEmail, loading: _isChecking),
+                AppButton.primary(label: 'ขอรหัสยืนยัน', onPressed: _requestCode, loading: _isRequesting),
               ] else ...[
                 const SizedBox(height: AppSpacing.xl),
+                AppTextField(
+                  label: 'รหัสยืนยัน 6 หลัก',
+                  controller: _codeController,
+                  keyboardType: TextInputType.number,
+                  prefixIcon: Icons.pin_outlined,
+                  hint: '123456',
+                ),
+                const SizedBox(height: AppSpacing.md),
                 AppTextField(
                   label: 'รหัสผ่านใหม่',
                   controller: _newPasswordController,

@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/testing.dart';
 import 'package:recipe_app/providers/auth_provider.dart';
+import 'package:recipe_app/services/api_client.dart';
 import 'package:recipe_app/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -44,6 +46,19 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('auth_token'), isNull);
     });
+  });
+
+  test('keeps the stored token for next launch but does not use it while the backend is unreachable', () async {
+    SharedPreferences.setMockInitialValues({'auth_token': 'valid'});
+    final api = ApiClient.forTesting(MockClient((_) => throw Exception('offline')));
+    final auth = AuthProvider(authService: AuthService(api: api));
+
+    await auth.init();
+
+    expect(auth.status, AuthStatus.loggedOut);
+    expect(api.hasToken, isFalse, reason: 'guest mode must not send the remembered account token');
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('auth_token'), 'valid');
   });
 
   group('login', () {
@@ -117,6 +132,17 @@ void main() {
     expect(auth.currentUser, isNull);
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('auth_token'), isNull);
+  });
+
+  test('resetPassword sends the verification code with the new password', () async {
+    final auth = buildProvider({
+      'POST /auth/reset-password': (req) {
+        expect(jsonDecode(req.body), {'email': 'somchai@example.com', 'code': '123456', 'newPassword': 'newpass1'});
+        return jsonResponse({'success': true});
+      },
+    });
+
+    expect(await auth.resetPassword(email: 'Somchai@example.com', code: ' 123456 ', newPassword: 'newpass1'), isNull);
   });
 
   test('changePassword refuses when nobody is logged in', () async {

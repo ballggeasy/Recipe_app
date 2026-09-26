@@ -15,6 +15,7 @@ import '../../providers/favorite_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
+import '../../widgets/common/login_required.dart';
 import '../../widgets/recipe_image.dart';
 import '../../widgets/rating_display.dart';
 import '../../widgets/source_badge.dart';
@@ -22,7 +23,7 @@ import '../../widgets/common/section_header.dart';
 import '../../widgets/review/review_card.dart';
 import '../../widgets/comment/comment_tile.dart';
 import 'cooking_mode_screen.dart';
-import 'edit_recipe_screen.dart';
+import 'recipe_form_screen.dart';
 
 /// รายละเอียดสูตรอาหาร — ครบทุกฟีเจอร์ demo
 class DetailScreen extends StatefulWidget {
@@ -36,8 +37,9 @@ class DetailScreen extends StatefulWidget {
 class _DetailScreenState extends State<DetailScreen> {
   int _imageIndex = 0;
 
+  /// ใช้ read เพราะถูกเรียกจาก callback ด้วย — build ด้านล่าง watch RecipeProvider อยู่แล้วจึงยัง rebuild เมื่อสูตรเปลี่ยน
   Recipe get recipe {
-    return context.watch<RecipeProvider>().getById(widget.recipe.id) ?? widget.recipe;
+    return context.read<RecipeProvider>().getById(widget.recipe.id) ?? widget.recipe;
   }
 
   @override
@@ -62,6 +64,7 @@ class _DetailScreenState extends State<DetailScreen> {
     final comments = commentProvider.getTopLevelComments(recipe.id);
     final currentUserId = auth.currentUser?.id;
     final userName = auth.currentUser?.name ?? 'ผู้เยี่ยมชม';
+    final isOwner = currentUserId != null && currentUserId == recipe.uploaderId;
 
     return Scaffold(
       body: CustomScrollView(
@@ -81,17 +84,18 @@ class _DetailScreenState extends State<DetailScreen> {
               ),
             ),
             actions: [
-              Padding(
-                padding: const EdgeInsets.all(4),
-                child: _RoundIconButton(
-                  icon: Icons.edit_outlined,
-                  tooltip: 'แก้ไขสูตร',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => EditRecipeScreen(recipe: recipe)),
+              if (isOwner)
+                Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: _RoundIconButton(
+                    icon: Icons.edit_outlined,
+                    tooltip: 'แก้ไขสูตร',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => RecipeFormScreen(recipe: recipe)),
+                    ),
                   ),
                 ),
-              ),
               Padding(
                 padding: const EdgeInsets.all(4),
                 child: _RoundIconButton(
@@ -119,7 +123,7 @@ class _DetailScreenState extends State<DetailScreen> {
                 child: _RoundIconButton(
                   icon: Icons.more_vert_rounded,
                   tooltip: 'ตัวเลือกเพิ่มเติม',
-                  onTap: () => _showMoreMenu(context, provider, favProvider),
+                  onTap: () => _showMoreMenu(context, provider, favProvider, isOwner: isOwner),
                 ),
               ),
             ],
@@ -213,7 +217,9 @@ class _DetailScreenState extends State<DetailScreen> {
                   SectionHeader(
                     title: 'รีวิว (${reviews.length})',
                     actionLabel: 'เขียนรีวิว',
-                    onAction: () => _showAddReviewDialog(context, userName),
+                    onAction: () {
+                      if (ensureLoggedIn(context, action: 'เขียนรีวิว')) _showAddReviewDialog(context, userName);
+                    },
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   if (reviews.isEmpty)
@@ -222,20 +228,31 @@ class _DetailScreenState extends State<DetailScreen> {
                     ...reviews.map((r) => ReviewCard(
                           review: r,
                           isLiked: r.likedBy(currentUserId),
-                          onLike: () => reviewProvider.toggleLike(r.id),
-                          onReport: () {
-                            reviewProvider.reportReview(r.id);
+                          onLike: () async {
+                            if (!ensureLoggedIn(context, action: 'กดถูกใจรีวิว')) return;
+                            final error = await reviewProvider.toggleLike(r.id);
+                            if (!context.mounted) return;
+                            showErrorIfAny(context, error);
+                          },
+                          onReport: () async {
+                            if (!ensureLoggedIn(context, action: 'รายงานรีวิว')) return;
+                            final error = await reviewProvider.reportReview(r.id);
+                            if (!context.mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('รายงานรีวิวแล้ว')),
+                              SnackBar(content: Text(error ?? 'รายงานรีวิวแล้ว')),
                             );
                           },
-                          onReply: () => _showReplyDialog(context, r.id, userName),
+                          onReply: () {
+                            if (ensureLoggedIn(context, action: 'ตอบกลับรีวิว')) _showReplyDialog(context, r.id, userName);
+                          },
                         )),
                   const SizedBox(height: AppSpacing.xxl),
                   SectionHeader(
                     title: 'ความคิดเห็น (${comments.length})',
                     actionLabel: 'แสดงความคิดเห็น',
-                    onAction: () => _showAddCommentDialog(context, userName),
+                    onAction: () {
+                      if (ensureLoggedIn(context, action: 'แสดงความคิดเห็น')) _showAddCommentDialog(context, userName);
+                    },
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   if (comments.isEmpty)
@@ -243,8 +260,19 @@ class _DetailScreenState extends State<DetailScreen> {
                   else
                     ...comments.map((c) => CommentTile(
                           comment: c,
-                          onReply: () => _showAddCommentDialog(context, userName, parentId: c.id),
-                          onDelete: () => commentProvider.deleteComment(recipe.id, c.id),
+                          onReply: () {
+                            if (ensureLoggedIn(context, action: 'ตอบกลับความคิดเห็น')) {
+                              _showAddCommentDialog(context, userName, parentId: c.id);
+                            }
+                          },
+                          // ลบได้เฉพาะคอมเมนต์ของตัวเอง (backend ตอบ 403 กับของคนอื่น)
+                          onDelete: currentUserId != null && c.userId == currentUserId
+                              ? () async {
+                                  final error = await commentProvider.deleteComment(recipe.id, c.id);
+                                  if (!context.mounted) return;
+                                  showErrorIfAny(context, error);
+                                }
+                              : null,
                         )),
                 ],
               ),
@@ -274,45 +302,79 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 
-  void _showMoreMenu(BuildContext context, RecipeProvider provider, FavoriteProvider favProvider) {
+  void _showMoreMenu(
+    BuildContext context,
+    RecipeProvider provider,
+    FavoriteProvider favProvider, {
+    required bool isOwner,
+  }) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => SafeArea(
-        child: Container(
-          margin: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          // ListTile วาดพื้นหลังและ ink บน Material ที่ใกล้ที่สุด — ใช้ Material แทน Container ที่มีสีพื้น
+          child: Material(
             color: AppTheme.surf(context),
             borderRadius: BorderRadius.circular(AppRadius.lg),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.download_outlined),
-                title: const Text('ดาวน์โหลดสูตร'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  final file = favProvider.downloadRecipe(recipe);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('ดาวน์โหลด (mock): $file')),
-                  );
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.delete_outline_rounded, color: AppTheme.error(context)),
-                title: Text('ลบสูตร', style: TextStyle(color: AppTheme.error(context))),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  provider.deleteRecipe(recipe.id);
-                  Navigator.pop(context);
-                },
-              ),
-            ],
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.download_outlined),
+                  title: const Text('ดาวน์โหลดสูตร'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    final file = favProvider.downloadRecipe(recipe);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('ดาวน์โหลด (mock): $file')),
+                    );
+                  },
+                ),
+                if (isOwner)
+                  ListTile(
+                    leading: Icon(Icons.delete_outline_rounded, color: AppTheme.error(context)),
+                    title: Text('ลบสูตร', style: TextStyle(color: AppTheme.error(context))),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _confirmDelete(provider);
+                    },
+                  ),
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDelete(RecipeProvider provider) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('ลบสูตร'),
+        content: Text('ต้องการลบ "${recipe.name}" หรือไม่? การลบไม่สามารถย้อนกลับได้'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('ยกเลิก')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text('ลบสูตร', style: TextStyle(color: AppTheme.error(dialogContext))),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final error = await provider.deleteRecipe(recipe.id);
+    if (!mounted) return;
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ลบสูตรแล้ว')));
   }
 
   void _showAddReviewDialog(BuildContext context, String userName) {
@@ -352,13 +414,16 @@ class _DetailScreenState extends State<DetailScreen> {
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('ยกเลิก')),
             TextButton(
-              onPressed: () {
-                context.read<ReviewProvider>().addReview(
-                      recipeId: recipe.id,
-                      rating: rating,
-                      content: controller.text.trim(),
-                    );
+              onPressed: () async {
+                final reviews = context.read<ReviewProvider>();
                 Navigator.pop(ctx);
+                final error = await reviews.addReview(
+                  recipeId: recipe.id,
+                  rating: rating,
+                  content: controller.text.trim(),
+                );
+                if (!context.mounted) return;
+                showErrorIfAny(context, error);
               },
               child: const Text('ส่ง'),
             ),
@@ -378,9 +443,12 @@ class _DetailScreenState extends State<DetailScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('ยกเลิก')),
           TextButton(
-            onPressed: () {
-              context.read<ReviewProvider>().addReply(reviewId, controller.text.trim());
+            onPressed: () async {
+              final reviews = context.read<ReviewProvider>();
               Navigator.pop(ctx);
+              final error = await reviews.addReply(reviewId, controller.text.trim());
+              if (!context.mounted) return;
+              showErrorIfAny(context, error);
             },
             child: const Text('ส่ง'),
           ),
@@ -417,16 +485,19 @@ class _DetailScreenState extends State<DetailScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('ยกเลิก')),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               final text = controller.text.trim();
               final mentions = RegExp(r'@(\S+)').allMatches(text).map((m) => m.group(1)!).toList();
-              context.read<CommentProvider>().addComment(
-                    recipeId: recipe.id,
-                    content: text,
-                    parentId: parentId,
-                    mentions: mentions,
-                  );
+              final comments = context.read<CommentProvider>();
               Navigator.pop(ctx);
+              final error = await comments.addComment(
+                recipeId: recipe.id,
+                content: text,
+                parentId: parentId,
+                mentions: mentions,
+              );
+              if (!context.mounted) return;
+              showErrorIfAny(context, error);
             },
             child: const Text('ส่ง'),
           ),

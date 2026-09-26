@@ -28,7 +28,7 @@ class Comment {
         userId: json['userId'] as String,
         userName: json['userName'] as String,
         content: json['content'] as String,
-        createdAt: DateTime.parse(json['createdAt'] as String),
+        createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
         imageUrl: json['imageUrl'] as String?,
         mentions: (json['mentions'] as List?)?.cast<String>() ?? const [],
         replies: (json['replies'] as List? ?? [])

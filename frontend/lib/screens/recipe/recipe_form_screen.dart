@@ -3,24 +3,34 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/ingredient.dart';
+import '../../models/recipe.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_typography.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/recipe_provider.dart';
 import '../../utils/constants.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
+import '../../widgets/common/empty_state.dart';
+import '../../widgets/common/login_required.dart';
 import '../../widgets/recipe_image_picker.dart';
 
-/// เพิ่มสูตรอาหารใหม่
-class AddRecipeScreen extends StatefulWidget {
-  const AddRecipeScreen({super.key});
+/// ฟอร์มสูตรอาหาร — ไม่ส่ง [recipe] = เพิ่มสูตรใหม่, ส่งมา = แก้ไขสูตรนั้น (เฉพาะเจ้าของสูตร)
+class RecipeFormScreen extends StatefulWidget {
+  final Recipe? recipe;
+
+  /// ส่งตัวเลือกรูปปลอมเข้ามาได้ใน test (ส่งต่อให้ [RecipeImagePicker]) — ปกติใช้คลังรูปของเครื่อง
+  @visibleForTesting
+  final Future<XFile?> Function()? pickImage;
+
+  const RecipeFormScreen({super.key, this.recipe, this.pickImage});
 
   @override
-  State<AddRecipeScreen> createState() => _AddRecipeScreenState();
+  State<RecipeFormScreen> createState() => _RecipeFormScreenState();
 }
 
-class _AddRecipeScreenState extends State<AddRecipeScreen> {
+class _RecipeFormScreenState extends State<RecipeFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emojiController = TextEditingController(text: '🍽️');
@@ -36,9 +46,45 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   int _cookTime = 20;
   int _servings = 2;
   final List<String> _selectedDietTags = [];
-  XFile? _image;
 
   final List<_IngredientControllers> _ingredientControllers = [_IngredientControllers()];
+
+  XFile? _image; // รูปที่เพิ่งเลือก — อัปโหลดตอนกดบันทึก (null = ใช้รูปเดิม)
+
+  bool get _isEditing => widget.recipe != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final recipe = widget.recipe;
+    if (recipe == null) return;
+
+    _nameController.text = recipe.name;
+    _emojiController.text = recipe.emoji;
+    _tipsController.text = recipe.tips ?? '';
+    _platingController.text = recipe.platingTips ?? '';
+    _stepsController.text = recipe.steps.join('\n');
+    _category = recipe.category;
+    _country = recipe.country;
+    _difficulty = recipe.difficulty;
+    _prepTime = recipe.prepTimeMinutes;
+    _cookTime = recipe.cookTimeMinutes;
+    _servings = recipe.servings;
+    _selectedDietTags.addAll(recipe.dietTags);
+
+    // สูตรเก่าบางสูตรมีแต่วัตถุดิบแบบข้อความ — ใส่ทั้งบรรทัดไว้ในช่องชื่อวัตถุดิบ
+    final items = recipe.ingredientItems.isNotEmpty
+        ? recipe.ingredientItems
+        : recipe.ingredients.map((i) => IngredientItem(name: i, amount: '', unit: '')).toList();
+    if (items.isNotEmpty) {
+      for (final c in _ingredientControllers) {
+        c.dispose();
+      }
+      _ingredientControllers
+        ..clear()
+        ..addAll(items.map((i) => _IngredientControllers(amount: i.amount, unit: i.unit, name: i.name)));
+    }
+  }
 
   @override
   void dispose() {
@@ -56,8 +102,29 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   @override
   Widget build(BuildContext context) {
     final recipeProvider = context.watch<RecipeProvider>();
+    final auth = context.watch<AuthProvider>();
+    final title = _isEditing ? 'แก้ไขสูตรอาหาร' : 'เพิ่มสูตรอาหาร';
+    // กันไว้อีกชั้นเผื่อมีทางเข้าหน้านี้โดยไม่ผ่านปุ่มที่เช็คแล้ว — ไม่ให้กรอกทั้งฟอร์มแล้วค่อยโดน 401/403 จาก backend
+    if (!auth.isLoggedIn) {
+      return Scaffold(
+        appBar: AppBar(title: Text(title)),
+        body: EmptyState(
+          emoji: '🔒',
+          message: _isEditing ? 'เข้าสู่ระบบก่อนแก้ไขสูตรอาหาร' : 'เข้าสู่ระบบก่อนเพิ่มสูตรอาหาร',
+          description: 'สูตรที่เพิ่มจะผูกกับบัญชีของคุณ\nแก้ไขหรือลบได้ภายหลัง',
+          actionLabel: 'เข้าสู่ระบบ',
+          onAction: () => goToLogin(Navigator.of(context)),
+        ),
+      );
+    }
+    if (_isEditing && auth.currentUser?.id != widget.recipe!.uploaderId) {
+      return Scaffold(
+        appBar: AppBar(title: Text(title)),
+        body: const EmptyState(emoji: '🔒', message: 'แก้ไขได้เฉพาะสูตรที่คุณเพิ่มเอง'),
+      );
+    }
     return Scaffold(
-      appBar: AppBar(title: const Text('เพิ่มสูตรอาหาร')),
+      appBar: AppBar(title: Text(title)),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -66,7 +133,11 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
             _FormSection(
               title: 'รูปภาพ',
               children: [
-                RecipeImagePicker(onChanged: (file) => _image = file),
+                RecipeImagePicker(
+                  currentImageUrl: widget.recipe?.imageUrl,
+                  onChanged: (file) => _image = file,
+                  pickImage: widget.pickImage,
+                ),
                 const SizedBox(height: AppSpacing.md),
                 Row(
                   children: [
@@ -183,7 +254,12 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
-            AppButton.primary(label: 'บันทึกสูตร', icon: Icons.check_rounded, onPressed: _save, loading: _isSaving),
+            AppButton.primary(
+              label: _isEditing ? 'บันทึกการแก้ไข' : 'บันทึกสูตร',
+              icon: Icons.check_rounded,
+              onPressed: _save,
+              loading: _isSaving,
+            ),
           ],
         ),
       ),
@@ -194,6 +270,19 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSaving = true);
+    try {
+      await _submit();
+    } catch (_) {
+      // error ที่ไม่ได้มาจาก API (เช่น อ่านไฟล์รูปที่เลือกไว้ไม่ได้แล้ว) — แจ้งแล้วให้ลองใหม่ได้ แทนที่ปุ่มจะหมุนค้าง
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('บันทึกไม่สำเร็จ กรุณาลองใหม่')));
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _submit() async {
     final provider = context.read<RecipeProvider>();
     final steps = _stepsController.text.split('\n').where((s) => s.trim().isNotEmpty).toList();
     final items = _ingredientControllers
@@ -201,40 +290,75 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
         .where((i) => i.name.trim().isNotEmpty)
         .toList();
 
-    final result = await provider.addRecipe(
-      name: _nameController.text.trim(),
-      emoji: _emojiController.text.trim().isEmpty ? '🍽️' : _emojiController.text.trim(),
-      category: _category,
-      country: _country,
-      prepTime: _prepTime,
-      cookTime: _cookTime,
-      difficulty: _difficulty,
-      servings: _servings,
-      steps: steps,
-      items: items,
-      tips: _tipsController.text.trim().isEmpty ? null : _tipsController.text.trim(),
-      platingTips: _platingController.text.trim().isEmpty ? null : _platingController.text.trim(),
-      dietTags: _selectedDietTags,
-      image: _image,
-    );
+    final name = _nameController.text.trim();
+    final emoji = _emojiController.text.trim().isEmpty ? '🍽️' : _emojiController.text.trim();
+    final tips = _tipsController.text.trim().isEmpty ? null : _tipsController.text.trim();
+    final platingTips = _platingController.text.trim().isEmpty ? null : _platingController.text.trim();
+
+    String? error;
+    String? imageError;
+    if (widget.recipe case final original?) {
+      error = await provider.updateRecipe(
+        original.copyWith(
+          name: name,
+          emoji: emoji,
+          category: _category,
+          country: _country,
+          prepTimeMinutes: _prepTime,
+          cookTimeMinutes: _cookTime,
+          difficulty: _difficulty,
+          servings: _servings,
+          steps: steps,
+          ingredients: items.map((i) => i.display).toList(),
+          ingredientItems: items,
+          tips: tips,
+          platingTips: platingTips,
+          dietTags: List.of(_selectedDietTags),
+        ),
+      );
+      if (error == null && _image != null) {
+        error = await provider.updateRecipeImage(original.id, _image!);
+        // อัปโหลดสำเร็จแล้ว ถ้ากดบันทึกอีกรอบ (เช่นหลังแก้ error อื่น) ไม่ต้องอัปโหลดซ้ำ
+        if (error == null) _image = null;
+      }
+    } else {
+      final result = await provider.addRecipe(
+        name: name,
+        emoji: emoji,
+        category: _category,
+        country: _country,
+        prepTime: _prepTime,
+        cookTime: _cookTime,
+        difficulty: _difficulty,
+        servings: _servings,
+        steps: steps,
+        items: items,
+        tips: tips,
+        platingTips: platingTips,
+        dietTags: _selectedDietTags,
+        image: _image,
+      );
+      error = result.error;
+      imageError = result.imageError;
+    }
 
     if (!mounted) return;
-    setState(() => _isSaving = false);
-
-    if (result.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.error!)));
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
       return;
     }
 
-    // สูตรถูกบันทึกแล้วแม้รูปจะอัปโหลดไม่ผ่าน จึงออกจากหน้านี้เสมอ (กันผู้ใช้กดบันทึกซ้ำจนได้สูตรซ้ำ)
+    // สูตรใหม่ถูกบันทึกแล้วแม้รูปจะอัปโหลดไม่ผ่าน จึงออกจากหน้านี้เสมอ (กันผู้ใช้กดบันทึกซ้ำจนได้สูตรซ้ำ)
     final messenger = ScaffoldMessenger.of(context);
     Navigator.pop(context);
     messenger.showSnackBar(
       SnackBar(
         content: Text(
-          result.imageError == null
-              ? 'เพิ่มสูตรเรียบร้อย'
-              : 'เพิ่มสูตรแล้ว แต่อัปโหลดรูปไม่สำเร็จ (${result.imageError}) — เพิ่มรูปได้ที่หน้าแก้ไขสูตร',
+          imageError != null
+              ? 'เพิ่มสูตรแล้ว แต่อัปโหลดรูปไม่สำเร็จ ($imageError) — เพิ่มรูปได้ที่หน้าแก้ไขสูตร'
+              : _isEditing
+                  ? 'แก้ไขสูตรเรียบร้อย'
+                  : 'เพิ่มสูตรเรียบร้อย',
         ),
       ),
     );
@@ -276,7 +400,10 @@ class _Dropdown extends StatelessWidget {
     return DropdownButtonFormField<String>(
       initialValue: value,
       decoration: InputDecoration(labelText: label),
-      items: items.map((i) => DropdownMenuItem(value: i, child: Text(i))).toList(),
+      // ค่าปัจจุบันต้องอยู่ในตัวเลือกเสมอ ไม่งั้น DropdownButton จะ assert (เช่น หมวดของสูตรที่กำลังแก้ไม่อยู่ในรายการ)
+      items: [if (!items.contains(value)) value, ...items]
+          .map((i) => DropdownMenuItem(value: i, child: Text(i)))
+          .toList(),
       onChanged: onChanged,
     );
   }

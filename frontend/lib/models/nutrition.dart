@@ -39,7 +39,8 @@ class NutritionInfo {
       };
 
   factory NutritionInfo.fromJson(Map<String, dynamic> json) => NutritionInfo(
-        calories: json['calories'] as int? ?? 0,
+        // backend รับเป็น number ใด ๆ ก็ได้ (เช่น 350.5) — cast เป็น int ตรง ๆ จะทำให้ parse ทั้งรายการสูตรล้ม
+        calories: (json['calories'] as num?)?.round() ?? 0,
         protein: (json['protein'] as num?)?.toDouble() ?? 0,
         fat: (json['fat'] as num?)?.toDouble() ?? 0,
         carbs: (json['carbs'] as num?)?.toDouble() ?? 0,
