@@ -8,7 +8,9 @@ import '../services/favorite_service.dart';
 
 /// จัดการโฟลเดอร์สูตรโปรดผ่าน backend — ต้องล็อกอิน (guest จะเห็นรายการว่าง)
 class FavoriteProvider extends ChangeNotifier {
-  final FavoriteService _favoriteService = FavoriteService();
+  final FavoriteService _favoriteService;
+
+  FavoriteProvider({FavoriteService? favoriteService}) : _favoriteService = favoriteService ?? FavoriteService();
 
   List<FavoriteFolder> _folders = [];
   bool _isLoading = false;

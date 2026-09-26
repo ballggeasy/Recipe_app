@@ -3,7 +3,9 @@ import 'api_client.dart';
 
 /// เรียก backend API สำหรับคอมเมนต์ (nested) — อ่านสาธารณะ, เขียน/ลบต้อง auth
 class CommentService {
-  final ApiClient _api = ApiClient();
+  final ApiClient _api;
+
+  CommentService({ApiClient? api}) : _api = api ?? ApiClient();
 
   Future<List<Comment>> fetchForRecipe(String recipeId) async {
     final data = await _api.get('/recipes/$recipeId/comments', auth: false) as List;

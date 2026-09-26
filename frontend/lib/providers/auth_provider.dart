@@ -8,7 +8,9 @@ enum AuthStatus { unknown, loggedOut, loggedIn, guest }
 
 /// จัดการ state การล็อกอิน/ผู้ใช้ปัจจุบัน ครอบ AuthService ไว้อีกชั้น
 class AuthProvider extends ChangeNotifier {
-  final AuthService _authService = AuthService();
+  final AuthService _authService;
+
+  AuthProvider({AuthService? authService}) : _authService = authService ?? AuthService();
 
   AuthStatus _status = AuthStatus.unknown;
   AppUser? _currentUser;

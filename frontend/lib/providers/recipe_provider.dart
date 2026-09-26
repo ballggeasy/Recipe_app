@@ -15,8 +15,12 @@ import '../utils/constants.dart';
 class RecipeProvider extends ChangeNotifier {
   static const _searchHistoryKey = 'search_history';
 
-  final RecipeService _recipeService = RecipeService();
-  final FavoriteService _favoriteService = FavoriteService();
+  final RecipeService _recipeService;
+  final FavoriteService _favoriteService;
+
+  RecipeProvider({RecipeService? recipeService, FavoriteService? favoriteService})
+      : _recipeService = recipeService ?? RecipeService(),
+        _favoriteService = favoriteService ?? FavoriteService();
 
   List<Recipe> _allRecipes = [];
   Set<String> _favoriteIds = {};

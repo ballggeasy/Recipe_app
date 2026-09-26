@@ -6,7 +6,9 @@ import '../services/review_service.dart';
 
 /// จัดการรีวิวผ่าน backend: ให้คะแนน, รีวิว, ถูกใจ, รายงาน, ตอบกลับ
 class ReviewProvider extends ChangeNotifier {
-  final ReviewService _reviewService = ReviewService();
+  final ReviewService _reviewService;
+
+  ReviewProvider({ReviewService? reviewService}) : _reviewService = reviewService ?? ReviewService();
 
   final Map<String, List<Review>> _reviewsByRecipe = {};
   final Set<String> _loadingRecipeIds = {};
