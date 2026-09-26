@@ -1,12 +1,12 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
-  IsBoolean,
   IsInt,
   IsNumber,
   IsOptional,
   IsString,
   Min,
+  MinLength,
   ValidateNested,
 } from 'class-validator';
 import { IngredientItem, NutritionInfo } from '../recipe.entity';
@@ -44,6 +44,7 @@ class NutritionInfoDto implements NutritionInfo {
 
 export class CreateRecipeDto {
   @IsString()
+  @MinLength(1)
   name: string;
 
   @IsString()
@@ -120,8 +121,4 @@ export class CreateRecipeDto {
   @IsOptional()
   @IsString()
   videoUrl?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  isRecommended?: boolean;
 }

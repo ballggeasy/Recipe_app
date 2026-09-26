@@ -40,7 +40,8 @@ export class RecipesService {
       tips: dto.tips ?? null,
       platingTips: dto.platingTips ?? null,
       videoUrl: dto.videoUrl ?? null,
-      isRecommended: dto.isRecommended ?? false,
+      // สูตรแนะนำคัดโดยทีมงานเท่านั้น (seed) ผู้ใช้ตั้งเองไม่ได้
+      isRecommended: false,
       isOfficial: false,
       uploaderId: user.id,
       uploaderName: user.name,
