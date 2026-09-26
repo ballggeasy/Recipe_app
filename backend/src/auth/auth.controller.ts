@@ -14,9 +14,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
-import { mkdirSync } from 'fs';
+import { imageUploadOptions, uploadedFileUrl } from '../common/image-upload';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -26,8 +24,6 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { CurrentUser } from './current-user.decorator';
 import { User } from '../users/user.entity';
-
-const AVATAR_DIR = join(process.cwd(), 'uploads', 'avatars');
 
 @Controller('auth')
 export class AuthController {
@@ -71,33 +67,16 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('avatar')
   @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: (_req, _file, cb) => {
-          mkdirSync(AVATAR_DIR, { recursive: true });
-          cb(null, AVATAR_DIR);
-        },
-        filename: (req, file, cb) => {
-          const ext = extname(file.originalname) || '.jpg';
-          const user = (req as unknown as { user: User }).user;
-          cb(null, `${user.id}-${Date.now()}${ext}`);
-        },
-      }),
-      fileFilter: (_req, file, cb) => {
-        if (!file.mimetype.startsWith('image/')) {
-          cb(new BadRequestException('ไฟล์ต้องเป็นรูปภาพเท่านั้น'), false);
-          return;
-        }
-        cb(null, true);
-      },
-      limits: { fileSize: 5 * 1024 * 1024 },
-    }),
+    FileInterceptor(
+      'file',
+      imageUploadOptions('avatars', (req) => (req as unknown as { user: User }).user.id),
+    ),
   )
   uploadAvatar(@CurrentUser() user: User, @UploadedFile() file: Express.Multer.File) {
     if (!file) {
       throw new BadRequestException('ไม่พบไฟล์รูปภาพ');
     }
-    return this.authService.updateAvatar(user, `/uploads/avatars/${file.filename}`);
+    return this.authService.updateAvatar(user, uploadedFileUrl('avatars', file.filename));
   }
 
   @UseGuards(JwtAuthGuard)

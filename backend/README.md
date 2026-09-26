@@ -29,7 +29,7 @@ Server default: `http://localhost:3000`, DB: SQLite ไฟล์ที่ `./dat
 | POST   | /auth/reset-password    | -    | `{ email, newPassword }`                 |
 | GET    | /auth/me                 | JWT  | -                                         |
 | PATCH  | /auth/profile            | JWT  | `{ name?, profileImageUrl? }`            |
-| POST   | /auth/avatar              | JWT  | multipart/form-data field `file` (รูปภาพ, ≤5MB) |
+| POST   | /auth/avatar              | JWT  | multipart/form-data field `file` (JPG/PNG/WebP/GIF, ≤5MB) |
 | POST   | /auth/change-password    | JWT  | `{ currentPassword, newPassword }`       |
 | DELETE | /auth/account             | JWT  | -                                         |
 
@@ -41,6 +41,7 @@ Server default: `http://localhost:3000`, DB: SQLite ไฟล์ที่ `./dat
 | GET    | /recipes/:id       | -    | -                                                        |
 | POST   | /recipes           | JWT  | สร้างสูตรใหม่ (isOfficial=false, uploaderId=ผู้สร้าง)     |
 | PATCH  | /recipes/:id       | JWT  | แก้ได้เฉพาะสูตรที่ตัวเองอัปโหลด (403 ถ้าไม่ใช่เจ้าของ)      |
+| POST   | /recipes/:id/image | JWT  | multipart/form-data field `file` (JPG/PNG/WebP/GIF, ≤5MB) — ตั้งเป็นรูปเมนูแทนรูปเดิม, เฉพาะเจ้าของ, คืนสูตรที่อัปเดตแล้ว |
 | DELETE | /recipes/:id       | JWT  | ลบได้เฉพาะสูตรที่ตัวเองอัปโหลด                            |
 
 ### Favorites & Folders
@@ -86,6 +87,6 @@ Server default: `http://localhost:3000`, DB: SQLite ไฟล์ที่ `./dat
 
 รหัสผ่าน hash ด้วย bcrypt (แทน SHA-256 ฝั่ง client เดิม).
 
-รูปโปรไฟล์เก็บที่ `./uploads/avatars/` เสิร์ฟผ่าน `/uploads/...` แบบ static, อัปโหลดใหม่จะลบไฟล์เก่าทิ้งอัตโนมัติ (sync ข้ามเครื่องได้เพราะ URL ที่คืนมาผูกกับ backend ไม่ใช่ path ในเครื่อง).
+รูปโปรไฟล์และรูปเมนูเก็บที่ `./uploads/avatars/` และ `./uploads/recipes/` (เปลี่ยนโฟลเดอร์ได้ด้วย env `UPLOADS_DIR`) เสิร์ฟผ่าน `/uploads/...` แบบ static. อัปโหลดใหม่จะลบไฟล์เก่าทิ้งอัตโนมัติ, ลบสูตรก็ลบรูปของสูตรนั้นด้วย. นามสกุลไฟล์ตั้งจาก MIME type ไม่ใช่ชื่อไฟล์ที่ client ส่งมา (ไม่รับ SVG) และจะไม่ลบไฟล์ที่อยู่นอกโฟลเดอร์ uploads เด็ดขาด. URL ที่คืนมาเป็น path relative (`/uploads/...`) — client ต่อ base URL เอง.
 
 เมื่อ DB ว่าง (บูตครั้งแรก) จะ seed สูตรอาหาร 16 สูตรพร้อมรีวิว/คอมเมนต์ตัวอย่าง จาก `src/seed/seed-data.ts` อัตโนมัติ.

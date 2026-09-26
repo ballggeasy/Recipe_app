@@ -1,3 +1,4 @@
+import '../services/api_client.dart';
 import 'ingredient.dart';
 import 'nutrition.dart';
 
@@ -150,12 +151,14 @@ class Recipe {
     );
   }
 
+  /// รูปที่ผู้ใช้อัปโหลดมาเป็น path relative (`/uploads/recipes/...`) จึงต่อ baseUrl ให้ตรงนี้
+  /// ห้ามส่ง [imageUrl] กลับไปใน PATCH เพราะจะกลายเป็น URL ที่ผูกกับเครื่อง/host ของ client
   factory Recipe.fromApi(Map<String, dynamic> json) => Recipe(
         id: json['id'] as String,
         name: json['name'] as String,
         emoji: json['emoji'] as String,
-        imageUrl: json['imageUrl'] as String? ?? '',
-        imageUrls: (json['imageUrls'] as List?)?.cast<String>() ?? const [],
+        imageUrl: ApiClient().resolveUrl(json['imageUrl'] as String? ?? ''),
+        imageUrls: (json['imageUrls'] as List? ?? []).map((u) => ApiClient().resolveUrl(u as String)).toList(),
         category: json['category'] as String,
         country: json['country'] as String,
         cookTimeMinutes: json['cookTimeMinutes'] as int,
