@@ -152,6 +152,7 @@ class _FoldersTab extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
+                                  tooltip: 'คัดลอกลิงก์สูตร',
                                   icon: Icon(Icons.share_outlined, size: 20, color: AppTheme.txtSecondary(context)),
                                   onPressed: () {
                                     final link = favProvider.shareRecipe(recipe);
@@ -162,6 +163,7 @@ class _FoldersTab extends StatelessWidget {
                                   },
                                 ),
                                 IconButton(
+                                  tooltip: 'ดาวน์โหลดสูตร',
                                   icon: Icon(Icons.download_outlined, size: 20, color: AppTheme.txtSecondary(context)),
                                   onPressed: () {
                                     final file = favProvider.downloadRecipe(recipe);

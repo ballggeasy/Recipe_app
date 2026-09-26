@@ -71,6 +71,7 @@ class _AppTextFieldState extends State<AppTextField> {
             : null,
         suffixIcon: widget.obscureText
             ? IconButton(
+                tooltip: _obscure ? 'แสดงรหัสผ่าน' : 'ซ่อนรหัสผ่าน',
                 icon: Icon(
                   _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                   size: 20,

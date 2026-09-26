@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../theme/app_theme.dart';
 import '../../theme/app_typography.dart';
+import 'tap_target.dart';
 
 /// หัวข้อของแต่ละ section พร้อมปุ่ม "ดูทั้งหมด" หรือ widget อื่นด้านขวา (ถ้ามี)
 class SectionHeader extends StatelessWidget {
@@ -30,7 +31,7 @@ class SectionHeader extends StatelessWidget {
         ),
         ?trailing,
         if (trailing == null && actionLabel != null)
-          GestureDetector(
+          TapTarget(
             onTap: onAction,
             child: Text(
               actionLabel!,

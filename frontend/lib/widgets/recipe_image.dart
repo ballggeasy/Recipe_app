@@ -6,6 +6,7 @@ import '../theme/app_theme.dart';
 /// แสดงรูปภาพจริงของสูตรอาหารจาก imageUrl
 /// ถ้า imageUrl ว่างเปล่าหรือโหลดไม่สำเร็จ จะ fallback กลับไปแสดง emoji แทนอัตโนมัติ
 /// เพื่อไม่ให้แอป crash หรือโชว์ไอคอนรูปหักเมื่อ URL เสียหรือไม่มีอินเทอร์เน็ต
+/// รูปเป็นแค่ส่วนตกแต่ง (ชื่อสูตรแสดงอยู่ข้าง ๆ เสมอ) จึงซ่อนจาก screen reader เพื่อไม่ให้อ่านชื่อซ้ำ
 class RecipeImage extends StatelessWidget {
   final Recipe recipe;
   final double emojiSize;
@@ -24,6 +25,7 @@ class RecipeImage extends StatelessWidget {
         ? _buildEmojiFallback(context)
         : Image.network(
             recipe.imageUrl,
+            excludeFromSemantics: true,
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
@@ -62,7 +64,7 @@ class RecipeImage extends StatelessWidget {
       height: double.infinity,
       color: AppTheme.primLight(context),
       child: Center(
-        child: Text(recipe.emoji, style: TextStyle(fontSize: emojiSize)),
+        child: ExcludeSemantics(child: Text(recipe.emoji, style: TextStyle(fontSize: emojiSize))),
       ),
     );
   }

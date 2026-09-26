@@ -135,9 +135,9 @@ class AppButton extends StatelessWidget {
   _ButtonColors _colorsFor(BuildContext context) {
     switch (variant) {
       case AppButtonVariant.primary:
-        return _ButtonColors(background: AppTheme.prim(context), foreground: Colors.white);
+        return _ButtonColors(background: AppTheme.prim(context), foreground: AppTheme.onAccent(context));
       case AppButtonVariant.secondary:
-        return _ButtonColors(background: AppTheme.secondary(context), foreground: Colors.white);
+        return _ButtonColors(background: AppTheme.secondary(context), foreground: AppTheme.onAccent(context));
       case AppButtonVariant.outline:
         return _ButtonColors(
           background: AppTheme.surf(context),
@@ -150,7 +150,7 @@ class AppButton extends StatelessWidget {
           foreground: AppTheme.prim(context),
         );
       case AppButtonVariant.danger:
-        return _ButtonColors(background: AppTheme.error(context), foreground: Colors.white);
+        return _ButtonColors(background: AppTheme.error(context), foreground: AppTheme.onAccent(context));
     }
   }
 }
