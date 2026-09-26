@@ -55,6 +55,8 @@ flutter test
 ```bash
 cd backend
 npm run build
+npm test          # unit test (test/*.spec.ts)
+npm run test:e2e  # e2e test บน SQLite in-memory (test/*.e2e-spec.ts)
 ```
 
 CI รันสองอย่างนี้บน GitHub Actions ทุก push/PR — ดู `.github/workflows/`.
