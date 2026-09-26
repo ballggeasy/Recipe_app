@@ -8,7 +8,9 @@ import '../services/meal_plan_service.dart';
 
 /// วางแผนมื้ออาหาร รายวัน/สัปดาห์/เดือน + คำนวณแคลอรี/สารอาหาร — ข้อมูลอยู่บน backend ต่อผู้ใช้
 class MealPlannerProvider extends ChangeNotifier {
-  final MealPlanService _mealPlanService = MealPlanService();
+  final MealPlanService _mealPlanService;
+
+  MealPlannerProvider({MealPlanService? mealPlanService}) : _mealPlanService = mealPlanService ?? MealPlanService();
 
   List<MealPlanEntry> _entries = [];
   bool _isLoading = false;

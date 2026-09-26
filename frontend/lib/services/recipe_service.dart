@@ -5,7 +5,9 @@ import 'api_client.dart';
 
 /// เรียก backend API สำหรับสูตรอาหาร — รายการสาธารณะ, เพิ่ม/แก้/ลบของผู้ใช้ที่ล็อกอิน
 class RecipeService {
-  final ApiClient _api = ApiClient();
+  final ApiClient _api;
+
+  RecipeService({ApiClient? api}) : _api = api ?? ApiClient();
 
   Future<List<Recipe>> fetchAll() async {
     final data = await _api.get('/recipes', auth: false) as List;

@@ -15,7 +15,9 @@ class AuthResult {
 /// จัดการ authentication ผ่าน backend API (NestJS) — เก็บเฉพาะ JWT token ไว้ในเครื่อง
 /// รหัสผ่านไม่ผ่าน client เลยนอกจากตอนส่งไปให้ backend ตรวจสอบ/hash
 class AuthService {
-  final ApiClient _api = ApiClient();
+  final ApiClient _api;
+
+  AuthService({ApiClient? api}) : _api = api ?? ApiClient();
 
   Future<AuthResult> register({
     required String name,

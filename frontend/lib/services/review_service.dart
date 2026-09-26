@@ -3,7 +3,9 @@ import 'api_client.dart';
 
 /// เรียก backend API สำหรับรีวิว — อ่านสาธารณะ, เขียน/like/report/reply ต้อง auth
 class ReviewService {
-  final ApiClient _api = ApiClient();
+  final ApiClient _api;
+
+  ReviewService({ApiClient? api}) : _api = api ?? ApiClient();
 
   Future<List<Review>> fetchForRecipe(String recipeId) async {
     final data = await _api.get('/recipes/$recipeId/reviews', auth: false) as List;

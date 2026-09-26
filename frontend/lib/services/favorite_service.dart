@@ -3,7 +3,9 @@ import 'api_client.dart';
 
 /// เรียก backend API สำหรับสูตรโปรด (quick favorite) และโฟลเดอร์ — auth เสมอ
 class FavoriteService {
-  final ApiClient _api = ApiClient();
+  final ApiClient _api;
+
+  FavoriteService({ApiClient? api}) : _api = api ?? ApiClient();
 
   Future<List<String>> listFavoriteIds() async {
     final data = await _api.get('/favorites') as List;

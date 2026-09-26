@@ -3,7 +3,9 @@ import 'api_client.dart';
 
 /// เรียก backend API สำหรับแผนมื้ออาหาร — auth เสมอ
 class MealPlanService {
-  final ApiClient _api = ApiClient();
+  final ApiClient _api;
+
+  MealPlanService({ApiClient? api}) : _api = api ?? ApiClient();
 
   Future<List<MealPlanEntry>> fetchAll() async {
     final data = await _api.get('/meal-plan') as List;
