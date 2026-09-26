@@ -116,6 +116,15 @@ void main() {
           uploaderName: uploaderName,
         );
 
+    test('copyWith keeps tips when omitted and clears them when null is passed', () {
+      final recipe = build().copyWith(tips: 'ใช้ไฟแรง', platingTips: 'โรยถั่ว');
+
+      expect(recipe.copyWith(name: 'x').tips, 'ใช้ไฟแรง');
+      final cleared = recipe.copyWith(tips: null, platingTips: null);
+      expect(cleared.tips, isNull);
+      expect(cleared.platingTips, isNull);
+    });
+
     test('totalTimeMinutes adds prep and cook time', () {
       expect(build().totalTimeMinutes, 35);
     });

@@ -27,6 +27,8 @@ class RecipeProvider extends ChangeNotifier {
   Set<String> _favoriteIds = {};
   bool _isLoading = false;
   bool _canSyncFavorites = false;
+  // เพิ่มทุกครั้งที่ onAuthChanged ถูกเรียก — ใช้ทิ้งผลของ request ที่ยิงตอนสถานะล็อกอินก่อนหน้า
+  int _authGeneration = 0;
 
   String _searchQuery = '';
   String _selectedCategory = 'ทั้งหมด';
@@ -34,6 +36,8 @@ class RecipeProvider extends ChangeNotifier {
   SourceFilter _selectedSource = SourceFilter.all;
   SortOption _sortOption = SortOption.ratingDesc;
   RecipeListMode _listMode = RecipeListMode.all;
+  // seed ของโหมดสุ่ม — สุ่มใหม่เฉพาะตอนผู้ใช้เลือกโหมดสุ่ม ไม่ใช่ทุกครั้งที่ filteredRecipes ถูกเรียก (ทุก rebuild)
+  int _randomSeed = 0;
   String? _selectedDietTag;
   int? _maxCookTime;
   String? _selectedDifficulty;
@@ -114,7 +118,7 @@ class RecipeProvider extends ChangeNotifier {
       case RecipeListMode.recommended:
         return list.where((r) => r.isRecommended).toList();
       case RecipeListMode.random:
-        final shuffled = [...list]..shuffle(Random());
+        final shuffled = [...list]..shuffle(Random(_randomSeed));
         return shuffled.take(6).toList();
       case RecipeListMode.seasonal:
         return list.where((r) => r.season != 'ตลอดปี').toList();
@@ -187,6 +191,7 @@ class RecipeProvider extends ChangeNotifier {
 
   /// เรียกทุกครั้งที่สถานะล็อกอินเปลี่ยน — favorites sync ได้เฉพาะบัญชีจริง ไม่รองรับ guest
   Future<void> onAuthChanged(bool isLoggedIn) async {
+    final generation = ++_authGeneration;
     _canSyncFavorites = isLoggedIn;
     if (!isLoggedIn) {
       _favoriteIds = {};
@@ -196,6 +201,7 @@ class RecipeProvider extends ChangeNotifier {
 
     try {
       final ids = await _favoriteService.listFavoriteIds();
+      if (generation != _authGeneration) return; // logout/เปลี่ยนบัญชีระหว่างรอ — ผลนี้เป็นของคนก่อน
       _favoriteIds = ids.toSet();
       notifyListeners();
     } on ApiException {
@@ -276,6 +282,7 @@ class RecipeProvider extends ChangeNotifier {
   }
 
   void updateListMode(RecipeListMode mode, {String? dietTag}) {
+    if (mode == RecipeListMode.random) _randomSeed = Random().nextInt(1 << 31);
     _listMode = mode;
     _selectedDietTag = dietTag;
     notifyListeners();
@@ -376,6 +383,7 @@ class RecipeProvider extends ChangeNotifier {
   }
 
   /// แก้ไขสูตร (เฉพาะสูตรที่ตัวเองอัปโหลด — backend ตรวจสอบสิทธิ์)
+  /// ไม่ส่งรูปไปด้วย — เปลี่ยนรูปผ่าน [updateRecipeImage] (recipe.imageUrl ในแอปต่อ baseUrl แล้ว ห้ามส่งกลับไปเก็บ)
   Future<String?> updateRecipe(Recipe recipe) async {
     try {
       final updated = await _recipeService.update(recipe.id, {

@@ -11,8 +11,9 @@ import '../../providers/theme_provider.dart';
 import '../../services/api_client.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
+import '../../widgets/common/login_required.dart';
 import '../../widgets/common/tap_target.dart';
-import '../login_screen.dart';
+import '../recipe/my_recipes_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -143,23 +144,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
-    await context.read<AuthProvider>().deleteAccount();
+    try {
+      await context.read<AuthProvider>().deleteAccount();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      _showMessage(e.message, isError: true);
+      return;
+    }
     if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
+    goToLogin(Navigator.of(context));
   }
 
   Future<void> _logout() async {
     await context.read<AuthProvider>().logout();
     if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
+    goToLogin(Navigator.of(context));
   }
 
   @override
@@ -196,10 +197,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 AppButton.primary(
                   label: 'เข้าสู่ระบบ',
                   fullWidth: false,
-                  onPressed: () => Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    (route) => false,
-                  ),
+                  onPressed: () => goToLogin(Navigator.of(context)),
                 ),
               ],
             ),
@@ -232,6 +230,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text('สูตรอาหาร', style: AppTypography.overline(color: AppTheme.txtSecondary(context))),
+                  const SizedBox(height: AppSpacing.sm),
+                  _SectionCard(
+                    children: [
+                      _ProfileTile(
+                        icon: Icons.menu_book_outlined,
+                        label: 'สูตรของฉัน',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const MyRecipesScreen()),
+                        ),
+                        showDivider: false,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
                   Text('บัญชี', style: AppTypography.overline(color: AppTheme.txtSecondary(context))),
                   const SizedBox(height: AppSpacing.sm),
                   _SectionCard(

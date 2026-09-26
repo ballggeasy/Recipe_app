@@ -22,7 +22,8 @@ class MealPlanService {
       '/meal-plan',
       body: {
         'recipeId': recipeId,
-        'date': date.toIso8601String(),
+        // ส่งเป็น UTC พร้อม 'Z' เพื่อไม่ให้ backend ตีความตาม timezone ของเครื่อง server
+        'date': date.toUtc().toIso8601String(),
         'mealType': mealType.name,
         'servings': servings,
       },

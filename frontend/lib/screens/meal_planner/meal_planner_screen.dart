@@ -12,6 +12,7 @@ import '../../models/recipe.dart';
 import '../../models/meal_plan.dart';
 import '../../models/nutrition.dart';
 import '../../widgets/common/empty_state.dart';
+import '../../widgets/common/login_required.dart';
 import '../recipe/detail_screen.dart';
 
 /// Meal Planner — วางแผนรายวัน/สัปดาห์/เดือน + คำนวณแคลอรี/สารอาหาร
@@ -58,7 +59,9 @@ class _MealPlannerScreenState extends State<MealPlannerScreen>
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'meal_planner_add_fab',
-        onPressed: () => _showAddMealDialog(context),
+        onPressed: () {
+          if (ensureLoggedIn(context, action: 'วางแผนมื้ออาหาร')) _showAddMealDialog(context);
+        },
         backgroundColor: AppTheme.prim(context),
         child: Icon(Icons.add_rounded, color: AppTheme.onAccent(context)),
       ),
@@ -129,15 +132,16 @@ class _MealPlannerScreenState extends State<MealPlannerScreen>
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('ยกเลิก')),
             TextButton(
-              onPressed: () {
-                if (selectedRecipeId != null) {
-                  planner.addEntry(
-                    recipeId: selectedRecipeId!,
-                    date: _selectedDate,
-                    mealType: selectedMeal,
-                  );
-                }
+              onPressed: () async {
                 Navigator.pop(ctx);
+                if (selectedRecipeId == null) return;
+                final error = await planner.addEntry(
+                  recipeId: selectedRecipeId!,
+                  date: _selectedDate,
+                  mealType: selectedMeal,
+                );
+                if (!context.mounted) return;
+                showErrorIfAny(context, error);
               },
               child: const Text('เพิ่ม'),
             ),
@@ -212,7 +216,11 @@ class _DailyView extends StatelessWidget {
                         MaterialPageRoute(builder: (_) => DetailScreen(recipe: recipe)),
                       )
                   : null,
-              onDelete: () => planner.removeEntry(e.id),
+              onDelete: () async {
+                final error = await planner.removeEntry(e.id);
+                if (!context.mounted) return;
+                showErrorIfAny(context, error);
+              },
             );
           }),
       ],

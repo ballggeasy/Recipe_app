@@ -92,6 +92,9 @@ class Recipe {
 
   bool matchesDietTag(String tag) => dietTags.contains(tag);
 
+  static const _unset = Object();
+
+  /// [tips] และ [platingTips] ส่ง null เพื่อล้างค่าได้ — ถ้าไม่ส่งจะคงค่าเดิม
   Recipe copyWith({
     String? name,
     String? emoji,
@@ -109,8 +112,8 @@ class Recipe {
     double? rating,
     int? reviewCount,
     int? servings,
-    String? tips,
-    String? platingTips,
+    Object? tips = _unset,
+    Object? platingTips = _unset,
     NutritionInfo? nutrition,
     List<String>? dietTags,
     String? season,
@@ -134,12 +137,13 @@ class Recipe {
       steps: steps ?? this.steps,
       country: country ?? this.country,
       isOfficial: isOfficial ?? this.isOfficial,
+      uploaderId: uploaderId,
       uploaderName: uploaderName ?? this.uploaderName,
       rating: rating ?? this.rating,
       reviewCount: reviewCount ?? this.reviewCount,
       servings: servings ?? this.servings,
-      tips: tips ?? this.tips,
-      platingTips: platingTips ?? this.platingTips,
+      tips: identical(tips, _unset) ? this.tips : tips as String?,
+      platingTips: identical(platingTips, _unset) ? this.platingTips : platingTips as String?,
       nutrition: nutrition ?? this.nutrition,
       dietTags: dietTags ?? this.dietTags,
       season: season ?? this.season,

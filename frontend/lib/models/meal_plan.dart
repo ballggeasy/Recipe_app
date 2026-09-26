@@ -32,7 +32,8 @@ class MealPlanEntry {
   factory MealPlanEntry.fromApi(Map<String, dynamic> json) => MealPlanEntry(
         id: json['id'] as String,
         recipeId: json['recipeId'] as String,
-        date: DateTime.parse(json['date'] as String),
+        // backend ส่งเวลาแบบ UTC ('...Z') — แปลงเป็นเวลาเครื่องก่อน ไม่งั้นมื้อช่วง 00:00-06:59 (UTC+7) จะไปอยู่วันก่อนหน้า
+        date: DateTime.parse(json['date'] as String).toLocal(),
         mealType: MealType.values.byName(json['mealType'] as String),
         servings: json['servings'] as int? ?? 1,
       );
