@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/recipe.dart';
-import '../../theme/app_radius.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_typography.dart';
 import '../../providers/recipe_provider.dart';
 import '../../widgets/common/app_text_field.dart';
+import '../../widgets/recipe_image_picker.dart';
 
 /// แก้ไขสูตรอาหาร
 class EditRecipeScreen extends StatefulWidget {
@@ -22,6 +23,8 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
   late TextEditingController _nameController;
   late TextEditingController _tipsController;
   late TextEditingController _cookTimeController;
+  XFile? _newImage;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -46,22 +49,19 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
         title: const Text('แก้ไขสูตร'),
         actions: [
           TextButton(
-            onPressed: _save,
-            child: Text('บันทึก', style: TextStyle(color: AppTheme.prim(context), fontWeight: FontWeight.w700)),
+            onPressed: _isSaving ? null : _save,
+            child: _isSaving
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                : Text('บันทึก', style: TextStyle(color: AppTheme.prim(context), fontWeight: FontWeight.w700)),
           ),
         ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          Container(
-            height: 120,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: AppTheme.primLight(context),
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-            ),
-            child: Center(child: Text(widget.recipe.emoji, style: const TextStyle(fontSize: 48))),
+          RecipeImagePicker(
+            currentImageUrl: widget.recipe.imageUrl,
+            onChanged: (file) => _newImage = file,
           ),
           const SizedBox(height: AppSpacing.xl),
           Text('ข้อมูลพื้นฐาน', style: AppTypography.h2(color: AppTheme.txtPrimary(context))),
@@ -81,22 +81,32 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
   }
 
   Future<void> _save() async {
+    setState(() => _isSaving = true);
+    final provider = context.read<RecipeProvider>();
     final cookTime = int.tryParse(_cookTimeController.text) ?? widget.recipe.cookTimeMinutes;
     final updated = widget.recipe.copyWith(
       name: _nameController.text.trim(),
       cookTimeMinutes: cookTime,
       tips: _tipsController.text.trim().isEmpty ? null : _tipsController.text.trim(),
     );
-    final error = await context.read<RecipeProvider>().updateRecipe(updated);
+
+    var error = await provider.updateRecipe(updated);
+    if (error == null && _newImage != null) {
+      error = await provider.updateRecipeImage(widget.recipe.id, _newImage!);
+      // อัปโหลดสำเร็จแล้ว ถ้ากดบันทึกอีกรอบ (เช่นหลังแก้ error อื่น) ไม่ต้องอัปโหลดซ้ำ
+      if (error == null) _newImage = null;
+    }
     if (!mounted) return;
+    setState(() => _isSaving = false);
 
     if (error != null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
       return;
     }
 
+    final messenger = ScaffoldMessenger.of(context);
     Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
+    messenger.showSnackBar(
       const SnackBar(content: Text('แก้ไขสูตรเรียบร้อย')),
     );
   }

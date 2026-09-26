@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:recipe_app/models/ingredient.dart';
 import 'package:recipe_app/models/recipe.dart';
+import 'package:recipe_app/services/api_client.dart';
 
 void main() {
   group('Recipe.fromApi', () {
@@ -50,6 +51,24 @@ void main() {
       expect(recipe.rating, 4.0, reason: 'int rating from JSON must become a double');
       expect(recipe.isRecommended, isTrue);
       expect(recipe.createdAt, DateTime.utc(2026, 5, 1, 10));
+    });
+
+    test('prefixes uploaded (relative) image paths with the API base URL, leaves full URLs alone', () {
+      final recipe = Recipe.fromApi({
+        'id': 'r3',
+        'name': 'ข้าวผัด',
+        'emoji': '🍚',
+        'category': 'อาหารจานเดียว',
+        'country': 'ไทย',
+        'cookTimeMinutes': 10,
+        'difficulty': 'ง่าย',
+        'imageUrl': '/uploads/recipes/r3-1.jpg',
+        'imageUrls': ['/uploads/recipes/r3-1.jpg', 'https://example.com/b.jpg'],
+      });
+
+      final base = ApiClient().baseUrl;
+      expect(recipe.imageUrl, '$base/uploads/recipes/r3-1.jpg');
+      expect(recipe.imageUrls, ['$base/uploads/recipes/r3-1.jpg', 'https://example.com/b.jpg']);
     });
 
     test('falls back to defaults when optional fields are missing', () {

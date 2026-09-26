@@ -5,6 +5,7 @@ import { Recipe } from './recipe.entity';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { User } from '../users/user.entity';
+import { removeUploadedFile } from '../common/image-upload';
 
 @Injectable()
 export class RecipesService {
@@ -61,7 +62,43 @@ export class RecipesService {
     if (recipe.uploaderId !== user.id) {
       throw new ForbiddenException('ลบได้เฉพาะสูตรที่คุณอัปโหลดเอง');
     }
+    const uploadedImages = this.ownUploads(recipe.id, [recipe.imageUrl, ...(recipe.imageUrls ?? [])]);
     await this.recipesRepository.remove(recipe);
+    uploadedImages.forEach((url) => void removeUploadedFile(url));
+  }
+
+  /**
+   * Attaches an already-saved upload as the recipe's image (owner only) and deletes the
+   * image previously uploaded for this recipe. If the caller may not edit the recipe, the
+   * new file is deleted so rejected uploads don't pile up on disk.
+   */
+  async setImage(id: string, imageUrl: string, user: User): Promise<Recipe> {
+    let recipe: Recipe;
+    try {
+      recipe = await this.findOne(id);
+      if (recipe.uploaderId !== user.id) {
+        throw new ForbiddenException('แก้ไขได้เฉพาะสูตรที่คุณอัปโหลดเอง');
+      }
+    } catch (error) {
+      await removeUploadedFile(imageUrl);
+      throw error;
+    }
+
+    const previous = this.ownUploads(recipe.id, [recipe.imageUrl, ...(recipe.imageUrls ?? [])]);
+    recipe.imageUrl = imageUrl;
+    recipe.imageUrls = [imageUrl];
+    const saved = await this.recipesRepository.save(recipe);
+    previous.filter((url) => url !== imageUrl).forEach((url) => void removeUploadedFile(url));
+    return saved;
+  }
+
+  /**
+   * Only files this API stored for this recipe (`/uploads/recipes/<id>-...`) are ever deleted,
+   * so a client-supplied imageUrl can't make us remove someone else's file.
+   */
+  private ownUploads(recipeId: string, urls: string[]): string[] {
+    const prefix = `/uploads/recipes/${recipeId}-`;
+    return [...new Set(urls.filter((url) => url?.startsWith(prefix)))];
   }
 
   async applyRatingAggregate(recipeId: string, rating: number, reviewCount: number): Promise<void> {

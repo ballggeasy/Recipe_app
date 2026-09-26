@@ -37,6 +37,10 @@ class ApiClient {
     return 'http://localhost:3000';
   }
 
+  /// ไฟล์ที่ backend เก็บเอง (เช่นรูปที่อัปโหลด) ส่งมาเป็น path แบบ relative เช่น `/uploads/recipes/x.jpg`
+  /// ต้องต่อ [baseUrl] ก่อนนำไปแสดง ส่วน URL เต็ม (เช่นรูปจาก wikimedia) ใช้ได้เลย
+  String resolveUrl(String path) => path.startsWith('/') ? '$baseUrl$path' : path;
+
   bool get hasToken => _token != null;
 
   Future<bool> loadToken() async {
@@ -95,7 +99,8 @@ class ApiClient {
         fieldName,
         bytes,
         filename: filename,
-        contentType: contentType != null ? MediaType.parse(contentType) : null,
+        // บนเว็บ image_picker มักไม่รู้ mimeType — เดาจากนามสกุลแทน ไม่งั้น backend จะปฏิเสธว่าไม่ใช่รูปภาพ
+        contentType: MediaType.parse(contentType ?? _guessImageType(filename)),
       ),
     );
 
@@ -145,6 +150,16 @@ class ApiClient {
     }
 
     return _decodeOrThrow(response);
+  }
+
+  static String _guessImageType(String filename) {
+    final ext = filename.toLowerCase().split('.').last;
+    return switch (ext) {
+      'png' => 'image/png',
+      'webp' => 'image/webp',
+      'gif' => 'image/gif',
+      _ => 'image/jpeg',
+    };
   }
 
   dynamic _decodeOrThrow(http.Response response) {
