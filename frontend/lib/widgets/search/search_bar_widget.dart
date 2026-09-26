@@ -58,6 +58,7 @@ class SearchBarWidget extends StatelessWidget {
                   prefixIcon: Icon(Icons.search_rounded, color: AppTheme.txtSecondary(context), size: 22),
                   suffixIcon: provider.searchQuery.isNotEmpty
                       ? IconButton(
+                          tooltip: 'ล้างคำค้นหา',
                           icon: Icon(Icons.close_rounded, size: 18, color: AppTheme.txtSecondary(context)),
                           onPressed: () {
                             controller.clear();

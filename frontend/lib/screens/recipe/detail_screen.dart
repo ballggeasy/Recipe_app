@@ -73,17 +73,19 @@ class _DetailScreenState extends State<DetailScreen> {
             expandedHeight: 300,
             pinned: true,
             leading: Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(4),
               child: _RoundIconButton(
                 icon: Icons.arrow_back_rounded,
+                tooltip: 'ย้อนกลับ',
                 onTap: () => Navigator.pop(context),
               ),
             ),
             actions: [
               Padding(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(4),
                 child: _RoundIconButton(
                   icon: Icons.edit_outlined,
+                  tooltip: 'แก้ไขสูตร',
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => EditRecipeScreen(recipe: recipe)),
@@ -91,9 +93,10 @@ class _DetailScreenState extends State<DetailScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(4),
                 child: _RoundIconButton(
                   icon: Icons.ios_share_rounded,
+                  tooltip: 'แชร์สูตร',
                   onTap: () {
                     final link = favProvider.shareRecipe(recipe);
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -103,17 +106,19 @@ class _DetailScreenState extends State<DetailScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(4),
                 child: _RoundIconButton(
                   icon: isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  tooltip: isFav ? 'เอาออกจากสูตรโปรด' : 'บันทึกเป็นสูตรโปรด',
                   iconColor: isFav ? AppTheme.error(context) : null,
                   onTap: () => provider.toggleFavorite(recipe.id),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(right: 12, top: 8, bottom: 8),
+                padding: const EdgeInsets.only(left: 4, right: 8, top: 4, bottom: 4),
                 child: _RoundIconButton(
                   icon: Icons.more_vert_rounded,
+                  tooltip: 'ตัวเลือกเพิ่มเติม',
                   onTap: () => _showMoreMenu(context, provider, favProvider),
                 ),
               ),
@@ -326,6 +331,7 @@ class _DetailScreenState extends State<DetailScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(5, (i) {
                   return IconButton(
+                    tooltip: 'ให้ ${i + 1} ดาว',
                     icon: Icon(
                       i < rating ? Icons.star_rounded : Icons.star_border_rounded,
                       color: AppTheme.star(ctx),
@@ -400,10 +406,10 @@ class _DetailScreenState extends State<DetailScreen> {
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
-                IconButton(icon: const Text('😊', style: TextStyle(fontSize: 20)), onPressed: () {
+                IconButton(tooltip: 'ใส่อีโมจิ 👍', icon: const Text('😊', style: TextStyle(fontSize: 20)), onPressed: () {
                   controller.text += ' 👍';
                 }),
-                const IconButton(icon: Icon(Icons.image_outlined), onPressed: null),
+                const IconButton(tooltip: 'แนบรูป (ยังไม่รองรับ)', icon: Icon(Icons.image_outlined), onPressed: null),
               ],
             ),
           ],
@@ -430,24 +436,38 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 }
 
+/// ปุ่มวงกลมบนรูปปก — วงกลมที่เห็นขนาด 36 แต่พื้นที่กดขยายเป็น 48x48 ตามขั้นต่ำด้าน accessibility
 class _RoundIconButton extends StatelessWidget {
   final IconData icon;
+  final String tooltip;
   final Color? iconColor;
   final VoidCallback onTap;
 
-  const _RoundIconButton({required this.icon, required this.onTap, this.iconColor});
+  const _RoundIconButton({required this.icon, required this.tooltip, required this.onTap, this.iconColor});
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppTheme.surf(context).withValues(alpha: 0.92),
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Icon(icon, size: 20, color: iconColor ?? AppTheme.txtPrimary(context)),
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox.square(
+            dimension: 48,
+            child: Center(
+              child: Ink(
+                width: 36,
+                height: 36,
+                decoration: ShapeDecoration(
+                  color: AppTheme.surf(context).withValues(alpha: 0.92),
+                  shape: const CircleBorder(),
+                ),
+                child: Icon(icon, size: 20, color: iconColor ?? AppTheme.txtPrimary(context)),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -468,6 +488,7 @@ class _ImageGallery extends StatelessWidget {
       return RecipeImage(recipe: recipe, emojiSize: 88);
     }
 
+    final dotCount = images.length.clamp(1, 5);
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -476,22 +497,33 @@ class _ImageGallery extends StatelessWidget {
           bottom: 12,
           left: 0,
           right: 0,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(images.length.clamp(1, 5), (i) {
-              return GestureDetector(
-                onTap: () => onIndexChanged(i),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: i == index ? Colors.white : Colors.white54,
-                  ),
-                ),
-              );
-            }),
+          // จุดเล็กเกินกว่าจะเป็นเป้ากดของ screen reader — ให้ทั้งแถวเป็นตัวควบคุมแบบปัดขึ้น/ลงแทน
+          child: Semantics(
+            label: 'รูปภาพสูตร',
+            value: '${index + 1} จาก $dotCount',
+            increasedValue: index + 1 < dotCount ? '${index + 2} จาก $dotCount' : null,
+            decreasedValue: index > 0 ? '$index จาก $dotCount' : null,
+            onIncrease: index + 1 < dotCount ? () => onIndexChanged(index + 1) : null,
+            onDecrease: index > 0 ? () => onIndexChanged(index - 1) : null,
+            child: ExcludeSemantics(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(dotCount, (i) {
+                  return GestureDetector(
+                    onTap: () => onIndexChanged(i),
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: i == index ? Colors.white : Colors.white54,
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
           ),
         ),
       ],
@@ -648,7 +680,7 @@ class _StepRow extends StatelessWidget {
               height: 28,
               decoration: BoxDecoration(color: AppTheme.prim(context), shape: BoxShape.circle),
               child: Center(
-                child: Text('$number', style: AppTypography.bodyStrong(color: Colors.white).copyWith(fontSize: 12)),
+                child: Text('$number', style: AppTypography.bodyStrong(color: AppTheme.onAccent(context)).copyWith(fontSize: 12)),
               ),
             ),
             const SizedBox(width: AppSpacing.md),

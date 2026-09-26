@@ -368,4 +368,7 @@ class AppTheme {
   static Color error(BuildContext c) => isDark(c) ? AppColors.errorDark : AppColors.error;
   static Color errorMuted(BuildContext c) => isDark(c) ? AppColors.errorMutedDark : AppColors.errorMuted;
   static Color star(BuildContext c) => isDark(c) ? AppColors.starDark : AppColors.star;
+
+  /// สีข้อความ/ไอคอนบนพื้น [prim], [secondary] หรือ [error] — ผ่าน WCAG AA ทั้งสองโหมด
+  static Color onAccent(BuildContext c) => isDark(c) ? AppColors.onAccentDark : AppColors.onAccent;
 }

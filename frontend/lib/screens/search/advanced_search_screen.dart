@@ -15,6 +15,7 @@ import '../../widgets/recipe_image.dart';
 import '../../widgets/rating_display.dart';
 import '../../widgets/source_badge.dart';
 import '../../widgets/common/empty_state.dart';
+import '../../widgets/common/tap_target.dart';
 import '../recipe/detail_screen.dart';
 
 /// ค้นหาขั้นสูง — Filter, Sort, ค้นหาตามชื่อ/วัตถุดิบ/ประเภท/ประเทศ/เวลา/ความยาก
@@ -276,9 +277,11 @@ class _SearchResultCard extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.sm),
-                child: GestureDetector(
+                padding: const EdgeInsets.only(right: AppSpacing.xs),
+                child: TapTarget(
                   onTap: () => provider.toggleFavorite(recipe.id),
+                  label: isFav ? 'เอาออกจากสูตรโปรด' : 'บันทึกเป็นสูตรโปรด',
+                  selected: isFav,
                   child: Icon(
                     isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                     color: isFav ? AppTheme.error(context) : AppTheme.txtSecondary(context),

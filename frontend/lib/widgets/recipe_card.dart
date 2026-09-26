@@ -7,6 +7,7 @@ import '../theme/app_shadows.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
 import '../providers/recipe_provider.dart';
+import 'common/tap_target.dart';
 import 'recipe_image.dart';
 import 'rating_display.dart';
 import 'source_badge.dart';
@@ -53,8 +54,8 @@ class RecipeCard extends StatelessWidget {
                       child: SourceBadge(recipe: recipe, compact: true),
                     ),
                     Positioned(
-                      top: 8,
-                      right: 8,
+                      top: 0,
+                      right: 0,
                       child: _FavoriteButton(
                         isFav: isFav,
                         onTap: () => provider.toggleFavorite(recipe.id),
@@ -122,12 +123,14 @@ class _FavoriteButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return TapTarget(
       onTap: onTap,
+      label: isFav ? 'เอาออกจากสูตรโปรด' : 'บันทึกเป็นสูตรโปรด',
+      selected: isFav,
       child: Container(
         padding: const EdgeInsets.all(6),
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: AppTheme.surf(context),
           shape: BoxShape.circle,
         ),
         child: AnimatedSwitcher(

@@ -36,6 +36,7 @@ class _CookingModeScreenState extends State<CookingModeScreen> {
       appBar: AppBar(
         title: Text(widget.recipe.name, maxLines: 1, overflow: TextOverflow.ellipsis),
         leading: IconButton(
+          tooltip: 'ออกจากโหมดทำอาหาร',
           icon: const Icon(Icons.close_rounded),
           onPressed: () => Navigator.pop(context),
         ),
@@ -98,7 +99,7 @@ class _CookingModeScreenState extends State<CookingModeScreen> {
                               child: Center(
                                 child: Text(
                                   '${i + 1}',
-                                  style: AppTypography.h2(color: Colors.white),
+                                  style: AppTypography.h2(color: AppTheme.onAccent(context)),
                                 ),
                               ),
                             ),
