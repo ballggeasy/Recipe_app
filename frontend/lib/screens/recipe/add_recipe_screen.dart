@@ -365,6 +365,7 @@ class _IngredientRow extends StatelessWidget {
         ),
         if (onRemove != null)
           IconButton(
+            tooltip: 'ลบวัตถุดิบนี้',
             icon: Icon(Icons.remove_circle_outline_rounded, size: 20, color: AppTheme.error(context)),
             onPressed: onRemove,
           ),

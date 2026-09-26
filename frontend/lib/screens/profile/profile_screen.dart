@@ -11,6 +11,7 @@ import '../../providers/theme_provider.dart';
 import '../../services/api_client.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
+import '../../widgets/common/tap_target.dart';
 import '../login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -212,7 +213,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         slivers: [
           SliverAppBar(
             backgroundColor: AppTheme.prim(context),
-            foregroundColor: Colors.white,
+            foregroundColor: AppTheme.onAccent(context),
             elevation: 0,
             pinned: true,
             expandedHeight: 240,
@@ -324,8 +325,9 @@ class _ProfileHeader extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              GestureDetector(
+              TapTarget(
                 onTap: onEditPhoto,
+                label: 'เปลี่ยนรูปโปรไฟล์',
                 child: Stack(
                   children: [
                     CircleAvatar(
@@ -333,7 +335,7 @@ class _ProfileHeader extends StatelessWidget {
                       backgroundColor: Colors.white.withValues(alpha: 0.2),
                       backgroundImage: imagePath != null ? NetworkImage(imagePath!) : null,
                       child: imagePath == null
-                          ? const Icon(Icons.person_rounded, size: 44, color: Colors.white)
+                          ? Icon(Icons.person_rounded, size: 44, color: AppTheme.onAccent(context))
                           : null,
                     ),
                     Positioned(
@@ -355,14 +357,14 @@ class _ProfileHeader extends StatelessWidget {
               const SizedBox(height: AppSpacing.md),
               Text(
                 name,
-                style: AppTypography.h1(color: Colors.white),
+                style: AppTypography.h1(color: AppTheme.onAccent(context)),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
               Text(
                 email,
-                style: AppTypography.caption(color: Colors.white.withValues(alpha: 0.8)),
+                style: AppTypography.caption(color: AppTheme.onAccent(context).withValues(alpha: 0.85)),
               ),
             ],
           ),

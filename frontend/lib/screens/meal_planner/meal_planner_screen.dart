@@ -60,7 +60,7 @@ class _MealPlannerScreenState extends State<MealPlannerScreen>
         heroTag: 'meal_planner_add_fab',
         onPressed: () => _showAddMealDialog(context),
         backgroundColor: AppTheme.prim(context),
-        child: const Icon(Icons.add_rounded, color: Colors.white),
+        child: Icon(Icons.add_rounded, color: AppTheme.onAccent(context)),
       ),
       body: TabBarView(
         controller: _tabController,
@@ -174,6 +174,7 @@ class _DailyView extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             IconButton(
+              tooltip: 'วันก่อนหน้า',
               icon: const Icon(Icons.chevron_left_rounded),
               onPressed: () => onDateChanged(date.subtract(const Duration(days: 1))),
             ),
@@ -182,6 +183,7 @@ class _DailyView extends StatelessWidget {
               style: AppTypography.h3(color: AppTheme.txtPrimary(context)).copyWith(fontSize: 16),
             ),
             IconButton(
+              tooltip: 'วันถัดไป',
               icon: const Icon(Icons.chevron_right_rounded),
               onPressed: () => onDateChanged(date.add(const Duration(days: 1))),
             ),
@@ -430,6 +432,7 @@ class _MealEntryTile extends StatelessWidget {
           title: Text(recipeName, style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context))),
           subtitle: Text(mealType.label, style: AppTypography.caption(color: AppTheme.txtSecondary(context))),
           trailing: IconButton(
+            tooltip: 'ลบออกจากแผน',
             icon: Icon(Icons.delete_outline_rounded, color: AppTheme.txtSecondary(context)),
             onPressed: onDelete,
           ),

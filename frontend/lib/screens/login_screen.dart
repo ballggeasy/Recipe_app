@@ -10,6 +10,7 @@ import '../theme/app_typography.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/common/app_button.dart';
 import '../widgets/common/app_text_field.dart';
+import '../widgets/common/tap_target.dart';
 import 'main/main_screen.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
@@ -218,7 +219,7 @@ class _LoginBrandPanelState extends State<LoginBrandPanel> {
             controller: _controller,
             itemBuilder: (context, index) {
               final path = _images[index % _images.length];
-              return Image.asset(path, fit: BoxFit.cover);
+              return Image.asset(path, fit: BoxFit.cover, excludeFromSemantics: true);
             },
           ),
           DecoratedBox(
@@ -305,7 +306,7 @@ class _LoginForm extends StatelessWidget {
         Row(
           children: [
             Text('ยังไม่มีบัญชี? ', style: AppTypography.body(color: AppTheme.txtSecondary(context))),
-            GestureDetector(
+            TapTarget(
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
               child: Text('สมัครสมาชิก', style: AppTypography.bodyStrong(color: AppTheme.prim(context))),
             ),
@@ -330,26 +331,39 @@ class _LoginForm extends StatelessWidget {
         const SizedBox(height: AppSpacing.md),
         Row(
           children: [
-            SizedBox(
-              width: 22,
-              height: 22,
-              child: Checkbox(
-                value: rememberMe,
-                onChanged: (v) => onRememberChanged(v ?? true),
-                activeColor: AppTheme.prim(context),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+            // checkbox กับข้อความรวมเป็นตัวควบคุมเดียว: กดตรงไหนของแถวก็สลับได้ และ screen reader อ่านเป็น "จดจำฉันไว้, checkbox"
+            MergeSemantics(
+              child: InkWell(
+                onTap: () => onRememberChanged(!rememberMe),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: kMinInteractiveDimension),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: Checkbox(
+                          value: rememberMe,
+                          onChanged: (v) => onRememberChanged(v ?? true),
+                          activeColor: AppTheme.prim(context),
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text('จดจำฉันไว้', style: AppTypography.body(color: AppTheme.txtSecondary(context))),
+                      const SizedBox(width: AppSpacing.xs),
+                    ],
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            GestureDetector(
-              onTap: () => onRememberChanged(!rememberMe),
-              child: Text('จดจำฉันไว้', style: AppTypography.body(color: AppTheme.txtSecondary(context))),
             ),
             const Spacer(),
             TextButton(
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPasswordScreen())),
-              style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+              style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 4)),
               child: const Text('ลืมรหัสผ่าน?'),
             ),
           ],

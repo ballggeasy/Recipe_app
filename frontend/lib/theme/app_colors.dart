@@ -8,15 +8,15 @@ class AppColors {
   static const background = Color(0xFFFBF7F2);
   static const surface = Color(0xFFFFFFFF);
   static const surfaceMuted = Color(0xFFF4EEE6);
-  static const primary = Color(0xFFC4552D);
+  static const primary = Color(0xFFAD4722);
   static const primaryMuted = Color(0xFFF5E3D8);
   static const secondary = Color(0xFF2D6A6A);
   static const secondaryMuted = Color(0xFFDCEEEC);
   static const textPrimary = Color(0xFF2B211C);
-  static const textSecondary = Color(0xFF8C7F74);
+  static const textSecondary = Color(0xFF74685E);
   static const divider = Color(0xFFEFE6DB);
   static const success = Color(0xFF3F7D5C);
-  static const error = Color(0xFFC23B3B);
+  static const error = Color(0xFFB83535);
   static const errorMuted = Color(0xFFF7E3E1);
   static const star = Color(0xFFE0A33B);
 
@@ -35,4 +35,9 @@ class AppColors {
   static const errorDark = Color(0xFFE0897C);
   static const errorMutedDark = Color(0xFF3B2620);
   static const starDark = Color(0xFFE9BE6E);
+
+  // ---- สีข้อความ/ไอคอนบนพื้น primary, secondary, error ----
+  // โหมดสว่างพื้นเข้มจึงใช้ขาว ส่วนโหมดมืดพื้นเป็นโทนพาสเทล ขาวได้ contrast แค่ ~2.6:1 จึงต้องใช้สีเข้มแทน
+  static const onAccent = Color(0xFFFFFFFF);
+  static const onAccentDark = backgroundDark;
 }

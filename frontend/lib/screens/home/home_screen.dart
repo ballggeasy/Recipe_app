@@ -16,6 +16,7 @@ import '../../widgets/rating_display.dart';
 import '../../widgets/common/filter_chip_widget.dart';
 import '../../widgets/common/empty_state.dart';
 import '../../widgets/common/section_header.dart';
+import '../../widgets/common/tap_target.dart';
 import '../../widgets/search/search_bar_widget.dart';
 import '../profile/profile_screen.dart';
 import '../recipe/detail_screen.dart';
@@ -57,8 +58,8 @@ class HomeScreen extends StatelessWidget {
           MaterialPageRoute(builder: (_) => const AddRecipeScreen()),
         ),
         backgroundColor: AppTheme.prim(context),
-        icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: const Text('เพิ่มสูตร', style: TextStyle(color: Colors.white)),
+        icon: Icon(Icons.add_rounded, color: AppTheme.onAccent(context)),
+        label: Text('เพิ่มสูตร', style: TextStyle(color: AppTheme.onAccent(context))),
       ),
       body: SafeArea(
         bottom: false,
@@ -93,7 +94,8 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
-                    GestureDetector(
+                    TapTarget(
+                      label: 'โปรไฟล์',
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => const ProfileScreen()),
@@ -130,7 +132,7 @@ class HomeScreen extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.only(top: AppSpacing.lg),
                 child: SizedBox(
-                  height: 38,
+                  height: kMinInteractiveDimension,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -240,23 +242,26 @@ class _FilterButton extends StatelessWidget {
         provider.selectedCountry != 'ทั้งหมด' ||
         provider.sortOption != SortOption.ratingDesc;
 
-    return Material(
-      color: isActive ? AppTheme.prim(context) : AppTheme.surf(context),
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      child: InkWell(
-        onTap: onTap,
+    return Tooltip(
+      message: 'ตัวกรองเพิ่มเติม',
+      child: Material(
+        color: isActive ? AppTheme.prim(context) : AppTheme.surf(context),
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        child: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: isActive ? Colors.transparent : AppTheme.div(context)),
-          ),
-          child: Icon(
-            Icons.tune_rounded,
-            color: isActive ? Colors.white : AppTheme.txtSecondary(context),
-            size: 22,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: isActive ? Colors.transparent : AppTheme.div(context)),
+            ),
+            child: Icon(
+              Icons.tune_rounded,
+              color: isActive ? AppTheme.onAccent(context) : AppTheme.txtSecondary(context),
+              size: 22,
+            ),
           ),
         ),
       ),
@@ -271,7 +276,7 @@ class _QuickPicksRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 38,
+      height: kMinInteractiveDimension,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -351,10 +356,12 @@ class _FeaturedRecipeCard extends StatelessWidget {
               ),
             ),
             Positioned(
-              top: 10,
-              right: 10,
-              child: GestureDetector(
+              top: 4,
+              right: 4,
+              child: TapTarget(
                 onTap: () => provider.toggleFavorite(recipe.id),
+                label: isFav ? 'เอาออกจากสูตรโปรด' : 'บันทึกเป็นสูตรโปรด',
+                selected: isFav,
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(

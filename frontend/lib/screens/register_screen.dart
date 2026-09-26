@@ -8,6 +8,7 @@ import '../theme/app_typography.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/common/app_button.dart';
 import '../widgets/common/app_text_field.dart';
+import '../widgets/common/tap_target.dart';
 import 'login_screen.dart';
 import 'main/main_screen.dart';
 
@@ -185,7 +186,7 @@ class _RegisterForm extends StatelessWidget {
         Row(
           children: [
             Text('มีบัญชีอยู่แล้ว? ', style: AppTypography.body(color: AppTheme.txtSecondary(context))),
-            GestureDetector(
+            TapTarget(
               onTap: () => Navigator.pop(context),
               child: Text('เข้าสู่ระบบ', style: AppTypography.bodyStrong(color: AppTheme.prim(context))),
             ),
