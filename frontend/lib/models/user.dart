@@ -30,15 +30,12 @@ class AppUser {
   /// path ที่ backend ส่งมาเป็น relative (เช่น /uploads/avatars/xxx.jpg) ต้องต่อ baseUrl ก่อนใช้แสดงผล
   factory AppUser.fromApi(Map<String, dynamic> json) {
     final rawPath = json['profileImageUrl'] as String?;
-    final resolvedPath = (rawPath != null && rawPath.startsWith('/'))
-        ? '${ApiClient().baseUrl}$rawPath'
-        : rawPath;
 
     return AppUser(
       id: json['id'] as String,
       email: json['email'] as String,
       name: json['name'] as String,
-      profileImagePath: resolvedPath,
+      profileImagePath: rawPath == null ? null : ApiClient().resolveUrl(rawPath),
     );
   }
 }

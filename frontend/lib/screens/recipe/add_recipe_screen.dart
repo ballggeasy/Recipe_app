@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/ingredient.dart';
-import '../../theme/app_radius.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_typography.dart';
@@ -10,6 +10,7 @@ import '../../providers/recipe_provider.dart';
 import '../../utils/constants.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
+import '../../widgets/recipe_image_picker.dart';
 
 /// เพิ่มสูตรอาหารใหม่
 class AddRecipeScreen extends StatefulWidget {
@@ -35,6 +36,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   int _cookTime = 20;
   int _servings = 2;
   final List<String> _selectedDietTags = [];
+  XFile? _image;
 
   final List<_IngredientControllers> _ingredientControllers = [_IngredientControllers()];
 
@@ -63,7 +65,28 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
           children: [
             _FormSection(
               title: 'รูปภาพ',
-              children: [_ImagePickerPlaceholder(emojiController: _emojiController)],
+              children: [
+                RecipeImagePicker(onChanged: (file) => _image = file),
+                const SizedBox(height: AppSpacing.md),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'อีโมจิประจำเมนู (ใช้แทนรูปเมื่อไม่มีรูป)',
+                        style: AppTypography.body(color: AppTheme.txtSecondary(context)),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 80,
+                      child: TextField(
+                        controller: _emojiController,
+                        textAlign: TextAlign.center,
+                        decoration: const InputDecoration(isDense: true, hintText: '🍽️'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
             _FormSection(
               title: 'ข้อมูลพื้นฐาน',
@@ -178,7 +201,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
         .where((i) => i.name.trim().isNotEmpty)
         .toList();
 
-    final error = await provider.addRecipe(
+    final result = await provider.addRecipe(
       name: _nameController.text.trim(),
       emoji: _emojiController.text.trim().isEmpty ? '🍽️' : _emojiController.text.trim(),
       category: _category,
@@ -192,19 +215,28 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
       tips: _tipsController.text.trim().isEmpty ? null : _tipsController.text.trim(),
       platingTips: _platingController.text.trim().isEmpty ? null : _platingController.text.trim(),
       dietTags: _selectedDietTags,
+      image: _image,
     );
 
     if (!mounted) return;
     setState(() => _isSaving = false);
 
-    if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+    if (result.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.error!)));
       return;
     }
 
+    // สูตรถูกบันทึกแล้วแม้รูปจะอัปโหลดไม่ผ่าน จึงออกจากหน้านี้เสมอ (กันผู้ใช้กดบันทึกซ้ำจนได้สูตรซ้ำ)
+    final messenger = ScaffoldMessenger.of(context);
     Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('เพิ่มสูตรเรียบร้อย')),
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          result.imageError == null
+              ? 'เพิ่มสูตรเรียบร้อย'
+              : 'เพิ่มสูตรแล้ว แต่อัปโหลดรูปไม่สำเร็จ (${result.imageError}) — เพิ่มรูปได้ที่หน้าแก้ไขสูตร',
+        ),
+      ),
     );
   }
 }
@@ -226,43 +258,6 @@ class _FormSection extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           ...children,
         ],
-      ),
-    );
-  }
-}
-
-class _ImagePickerPlaceholder extends StatelessWidget {
-  final TextEditingController emojiController;
-  const _ImagePickerPlaceholder({required this.emojiController});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 160,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppTheme.primLight(context),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppTheme.div(context)),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.add_photo_alternate_outlined, size: 36, color: AppTheme.prim(context)),
-            const SizedBox(height: AppSpacing.sm),
-            Text('เพิ่มรูปภาพเมนู (placeholder)', style: AppTypography.body(color: AppTheme.txtSecondary(context))),
-            const SizedBox(height: AppSpacing.sm),
-            SizedBox(
-              width: 80,
-              child: TextField(
-                controller: emojiController,
-                textAlign: TextAlign.center,
-                decoration: const InputDecoration(isDense: true, hintText: '🍽️'),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

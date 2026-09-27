@@ -1,7 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:recipe_app/models/ingredient.dart';
 import 'package:recipe_app/providers/recipe_provider.dart';
+import 'package:recipe_app/services/api_client.dart';
 import 'package:recipe_app/services/favorite_service.dart';
 import 'package:recipe_app/services/recipe_service.dart';
 import 'package:recipe_app/utils/constants.dart';
@@ -44,6 +48,21 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     log = [];
   });
+
+  Future<({String? error, String? imageError})> addFriedRice(RecipeProvider provider, {XFile? image}) =>
+      provider.addRecipe(
+        name: 'ข้าวผัด',
+        emoji: '🍚',
+        category: 'อาหารจานเดียว',
+        country: 'ไทย',
+        prepTime: 5,
+        cookTime: 10,
+        difficulty: 'ง่าย',
+        servings: 1,
+        steps: const ['ผัด'],
+        items: const [IngredientItem(name: 'ข้าว', amount: '1', unit: 'จาน')],
+        image: image,
+      );
 
   group('init', () {
     test('loads the catalog and builds category/country lists', () async {
@@ -207,21 +226,59 @@ void main() {
       });
       await provider.init();
 
-      final error = await provider.addRecipe(
-        name: 'ข้าวผัด',
-        emoji: '🍚',
-        category: 'อาหารจานเดียว',
-        country: 'ไทย',
-        prepTime: 5,
-        cookTime: 10,
-        difficulty: 'ง่าย',
-        servings: 1,
-        steps: const ['ผัด'],
-        items: const [IngredientItem(name: 'ข้าว', amount: '1', unit: 'จาน')],
-      );
+      final result = await addFriedRice(provider);
+
+      expect(result.error, isNull);
+      expect(result.imageError, isNull);
+      expect(provider.allRecipes.first.id, 'new');
+    });
+
+    test('addRecipe uploads the picked image as multipart and stores the resolved URL', () async {
+      final provider = buildProvider(extra: {
+        'POST /recipes': (_) => jsonResponse(recipeJson(id: 'new', name: 'ข้าวผัด', isOfficial: false), 201),
+        'POST /recipes/new/image': (_) => jsonResponse(
+              {...recipeJson(id: 'new', name: 'ข้าวผัด'), 'imageUrl': '/uploads/recipes/new-1.png'},
+              201,
+            ),
+      });
+      await provider.init();
+
+      final result = await addFriedRice(provider, image: XFile.fromData(Uint8List.fromList([1, 2, 3]), name: 'dish.png', path: 'dish.png'));
+
+      expect(result, (error: null, imageError: null));
+      final upload = log.singleWhere((r) => r.url.path == '/recipes/new/image');
+      expect(upload.headers['content-type'], startsWith('multipart/form-data'));
+      expect(upload.body, contains('filename="dish.png"'));
+      expect(upload.body, contains('content-type: image/png'),
+          reason: 'web pickers often omit mimeType, so it is guessed from the file name');
+      expect(provider.allRecipes.first.imageUrl, '${ApiClient().baseUrl}/uploads/recipes/new-1.png');
+    });
+
+    test('addRecipe keeps the recipe when only the image upload fails', () async {
+      final provider = buildProvider(extra: {
+        'POST /recipes': (_) => jsonResponse(recipeJson(id: 'new', name: 'ข้าวผัด', isOfficial: false), 201),
+        'POST /recipes/new/image': (_) => jsonResponse({'message': 'ไฟล์ต้องเป็นรูปภาพ'}, 400),
+      });
+      await provider.init();
+
+      final result = await addFriedRice(provider, image: XFile.fromData(Uint8List.fromList([1]), name: 'dish.jpg', path: 'dish.jpg'));
+
+      expect(result.error, isNull, reason: 'the recipe itself was saved');
+      expect(result.imageError, 'ไฟล์ต้องเป็นรูปภาพ');
+      expect(provider.getById('new'), isNotNull);
+    });
+
+    test('updateRecipeImage swaps in the updated recipe', () async {
+      final provider = buildProvider(extra: {
+        'POST /recipes/krapao/image': (_) =>
+            jsonResponse({...recipeJson(id: 'krapao'), 'imageUrl': '/uploads/recipes/krapao-2.jpg'}, 201),
+      });
+      await provider.init();
+
+      final error = await provider.updateRecipeImage('krapao', XFile.fromData(Uint8List.fromList([1]), name: 'a.jpg', path: 'a.jpg'));
 
       expect(error, isNull);
-      expect(provider.allRecipes.first.id, 'new');
+      expect(provider.getById('krapao')!.imageUrl, endsWith('/uploads/recipes/krapao-2.jpg'));
     });
 
     test('addRecipe returns the backend error and changes nothing', () async {
@@ -230,20 +287,11 @@ void main() {
       });
       await provider.init();
 
-      final error = await provider.addRecipe(
-        name: 'x',
-        emoji: 'x',
-        category: 'x',
-        country: 'x',
-        prepTime: 0,
-        cookTime: 0,
-        difficulty: 'ง่าย',
-        servings: 1,
-        steps: const [],
-        items: const [],
-      );
+      final result = await addFriedRice(provider, image: XFile.fromData(Uint8List.fromList([1]), name: 'a.jpg', path: 'a.jpg'));
 
-      expect(error, 'Unauthorized');
+      expect(result.error, 'Unauthorized');
+      expect(log.where((r) => r.url.path.endsWith('/image')), isEmpty,
+          reason: 'no image upload when the recipe was not created');
       expect(provider.allRecipes, hasLength(3));
     });
 

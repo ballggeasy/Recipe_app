@@ -6,6 +6,11 @@ import { Recipe } from '../src/recipes/recipe.entity';
 import { RecipesService } from '../src/recipes/recipes.service';
 import { User } from '../src/users/user.entity';
 
+const mockRemoveUploadedFile = jest.fn(async (_url: string) => undefined);
+jest.mock('../src/common/image-upload', () => ({
+  removeUploadedFile: (url: string) => mockRemoveUploadedFile(url),
+}));
+
 const owner = { id: 'owner-1', name: 'Owner' } as User;
 const stranger = { id: 'stranger-1', name: 'Stranger' } as User;
 
@@ -31,6 +36,7 @@ describe('RecipesService', () => {
   };
 
   beforeEach(async () => {
+    mockRemoveUploadedFile.mockClear();
     repo = {
       find: jest.fn(),
       findOne: jest.fn(),
@@ -118,6 +124,71 @@ describe('RecipesService', () => {
     it('treats official seed recipes (no uploader) as not deletable', async () => {
       repo.findOne.mockResolvedValue({ id: 'seed-1', uploaderId: null } as Recipe);
       await expect(service.remove('seed-1', owner)).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('deletes image files uploaded for the recipe, but not external URLs', async () => {
+      repo.findOne.mockResolvedValue({
+        id: 'recipe-1',
+        uploaderId: owner.id,
+        imageUrl: '/uploads/recipes/recipe-1-100.jpg',
+        imageUrls: ['/uploads/recipes/recipe-1-100.jpg', 'https://example.com/a.jpg'],
+      } as Recipe);
+
+      await service.remove('recipe-1', owner);
+
+      expect(mockRemoveUploadedFile).toHaveBeenCalledTimes(1);
+      expect(mockRemoveUploadedFile).toHaveBeenCalledWith('/uploads/recipes/recipe-1-100.jpg');
+    });
+  });
+
+  describe('setImage', () => {
+    const newUrl = '/uploads/recipes/recipe-1-200.png';
+
+    it("sets the owner's recipe image and deletes the image it replaces", async () => {
+      repo.findOne.mockResolvedValue({
+        id: 'recipe-1',
+        uploaderId: owner.id,
+        imageUrl: '/uploads/recipes/recipe-1-100.jpg',
+        imageUrls: ['/uploads/recipes/recipe-1-100.jpg'],
+      } as Recipe);
+
+      const saved = await service.setImage('recipe-1', newUrl, owner);
+
+      expect(saved.imageUrl).toBe(newUrl);
+      expect(saved.imageUrls).toEqual([newUrl]);
+      expect(mockRemoveUploadedFile).toHaveBeenCalledWith('/uploads/recipes/recipe-1-100.jpg');
+      expect(mockRemoveUploadedFile).not.toHaveBeenCalledWith(newUrl);
+    });
+
+    it('never deletes files that were not uploaded for this recipe', async () => {
+      repo.findOne.mockResolvedValue({
+        id: 'recipe-1',
+        uploaderId: owner.id,
+        // e.g. a path pointing at another recipe's upload, set through the create/update DTO
+        imageUrl: '/uploads/recipes/recipe-2-100.jpg',
+        imageUrls: [],
+      } as unknown as Recipe);
+
+      await service.setImage('recipe-1', newUrl, owner);
+
+      expect(mockRemoveUploadedFile).not.toHaveBeenCalled();
+    });
+
+    it('rejects non-owners and deletes the file they just uploaded', async () => {
+      repo.findOne.mockResolvedValue({ id: 'recipe-1', uploaderId: owner.id, imageUrl: '', imageUrls: [] } as unknown as Recipe);
+
+      await expect(service.setImage('recipe-1', newUrl, stranger)).rejects.toBeInstanceOf(ForbiddenException);
+
+      expect(repo.save).not.toHaveBeenCalled();
+      expect(mockRemoveUploadedFile).toHaveBeenCalledWith(newUrl);
+    });
+
+    it('deletes the uploaded file when the recipe does not exist', async () => {
+      repo.findOne.mockResolvedValue(null);
+
+      await expect(service.setImage('missing', newUrl, owner)).rejects.toBeInstanceOf(NotFoundException);
+
+      expect(mockRemoveUploadedFile).toHaveBeenCalledWith(newUrl);
     });
   });
 });

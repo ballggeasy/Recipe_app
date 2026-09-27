@@ -1,8 +1,7 @@
 import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import { unlink } from 'fs/promises';
-import { join } from 'path';
+import { removeUploadedFile } from '../common/image-upload';
 import { User } from '../users/user.entity';
 import { UsersService } from '../users/users.service';
 
@@ -106,7 +105,7 @@ export class AuthService {
     const saved = await this.usersService.save(user);
 
     if (previous && previous.startsWith('/uploads/')) {
-      unlink(join(process.cwd(), previous)).catch(() => undefined);
+      void removeUploadedFile(previous);
     }
 
     return toSafeUser(saved);

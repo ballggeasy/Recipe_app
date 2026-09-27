@@ -1,3 +1,5 @@
+import 'package:image_picker/image_picker.dart';
+
 import '../models/ingredient.dart';
 import '../models/nutrition.dart';
 import '../models/recipe.dart';
@@ -60,4 +62,16 @@ class RecipeService {
   }
 
   Future<void> delete(String id) => _api.delete('/recipes/$id');
+
+  /// อัปโหลดรูปเมนูให้สูตรที่ตัวเองเป็นเจ้าของ — backend แทนที่รูปเดิมและคืนสูตรที่อัปเดตแล้ว
+  Future<Recipe> uploadImage(String id, XFile file) async {
+    final data = await _api.uploadFile(
+      '/recipes/$id/image',
+      fieldName: 'file',
+      bytes: await file.readAsBytes(),
+      filename: file.name,
+      contentType: file.mimeType,
+    ) as Map<String, dynamic>;
+    return Recipe.fromApi(data);
+  }
 }

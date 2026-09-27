@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/recipe.dart';
@@ -307,8 +308,12 @@ class RecipeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// เพิ่มสูตรใหม่ผ่าน backend — คืน error message ถ้าไม่สำเร็จ
-  Future<String?> addRecipe({
+  /// เพิ่มสูตรใหม่ผ่าน backend แล้วอัปโหลด [image] ให้สูตรนั้น (ถ้ามี)
+  ///
+  /// - `error` ไม่เป็น null: สร้างสูตรไม่สำเร็จ ไม่มีอะไรถูกบันทึก
+  /// - `imageError` ไม่เป็น null: สูตรถูกบันทึกแล้วแต่อัปโหลดรูปไม่สำเร็จ — ห้ามให้ผู้ใช้กดบันทึกซ้ำ
+  ///   (จะได้สูตรซ้ำ) ให้ไปเพิ่มรูปทีหลังที่หน้าแก้ไขแทน
+  Future<({String? error, String? imageError})> addRecipe({
     required String name,
     required String emoji,
     required String category,
@@ -323,9 +328,11 @@ class RecipeProvider extends ChangeNotifier {
     String? platingTips,
     List<String> dietTags = const [],
     NutritionInfo? nutrition,
+    XFile? image,
   }) async {
+    final Recipe recipe;
     try {
-      final recipe = await _recipeService.create(
+      recipe = await _recipeService.create(
         name: name,
         emoji: emoji,
         category: category,
@@ -342,8 +349,26 @@ class RecipeProvider extends ChangeNotifier {
         dietTags: dietTags,
         nutrition: nutrition,
       );
-      _allRecipes.insert(0, recipe);
-      notifyListeners();
+    } on ApiException catch (e) {
+      return (error: e.message, imageError: null);
+    }
+
+    _allRecipes.insert(0, recipe);
+    notifyListeners();
+
+    if (image == null) return (error: null, imageError: null);
+    return (error: null, imageError: await updateRecipeImage(recipe.id, image));
+  }
+
+  /// อัปโหลดรูปเมนูใหม่แทนรูปเดิม (เฉพาะสูตรที่ตัวเองอัปโหลด) — คืน error message ถ้าไม่สำเร็จ
+  Future<String?> updateRecipeImage(String id, XFile image) async {
+    try {
+      final updated = await _recipeService.uploadImage(id, image);
+      final index = _allRecipes.indexWhere((r) => r.id == id);
+      if (index != -1) {
+        _allRecipes[index] = updated;
+        notifyListeners();
+      }
       return null;
     } on ApiException catch (e) {
       return e.message;
