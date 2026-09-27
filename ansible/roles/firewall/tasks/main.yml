@@ -1,0 +1,22 @@
+# Host firewall. SSH is allowed before enabling so the play cannot lock itself out.
+- name: Install ufw
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+
+- name: Allow SSH
+  community.general.ufw:
+    rule: allow
+    name: OpenSSH
+
+- name: Allow app ports
+  community.general.ufw:
+    rule: allow
+    port: "{{ item | string }}"
+    proto: tcp
+  loop: "{{ ufw_open_ports }}"
+
+- name: Enable ufw
+  community.general.ufw:
+    state: enabled
+    policy: deny

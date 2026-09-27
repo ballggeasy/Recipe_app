@@ -1,0 +1,17 @@
+# Directory on the VM that holds the secret env file and the repo checkout.
+app_dir: /opt/recipe-backend
+app_env_file: "{{ app_dir }}/.env"
+
+# Pull-based deploy: the VM polls GHCR for the image CI publishes from main.
+# Nothing in GitHub can push to or run code on the VM.
+deploy_user: recipe-deploy
+deploy_repo_url: https://github.com/ballggeasy/Recipe_app.git
+deploy_repo_dir: "{{ app_dir }}/repo"
+backend_image: ghcr.io/ballggeasy/recipe-backend:latest
+deploy_interval: 2min
+
+# Optional host firewall (ufw). The network firewall in front of the VM is separate.
+manage_ufw: false
+ufw_open_ports:
+  - 3000  # backend API
+  - 3001  # Grafana

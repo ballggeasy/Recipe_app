@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Check GHCR for a new recipe backend image every {{ deploy_interval }}
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec={{ deploy_interval }}
+
+[Install]
+WantedBy=timers.target

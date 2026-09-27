@@ -1,0 +1,58 @@
+# Secret env file read by docker compose on the VM.
+# Secrets are generated on first run and never overwritten, so tokens and logins stay valid.
+- name: Create deploy user with Docker access
+  ansible.builtin.user:
+    name: "{{ deploy_user }}"
+    system: true
+    shell: /usr/sbin/nologin
+    create_home: true
+    groups: docker
+    append: true
+
+- name: Create app directory
+  ansible.builtin.file:
+    path: "{{ app_dir }}"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0750"
+
+- name: Create env file if missing
+  ansible.builtin.copy:
+    content: ""
+    dest: "{{ app_env_file }}"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0600"
+    force: false
+
+# copy with force: false skips existing files entirely, so enforce ownership separately
+# (e.g. a file created by hand with sudo is root-owned and unreadable for the deploy user).
+- name: Enforce env file ownership and mode
+  ansible.builtin.file:
+    path: "{{ app_env_file }}"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0600"
+
+- name: Read current env file
+  ansible.builtin.slurp:
+    src: "{{ app_env_file }}"
+  register: app_env_file_content
+  no_log: true
+
+- name: Add missing settings
+  ansible.builtin.lineinfile:
+    path: "{{ app_env_file }}"
+    line: "{{ item.key }}={{ item.value }}"
+  loop:
+    - key: JWT_SECRET
+      value: "{{ lookup('ansible.builtin.password', '/dev/null', length=64, chars=['ascii_letters', 'digits']) }}"
+    - key: JWT_EXPIRES_IN
+      value: 7d
+    - key: GRAFANA_ADMIN_PASSWORD
+      value: "{{ lookup('ansible.builtin.password', '/dev/null', length=24, chars=['ascii_letters', 'digits']) }}"
+  when: not (app_env_file_content.content | b64decode is search('^' ~ item.key ~ '=', multiline=True))
+  loop_control:
+    label: "{{ item.key }}"
+  no_log: true

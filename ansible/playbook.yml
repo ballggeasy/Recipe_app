@@ -1,0 +1,17 @@
+# Prepares the VM to run the backend and keep it updated from GHCR.
+#
+#   ansible-playbook playbook.yml -K
+- name: Prepare recipe backend VM
+  hosts: recipe_vm
+  become: true
+  pre_tasks:
+    - name: Only Debian/Ubuntu hosts are supported
+      ansible.builtin.assert:
+        that: ansible_facts['os_family'] == 'Debian'
+        fail_msg: "Unsupported OS family: {{ ansible_facts['os_family'] }}"
+  roles:
+    - docker
+    - app_env
+    - deploy_agent
+    - role: firewall
+      when: manage_ufw | bool
