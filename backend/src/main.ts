@@ -6,6 +6,10 @@ import { AppModule } from './app.module';
 import { uploadsRoot } from './common/image-upload';
 
 async function bootstrap() {
+  // Without this, tokens would be signed with the public fallback secret in auth.module.ts.
+  if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET must be set when NODE_ENV=production');
+  }
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.enableCors();
   app.useStaticAssets(uploadsRoot(), { prefix: '/uploads/' });

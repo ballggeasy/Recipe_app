@@ -60,3 +60,17 @@ npm run test:e2e  # e2e test บน SQLite in-memory (test/*.e2e-spec.ts)
 ```
 
 CI รันสองอย่างนี้บน GitHub Actions ทุก push/PR — ดู `.github/workflows/`.
+
+## Deploy backend (Docker)
+
+Backend มี `Dockerfile` และ `docker-compose.yml` อยู่ใน `backend/` — เครื่องที่จะ deploy ต้องมีแค่ Docker
+
+```bash
+cd backend
+JWT_SECRET=$(openssl rand -hex 32) docker compose up -d --build
+curl http://localhost:3000/health   # {"status":"ok"}
+```
+
+- ฐานข้อมูล SQLite และรูปที่อัปโหลดเก็บใน Docker volume (`backend-data`, `backend-uploads`) ไม่หายตอน restart/อัปเดต image
+- container จะไม่ยอมสตาร์ทถ้าไม่ได้ตั้ง `JWT_SECRET` (`NODE_ENV=production`)
+- ทุก push เข้า `main` GitHub Actions จะ build แล้ว push image ไปที่ `ghcr.io/ballggeasy/recipe_app-backend` (tag `latest` และ `sha-<commit>`) — บนเซิร์ฟเวอร์ใช้ `docker compose pull && docker compose up -d` ได้เลยโดยไม่ต้อง build เอง (ถ้า package เป็น private ต้อง `docker login ghcr.io` ก่อน)

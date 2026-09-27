@@ -44,6 +44,10 @@ describe('Recipe API (e2e)', () => {
     return { token: res.body.accessToken, id: res.body.user.id };
   }
 
+  it('GET /health reports ok', async () => {
+    await http().get('/health').expect(200, { status: 'ok' });
+  });
+
   describe('auth', () => {
     it('registers, logs in and returns the current user', async () => {
       const { id } = await registerUser('alice@example.com');

@@ -1,0 +1,19 @@
+# Run the backend with its SQLite DB and uploads kept in named volumes.
+#   JWT_SECRET=$(openssl rand -hex 32) docker compose up -d --build
+services:
+  backend:
+    build: .
+    image: ghcr.io/ballggeasy/recipe_app-backend:latest
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+    volumes:
+      - backend-data:/app/data
+      - backend-uploads:/app/uploads
+
+volumes:
+  backend-data:
+  backend-uploads:
