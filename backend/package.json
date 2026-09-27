@@ -13,11 +13,22 @@
   },
   "jest": {
     "rootDir": ".",
-    "roots": ["<rootDir>/test"],
+    "roots": [
+      "<rootDir>/test"
+    ],
     "testRegex": "\\.spec\\.ts$",
-    "moduleFileExtensions": ["js", "json", "ts"],
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
     "transform": {
-      "^.+\\.ts$": ["ts-jest", { "tsconfig": "<rootDir>/tsconfig.spec.json" }]
+      "^.+\\.ts$": [
+        "ts-jest",
+        {
+          "tsconfig": "<rootDir>/tsconfig.spec.json"
+        }
+      ]
     },
     "testEnvironment": "node"
   },
@@ -36,6 +47,7 @@
     "multer": "^1.4.5-lts.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "prom-client": "^15.1.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "sqlite3": "^5.1.7",

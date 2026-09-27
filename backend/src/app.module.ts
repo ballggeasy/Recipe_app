@@ -16,6 +16,7 @@ import { Comment } from './comments/comment.entity';
 import { MealPlanModule } from './meal-plan/meal-plan.module';
 import { MealPlanEntry } from './meal-plan/meal-plan-entry.entity';
 import { SeedModule } from './seed/seed.module';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { SeedModule } from './seed/seed.module';
     CommentsModule,
     MealPlanModule,
     SeedModule,
+    MetricsModule,
   ],
 })
 export class AppModule {}
