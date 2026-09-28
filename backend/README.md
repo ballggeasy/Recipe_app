@@ -93,13 +93,14 @@ Server default: `http://localhost:3000`, DB: SQLite ไฟล์ที่ `./dat
 
 ## Deploy (Docker บน VM)
 
-แบบ **pull-based** — GitHub ไม่มีสิทธิ์เข้าหรือสั่งอะไรบน VM เลย (repo เป็น public จึงไม่ใช้ self-hosted runner):
+แบบ **pull-based + webhook** — GitHub ทำได้แค่ขอให้ VM deploy ผ่าน webhook ที่มีลายเซ็น ไม่มีสิทธิ์รันคำสั่งบน VM (repo เป็น public จึงไม่ใช้ self-hosted runner):
 
 1. push เข้า `main` → CI (`.github/workflows/backend.yml`) รัน build + test บน runner ของ GitHub
 2. ผ่านแล้ว job `publish` build image, smoke test (`/recipes`, `/metrics`) แล้ว push ขึ้น `ghcr.io/ballggeasy/recipe-backend` (tag `latest` + `sha-<commit>`)
-3. บน VM มี systemd timer `recipe-deploy.timer` ทุก 2 นาที รัน `/usr/local/bin/recipe-deploy`:
+3. ขั้นสุดท้ายของ job `publish` ยิง `POST` ที่มีลายเซ็น HMAC-SHA256 ไปที่ webhook บน VM (ผ่าน Tailscale Funnel) → hook แตะไฟล์ `/opt/recipe-backend/.deploy-request` → `recipe-deploy.path` สั่ง `recipe-deploy.service` รัน `/usr/local/bin/recipe-deploy` ทันที:
    pull image → checkout commit เดียวกับ image (label `org.opencontainers.image.revision`) เพื่อใช้ compose/monitoring config ที่ตรงกัน → `docker compose up -d` → reload Prometheus → smoke test `GET /recipes`
    ถ้า smoke test ไม่ผ่านจะไม่บันทึกว่า deploy แล้ว และลองใหม่รอบถัดไป (ไม่มี auto-rollback — แก้โดย push commit ที่แก้แล้ว)
+4. ถ้าเรียก webhook ไม่สำเร็จ (VM ปิด, tunnel ล่ม, ยังไม่ตั้ง secret) CI ไม่ fail — systemd timer `recipe-deploy.timer` บน VM เช็ก GHCR ทุก 1 ชั่วโมงเป็น fallback
 
 ตั้งค่า VM ด้วย Ansible playbook ใน [`../ansible`](../ansible/README.md) (Docker, deploy user, env file ที่มี secret สุ่ม, timer).
 
@@ -109,6 +110,7 @@ Server default: `http://localhost:3000`, DB: SQLite ไฟล์ที่ `./dat
 
 ```bash
 systemctl list-timers recipe-deploy.timer
+systemctl status recipe-webhook.service recipe-deploy.path
 journalctl -u recipe-deploy.service -n 50
 cat /opt/recipe-backend/.deployed-revision
 ```

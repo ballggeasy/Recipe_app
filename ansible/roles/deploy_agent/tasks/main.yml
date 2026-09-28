@@ -1,6 +1,6 @@
-# Pull-based deploy agent: a systemd timer that pulls the backend image from GHCR.
-# Replaces a self-hosted GitHub runner, so pull requests on the public repo can
-# never run code on the VM.
+# Pull-based deploy agent: pulls the backend image from GHCR when CI calls the webhook
+# (deploy_webhook role) and on a fallback timer. Replaces a self-hosted GitHub runner,
+# so pull requests on the public repo can never run code on the VM.
 - name: Install git
   ansible.builtin.apt:
     name: git

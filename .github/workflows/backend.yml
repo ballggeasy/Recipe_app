@@ -39,8 +39,8 @@ jobs:
     needs: build
     # Only publish from main, never from pull requests.
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    # GitHub-hosted runner: nothing in CI can reach the VM. The VM pulls this
-    # image itself (see ansible/roles/deploy_agent).
+    # GitHub-hosted runner: CI can only ask the VM to deploy (last step); the VM
+    # pulls this image itself (see ansible/roles/deploy_agent and deploy_webhook).
     runs-on: ubuntu-latest
     # One publish at a time, in push order, so :latest always ends on the newest commit.
     concurrency:
@@ -96,3 +96,22 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
+      # The request carries no image or command: the VM's hook only starts its own
+      # deploy script, which pulls :latest from GHCR. A missed call is picked up by
+      # the VM's fallback timer, so this step never fails the job.
+      - name: Ask the VM to deploy
+        env:
+          DEPLOY_WEBHOOK_URL: ${{ secrets.DEPLOY_WEBHOOK_URL }}
+          DEPLOY_WEBHOOK_SECRET: ${{ secrets.DEPLOY_WEBHOOK_SECRET }}
+        run: |
+          if [ -z "$DEPLOY_WEBHOOK_URL" ] || [ -z "$DEPLOY_WEBHOOK_SECRET" ]; then
+            echo "::notice::Deploy webhook secrets are not set; the VM deploys on its next timer run."
+            exit 0
+          fi
+          body=$(jq -cn --arg revision "$GITHUB_SHA" '{revision: $revision}')
+          signature=$(printf '%s' "$body" | openssl dgst -sha256 -hmac "$DEPLOY_WEBHOOK_SECRET" -r | cut -d' ' -f1)
+          if ! curl -fsS --retry 3 --retry-all-errors --max-time 20 -X POST \
+              -H 'Content-Type: application/json' -H "X-Signature: $signature" \
+              --data "$body" "$DEPLOY_WEBHOOK_URL"; then
+            echo "::warning::Could not reach the deploy webhook; the VM deploys on its next timer run."
+          fi
