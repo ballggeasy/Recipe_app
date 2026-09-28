@@ -17,6 +17,7 @@ import { MealPlanModule } from './meal-plan/meal-plan.module';
 import { MealPlanEntry } from './meal-plan/meal-plan-entry.entity';
 import { SeedModule } from './seed/seed.module';
 import { MetricsModule } from './metrics/metrics.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { MetricsModule } from './metrics/metrics.module';
     MealPlanModule,
     SeedModule,
     MetricsModule,
+    HealthModule,
   ],
 })
 export class AppModule {}

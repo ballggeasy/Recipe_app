@@ -16,6 +16,9 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist
+# Commit SHA from CI, reported by GET /health
+ARG REVISION=dev
+ENV APP_REVISION=$REVISION
 # Pre-create writable dirs so named volumes inherit node ownership on first mount
 RUN mkdir -p data uploads/avatars && chown -R node:node data uploads
 USER node

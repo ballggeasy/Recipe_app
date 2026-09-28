@@ -170,6 +170,13 @@ describe('Recipe API (e2e)', () => {
     });
   });
 
+  describe('health', () => {
+    it('reports ok and the running revision', async () => {
+      const res = await http().get('/health').expect(200);
+      expect(res.body).toEqual({ status: 'ok', revision: process.env.APP_REVISION || 'dev' });
+    });
+  });
+
   describe('recipe images', () => {
     // Multer only checks the declared MIME type, so any bytes work as a stand-in image.
     const png = Buffer.from('fake-png-bytes');
