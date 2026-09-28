@@ -26,7 +26,7 @@ Playbook นี้ตั้งค่า VM (Ubuntu/Debian) ให้รัน ba
 cd ansible
 cp inventory.ini.example inventory.ini        # แก้ ansible_user
 ansible-galaxy collection install -r requirements.yml
-ssh <user>@172.30.58.15 exit                  # ครั้งแรก: ยอมรับ host key
+ssh <user>@172.30.58.24 exit                  # ครั้งแรก: ยอมรับ host key
 ansible-playbook playbook.yml -K -e tailscale_authkey=tskey-auth-...   # ครั้งแรก; -K ถามรหัส sudo
 ansible-playbook playbook.yml -K              # ครั้งต่อไป (VM ล็อกอิน Tailscale แล้ว)
 ```
