@@ -1,0 +1,68 @@
+services:
+  backend:
+    build: .
+    # The VM sets BACKEND_IMAGE to the GHCR image published by CI; locally it builds.
+    image: ${BACKEND_IMAGE:-recipe-backend:latest}
+    restart: unless-stopped
+    # Secrets (JWT_SECRET, ...) live only on the host. Deploy sets BACKEND_ENV_FILE
+    # to a path outside the checkout; locally it falls back to ./.env.
+    env_file:
+      - ${BACKEND_ENV_FILE:-.env}
+    environment:
+      PORT: 3000
+      DB_PATH: /app/data/app.sqlite
+    ports:
+      - "${HOST_PORT:-3000}:3000"
+    volumes:
+      - data:/app/data
+      - uploads:/app/uploads
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+    # Not exposed to the network; reach it through Grafana or an SSH tunnel.
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      # Mount directories, not single files, so config edits from a new checkout are picked up.
+      - ./monitoring/prometheus:/etc/prometheus:ro
+      - prometheus-data:/prometheus
+    depends_on:
+      - backend
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in the env file}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+  # Host metrics (CPU, RAM, disk) of the VM itself. Linux hosts only.
+  node-exporter:
+    image: prom/node-exporter:v1.9.1
+    restart: unless-stopped
+    command:
+      - --path.rootfs=/host
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+
+volumes:
+  data:
+  uploads:
+  prometheus-data:
+  grafana-data:

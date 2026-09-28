@@ -1,0 +1,46 @@
+# Pull-based deploy agent: a systemd timer that pulls the backend image from GHCR.
+# Replaces a self-hosted GitHub runner, so pull requests on the public repo can
+# never run code on the VM.
+- name: Install git
+  ansible.builtin.apt:
+    name: git
+    state: present
+
+- name: Clone repository (compose and monitoring config)
+  ansible.builtin.git:
+    repo: "{{ deploy_repo_url }}"
+    dest: "{{ deploy_repo_dir }}"
+    version: main
+    # The deploy script checks out the exact commit of each image afterwards.
+    update: false
+  become: true
+  become_user: "{{ deploy_user }}"
+
+- name: Install deploy script
+  ansible.builtin.template:
+    src: recipe-deploy.sh.j2
+    dest: /usr/local/bin/recipe-deploy
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install systemd units
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - recipe-deploy.service
+    - recipe-deploy.timer
+  notify: Reload systemd
+
+- name: Apply systemd changes before starting the timer
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable and start deploy timer
+  ansible.builtin.systemd_service:
+    name: recipe-deploy.timer
+    state: started
+    enabled: true

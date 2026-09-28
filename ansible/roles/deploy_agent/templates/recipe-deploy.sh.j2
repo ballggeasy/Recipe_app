@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# {{ ansible_managed }}
+#
+# Pull-based deploy, run by recipe-deploy.timer as {{ deploy_user }}:
+#   1. pull the image CI published from main (only built after tests pass)
+#   2. check out the commit that image was built from (compose + monitoring config)
+#   3. docker compose up, reload Prometheus, smoke test
+# A revision is recorded as deployed only after the smoke test passes, so a failed
+# deploy is retried on the next tick.
+set -euo pipefail
+
+IMAGE="{{ backend_image }}"
+REPO_DIR="{{ deploy_repo_dir }}"
+ENV_FILE="{{ app_env_file }}"
+STATE_FILE="{{ app_dir }}/.deployed-revision"
+PROJECT=recipe-backend
+
+export BACKEND_IMAGE="$IMAGE" BACKEND_ENV_FILE="$ENV_FILE"
+compose() {
+  docker compose -p "$PROJECT" --env-file "$ENV_FILE" -f "$REPO_DIR/backend/docker-compose.yml" "$@"
+}
+
+docker pull --quiet "$IMAGE" > /dev/null
+{% raw %}
+REVISION=$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$IMAGE")
+{% endraw %}
+if [[ -z "$REVISION" ]]; then
+  echo "Image $IMAGE has no org.opencontainers.image.revision label" >&2
+  exit 1
+fi
+
+if [[ "$(cat "$STATE_FILE" 2> /dev/null || true)" == "$REVISION" ]]; then
+  exit 0
+fi
+
+echo "Deploying $REVISION"
+git -C "$REPO_DIR" fetch --quiet origin
+git -C "$REPO_DIR" checkout --quiet --force --detach "$REVISION"
+
+compose up -d --no-build --remove-orphans --quiet-pull
+compose kill -s SIGHUP prometheus > /dev/null
+
+port=$(grep -E '^HOST_PORT=' "$ENV_FILE" | cut -d= -f2 || true)
+for _ in $(seq 1 30); do
+  if curl -fsS "http://localhost:${port:-3000}/recipes" > /dev/null; then
+    echo "$REVISION" > "$STATE_FILE"
+    docker image prune -f > /dev/null
+    echo "Deployed $REVISION"
+    exit 0
+  fi
+  sleep 2
+done
+
+compose logs --tail=100 backend >&2
+echo "Deploy of $REVISION failed the smoke test; will retry" >&2
+exit 1

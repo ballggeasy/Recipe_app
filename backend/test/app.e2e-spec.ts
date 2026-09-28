@@ -157,6 +157,19 @@ describe('Recipe API (e2e)', () => {
     });
   });
 
+  describe('metrics', () => {
+    it('exposes Prometheus metrics labelled by route pattern', async () => {
+      const list = await http().get('/recipes').expect(200);
+      await http().get(`/recipes/${list.body[0].id}`).expect(200);
+
+      const res = await http().get('/metrics').expect(200);
+      expect(res.headers['content-type']).toContain('text/plain');
+      expect(res.text).toContain('process_cpu_seconds_total');
+      expect(res.text).toMatch(/http_requests_total\{method="GET",route="\/recipes\/:id",status="200"\} \d+/);
+      expect(res.text).not.toContain('route="/metrics"');
+    });
+  });
+
   describe('recipe images', () => {
     // Multer only checks the declared MIME type, so any bytes work as a stand-in image.
     const png = Buffer.from('fake-png-bytes');
