@@ -22,16 +22,6 @@ import '../recipe/detail_screen.dart';
 class AdvancedSearchScreen extends StatelessWidget {
   const AdvancedSearchScreen({super.key});
 
-  SortOption _sortFromKey(String key) => switch (key) {
-        'name_asc' => SortOption.nameAsc,
-        'name_desc' => SortOption.nameDesc,
-        'rating_desc' => SortOption.ratingDesc,
-        'time_asc' => SortOption.timeAsc,
-        'time_desc' => SortOption.timeDesc,
-        'newest' => SortOption.newest,
-        _ => SortOption.popular,
-      };
-
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<RecipeProvider>();
@@ -124,7 +114,7 @@ class AdvancedSearchScreen extends StatelessWidget {
               spacing: AppSpacing.sm,
               runSpacing: AppSpacing.sm,
               children: AppConstants.sortOptions.map((o) {
-                final opt = _sortFromKey(o.$1);
+                final opt = o.$1;
                 return FilterChipWidget(
                   label: o.$2,
                   isSelected: provider.sortOption == opt,

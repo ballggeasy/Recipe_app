@@ -6,13 +6,17 @@ import { unlink } from 'fs/promises';
 import { diskStorage } from 'multer';
 import { join, resolve, sep } from 'path';
 
-/** Only raster formats we can safely serve back as static files (no SVG: it can carry script). */
-const EXTENSION_BY_MIME: Record<string, string> = {
-  'image/jpeg': '.jpg',
-  'image/png': '.png',
-  'image/webp': '.webp',
-  'image/gif': '.gif',
-};
+/**
+ * Only raster formats we can safely serve back as static files (no SVG: it can carry script).
+ * A Map, not an object literal: `obj['constructor']` would find Object.prototype and let a
+ * client-chosen MIME type like `constructor` through the filter.
+ */
+const EXTENSION_BY_MIME = new Map<string, string>([
+  ['image/jpeg', '.jpg'],
+  ['image/png', '.png'],
+  ['image/webp', '.webp'],
+  ['image/gif', '.gif'],
+]);
 
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
@@ -38,11 +42,11 @@ export function imageUploadOptions(subdir: string, filePrefix: (req: Request) =>
       filename: (req, file, cb) => {
         // The prefix may come from a URL param, so strip anything that could form a path.
         const prefix = filePrefix(req).replace(/[^a-zA-Z0-9-]/g, '') || 'file';
-        cb(null, `${prefix}-${Date.now()}${EXTENSION_BY_MIME[file.mimetype]}`);
+        cb(null, `${prefix}-${Date.now()}${EXTENSION_BY_MIME.get(file.mimetype)}`);
       },
     }),
     fileFilter: (_req, file, cb) => {
-      if (!EXTENSION_BY_MIME[file.mimetype]) {
+      if (!EXTENSION_BY_MIME.has(file.mimetype)) {
         cb(new BadRequestException('ไฟล์ต้องเป็นรูปภาพ (JPG, PNG, WebP หรือ GIF) เท่านั้น'), false);
         return;
       }

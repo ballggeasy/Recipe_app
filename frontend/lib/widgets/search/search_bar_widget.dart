@@ -7,7 +7,7 @@ import '../../theme/app_shadows.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_typography.dart';
 
-class SearchBarWidget extends StatelessWidget {
+class SearchBarWidget extends StatefulWidget {
   final String hint;
   final bool showHistory;
   final VoidCallback? onSubmitted;
@@ -18,6 +18,30 @@ class SearchBarWidget extends StatelessWidget {
     this.showHistory = false,
     this.onSubmitted,
   });
+
+  @override
+  State<SearchBarWidget> createState() => _SearchBarWidgetState();
+}
+
+class _SearchBarWidgetState extends State<SearchBarWidget> {
+  // controller ของช่องค้นหาเป็นของ Autocomplete — เก็บไว้เพื่อ sync กับ provider.searchQuery
+  // ซึ่งถูกเปลี่ยนจากที่อื่นได้ (ชิปประวัติ, ล้างตัวกรอง, ช่องค้นหาอีกแท็บ)
+  TextEditingController? _fieldController;
+
+  void _syncFieldWith(String query) {
+    final controller = _fieldController;
+    if (controller == null || controller.text == query) return;
+    // ตั้งค่าหลังเฟรม เพราะการแก้ controller ระหว่าง build จะไปกระตุ้น Autocomplete ให้ rebuild ซ้อน
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final latest = context.read<RecipeProvider>().searchQuery;
+      if (controller.text == latest) return;
+      controller.value = TextEditingValue(
+        text: latest,
+        selection: TextSelection.collapsed(offset: latest.length),
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,26 +58,26 @@ class SearchBarWidget extends StatelessWidget {
             boxShadow: AppShadows.softFor(context),
           ),
           child: Autocomplete<String>(
-            optionsBuilder: (textEditingValue) {
-              provider.updateSearchQuery(textEditingValue.text);
-              return provider.getAutocompleteSuggestions(textEditingValue.text);
-            },
+            // ห้ามแก้ state ในนี้ — ถูกเรียกทุกครั้งที่ข้อความเปลี่ยน รวมถึงตอน sync จาก provider
+            optionsBuilder: (textEditingValue) => provider.getAutocompleteSuggestions(textEditingValue.text),
             onSelected: (selection) {
               provider.updateSearchQuery(selection);
               provider.addToSearchHistory(selection);
             },
             fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+              _fieldController = controller;
+              _syncFieldWith(provider.searchQuery);
               return TextField(
                 controller: controller,
                 focusNode: focusNode,
                 onChanged: provider.updateSearchQuery,
                 onSubmitted: (value) {
                   provider.addToSearchHistory(value);
-                  onSubmitted?.call();
+                  widget.onSubmitted?.call();
                 },
                 style: AppTypography.body(color: AppTheme.txtPrimary(context)),
                 decoration: InputDecoration(
-                  hintText: hint,
+                  hintText: widget.hint,
                   hintStyle: AppTypography.body(color: AppTheme.txtSecondary(context)),
                   prefixIcon: Icon(Icons.search_rounded, color: AppTheme.txtSecondary(context), size: 22),
                   suffixIcon: provider.searchQuery.isNotEmpty
@@ -73,7 +97,7 @@ class SearchBarWidget extends StatelessWidget {
             },
           ),
         ),
-        if (showHistory && provider.searchHistory.isNotEmpty) ...[
+        if (widget.showHistory && provider.searchHistory.isNotEmpty) ...[
           const SizedBox(height: 10),
           Wrap(
             spacing: 8,

@@ -14,6 +14,8 @@ class FavoriteProvider extends ChangeNotifier {
 
   List<FavoriteFolder> _folders = [];
   bool _isLoading = false;
+  // เพิ่มทุกครั้งที่ onAuthChanged ถูกเรียก — ใช้ทิ้งผลของ request ที่ยิงตอนสถานะล็อกอินก่อนหน้า
+  int _authGeneration = 0;
 
   List<FavoriteFolder> get folders => List.unmodifiable(_folders);
   bool get isLoading => _isLoading;
@@ -37,30 +39,37 @@ class FavoriteProvider extends ChangeNotifier {
 
   /// เรียกทุกครั้งที่สถานะล็อกอินเปลี่ยน
   Future<void> onAuthChanged(bool isLoggedIn) async {
+    final generation = ++_authGeneration;
     if (!isLoggedIn) {
       _folders = [];
+      _isLoading = false;
       notifyListeners();
       return;
     }
 
     _isLoading = true;
     notifyListeners();
+    List<FavoriteFolder> folders;
     try {
-      _folders = await _favoriteService.listFolders();
+      folders = await _favoriteService.listFolders();
     } on ApiException {
-      _folders = [];
+      folders = [];
     }
+    if (generation != _authGeneration) return; // logout/เปลี่ยนบัญชีระหว่างรอ — ผลนี้เป็นของคนก่อน
+    _folders = folders;
     _isLoading = false;
     notifyListeners();
   }
 
-  Future<void> createFolder(String name, {String emoji = '📁'}) async {
+  /// คืน error message ถ้าสร้างไม่สำเร็จ ไม่งั้นคืน null
+  Future<String?> createFolder(String name, {String emoji = '📁'}) async {
     try {
       final folder = await _favoriteService.createFolder(name, emoji: emoji);
       _folders.add(folder);
       notifyListeners();
-    } on ApiException {
-      // ไม่สามารถสร้างโฟลเดอร์ได้ — เงียบไว้ ผู้ใช้ลองใหม่ได้
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
     }
   }
 

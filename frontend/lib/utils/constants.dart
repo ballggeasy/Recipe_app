@@ -18,13 +18,13 @@ class AppConstants {
   static const seasons = ['ตลอดปี', 'ฤดูร้อน', 'ฤดูหนาว', 'ฤดูฝน'];
 
   static const sortOptions = [
-    ('name_asc', 'ชื่อ A-Z'),
-    ('name_desc', 'ชื่อ Z-A'),
-    ('rating_desc', 'คะแนนสูงสุด'),
-    ('time_asc', 'เวลาน้อยสุด'),
-    ('time_desc', 'เวลามากสุด'),
-    ('newest', 'ล่าสุด'),
-    ('popular', 'ยอดนิยม'),
+    (SortOption.nameAsc, 'ชื่อ A-Z'),
+    (SortOption.nameDesc, 'ชื่อ Z-A'),
+    (SortOption.ratingDesc, 'คะแนนสูงสุด'),
+    (SortOption.timeAsc, 'เวลาน้อยสุด'),
+    (SortOption.timeDesc, 'เวลามากสุด'),
+    (SortOption.newest, 'ล่าสุด'),
+    (SortOption.popular, 'ยอดนิยม'),
   ];
 
   static const homeSections = [

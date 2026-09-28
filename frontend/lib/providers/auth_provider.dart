@@ -83,12 +83,12 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<String?> resetPassword({required String email, required String newPassword}) {
-    return _authService.resetPassword(email: email, newPassword: newPassword);
+  Future<String?> requestPasswordReset(String email) {
+    return _authService.requestPasswordReset(email);
   }
 
-  Future<bool> checkUserExists(String email) {
-    return _authService.checkUserExists(email);
+  Future<String?> resetPassword({required String email, required String code, required String newPassword}) {
+    return _authService.resetPassword(email: email, code: code, newPassword: newPassword);
   }
 
   Future<String?> changePassword({

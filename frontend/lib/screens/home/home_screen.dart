@@ -15,12 +15,13 @@ import '../../widgets/recipe_image.dart';
 import '../../widgets/rating_display.dart';
 import '../../widgets/common/filter_chip_widget.dart';
 import '../../widgets/common/empty_state.dart';
+import '../../widgets/common/login_required.dart';
 import '../../widgets/common/section_header.dart';
 import '../../widgets/common/tap_target.dart';
 import '../../widgets/search/search_bar_widget.dart';
 import '../profile/profile_screen.dart';
 import '../recipe/detail_screen.dart';
-import '../recipe/add_recipe_screen.dart';
+import '../recipe/recipe_form_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -53,10 +54,11 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'home_add_recipe_fab',
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const AddRecipeScreen()),
-        ),
+        // เพิ่มสูตรได้เฉพาะบัญชีที่ล็อกอิน (backend ก็ตอบ 401) — ผู้เยี่ยมชมได้ข้อความพร้อมปุ่มไปเข้าสู่ระบบ
+        onPressed: () {
+          if (!ensureLoggedIn(context, action: 'เพิ่มสูตรอาหาร')) return;
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const RecipeFormScreen()));
+        },
         backgroundColor: AppTheme.prim(context),
         icon: Icon(Icons.add_rounded, color: AppTheme.onAccent(context)),
         label: Text('เพิ่มสูตร', style: TextStyle(color: AppTheme.onAccent(context))),
@@ -453,16 +455,6 @@ class _FilterSheet extends StatelessWidget {
     (SourceFilter.user, 'ผู้ใช้', Icons.person_rounded),
   ];
 
-  SortOption _sortFromKey(String key) => switch (key) {
-        'name_asc' => SortOption.nameAsc,
-        'name_desc' => SortOption.nameDesc,
-        'rating_desc' => SortOption.ratingDesc,
-        'time_asc' => SortOption.timeAsc,
-        'time_desc' => SortOption.timeDesc,
-        'newest' => SortOption.newest,
-        _ => SortOption.popular,
-      };
-
   String _countryFlag(String country) => switch (country) {
         'ไทย' => '🇹🇭',
         'อิตาลี' => '🇮🇹',
@@ -571,7 +563,7 @@ class _FilterSheet extends StatelessWidget {
                       spacing: AppSpacing.sm,
                       runSpacing: AppSpacing.sm,
                       children: AppConstants.sortOptions.map((o) {
-                        final opt = _sortFromKey(o.$1);
+                        final opt = o.$1;
                         return FilterChipWidget(
                           label: o.$2,
                           isSelected: provider.sortOption == opt,

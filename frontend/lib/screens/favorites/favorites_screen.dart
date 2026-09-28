@@ -14,6 +14,7 @@ import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
 import '../../widgets/recipe_card.dart';
 import '../../widgets/common/empty_state.dart';
+import '../../widgets/common/login_required.dart';
 import '../recipe/detail_screen.dart';
 
 /// ระบบ Favorite — บันทึกสูตรโปรด, โฟลเดอร์, แชร์, ดาวน์โหลด
@@ -101,7 +102,9 @@ class _FoldersTab extends StatelessWidget {
         AppButton.outline(
           label: 'สร้างโฟลเดอร์ใหม่',
           icon: Icons.create_new_folder_outlined,
-          onPressed: () => _createFolder(context),
+          onPressed: () {
+            if (ensureLoggedIn(context, action: 'สร้างโฟลเดอร์')) _createFolder(context);
+          },
           fullWidth: true,
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -199,11 +202,14 @@ class _FoldersTab extends StatelessWidget {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('ยกเลิก')),
           TextButton(
-            onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
-                context.read<FavoriteProvider>().createFolder(controller.text.trim());
-              }
+            onPressed: () async {
+              final name = controller.text.trim();
+              final folders = context.read<FavoriteProvider>();
               Navigator.pop(ctx);
+              if (name.isEmpty) return;
+              final error = await folders.createFolder(name);
+              if (!context.mounted) return;
+              showErrorIfAny(context, error);
             },
             child: const Text('สร้าง'),
           ),

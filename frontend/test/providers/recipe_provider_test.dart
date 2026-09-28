@@ -1,7 +1,10 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:recipe_app/models/ingredient.dart';
 import 'package:recipe_app/providers/recipe_provider.dart';
@@ -153,6 +156,23 @@ void main() {
     });
   });
 
+  test('random mode keeps the same pick across rebuilds until it is chosen again', () async {
+    // มากกว่า 6 สูตรที่โหมดสุ่มหยิบมา ไม่งั้นทุกสูตรถูกเลือกเสมอ
+    final many = [for (var i = 0; i < 12; i++) recipeJson(id: 'r$i', name: 'สูตร $i', rating: i / 3)];
+    final provider = buildProvider(extra: {'GET /recipes': (_) => jsonResponse(many)});
+    await provider.init();
+    List<String> ids() => provider.filteredRecipes.map((r) => r.id).toList();
+
+    provider.updateListMode(RecipeListMode.random);
+    final first = ids();
+    expect(first, hasLength(6));
+
+    provider.toggleFavorite('r0'); // ทำให้ทุกหน้าที่ watch อยู่ rebuild แล้วเรียก filteredRecipes ใหม่
+    for (var i = 0; i < 5; i++) {
+      expect(ids(), first);
+    }
+  });
+
   group('favorites', () {
     test('guests toggle favorites locally without calling the API', () async {
       final provider = buildProvider();
@@ -180,6 +200,25 @@ void main() {
 
       expect(provider.isFavorite('krapao'), isTrue);
       expect(log.any((r) => r.method == 'POST' && r.url.path == '/favorites/krapao'), isTrue);
+    });
+
+    test('ignores a favorites response that arrives after the user logged out', () async {
+      final favoritesReply = Completer<http.Response>();
+      final api = ApiClient.forTesting(MockClient((req) async {
+        if (req.url.path == '/recipes') return jsonResponse(_catalog);
+        if (req.url.path == '/favorites') return favoritesReply.future;
+        return jsonResponse({'message': 'no route'}, 404);
+      }));
+      final provider = RecipeProvider(recipeService: RecipeService(api: api), favoriteService: FavoriteService(api: api));
+      await provider.init();
+
+      final loginSync = provider.onAuthChanged(true);
+      await provider.onAuthChanged(false); // logout ก่อนรายการของคนเดิมมาถึง
+      favoritesReply.complete(jsonResponse(['tomyum']));
+      await loginSync;
+
+      expect(provider.isFavorite('tomyum'), isFalse);
+      expect(provider.favoriteRecipes, isEmpty);
     });
 
     test('rolls the toggle back when the backend rejects it', () async {
@@ -318,6 +357,25 @@ void main() {
 
       expect(error, isNull);
       expect(provider.getById('krapao')!.name, 'กะเพราไก่');
+    });
+
+    test('updateRecipe never sends the display image URL back to the backend', () async {
+      Map<String, dynamic>? patched;
+      final provider = buildProvider(extra: {
+        'PATCH /recipes/krapao': (req) {
+          patched = jsonDecode(req.body) as Map<String, dynamic>;
+          return jsonResponse(recipeJson(id: 'krapao', name: 'ใหม่'));
+        },
+      });
+      await provider.init();
+
+      // imageUrl ในแอปเป็น URL เต็ม (ต่อ baseUrl แล้ว) — ถ้าส่งกลับไปจะถูกเก็บผิดรูปแบบใน DB
+      final original = provider.getById('krapao')!.copyWith(imageUrl: 'http://localhost:3000/uploads/recipes/krapao-1.png');
+      await provider.updateRecipe(original.copyWith(name: 'ใหม่'));
+
+      expect(patched!['name'], 'ใหม่');
+      expect(patched!.containsKey('imageUrl'), isFalse);
+      expect(patched!.containsKey('imageUrls'), isFalse);
     });
   });
 }

@@ -1,18 +1,23 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { JwtStrategy } from './jwt.strategy';
+import { JwtStrategy, jwtSecret } from './jwt.strategy';
 
 @Module({
   imports: [
     UsersModule,
     PassportModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET ?? 'change-this-secret-in-production',
-      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN ?? '7d' },
+    // registerAsync ให้อ่านค่าหลัง ConfigModule โหลด .env แล้ว — register() ธรรมดาจะอ่าน process.env ตอน import ไฟล์นี้ ซึ่งเกิดก่อน
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: jwtSecret(config),
+        signOptions: { expiresIn: config.get<string>('JWT_EXPIRES_IN') ?? '7d' },
+      }),
     }),
   ],
   controllers: [AuthController],

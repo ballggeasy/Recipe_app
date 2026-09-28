@@ -33,7 +33,8 @@ export class CommentsService {
 
   async create(recipeId: string, dto: CreateCommentDto, user: User): Promise<Comment> {
     if (dto.parentId) {
-      const parent = await this.commentsRepository.findOne({ where: { id: dto.parentId } });
+      // parent ต้องอยู่สูตรเดียวกัน ไม่งั้น reply จะไม่ขึ้นในต้นไม้ของสูตรไหนเลยและลบตามไม่ได้
+      const parent = await this.commentsRepository.findOne({ where: { id: dto.parentId, recipeId } });
       if (!parent) {
         throw new NotFoundException('ไม่พบคอมเมนต์ต้นทาง');
       }

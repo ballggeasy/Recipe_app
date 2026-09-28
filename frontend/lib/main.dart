@@ -40,6 +40,8 @@ class RecipeApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeProvider.themeMode,
+            // _AuthSync อยู่เหนือ Navigator จึงยังทำงานแม้หน้าจอ login/logout จะแทนที่ route ของ _AuthGate ไปแล้ว
+            builder: (context, child) => _AuthSync(child: child!),
             home: const _AuthGate(),
           );
         },
@@ -48,27 +50,33 @@ class RecipeApp extends StatelessWidget {
   }
 }
 
-class _AuthGate extends StatefulWidget {
-  const _AuthGate();
+/// โหลด/ล้างข้อมูลของ provider ที่ผูกกับผู้ใช้ทุกครั้งที่สถานะล็อกอินเปลี่ยน (รวมถึง logout แล้ว login เป็นอีกคน)
+class _AuthSync extends StatefulWidget {
+  final Widget child;
+  const _AuthSync({required this.child});
 
   @override
-  State<_AuthGate> createState() => _AuthGateState();
+  State<_AuthSync> createState() => _AuthSyncState();
 }
 
-class _AuthGateState extends State<_AuthGate> {
+class _AuthSyncState extends State<_AuthSync> {
   String? _lastSyncedKey = 'unset';
 
   void _syncOnAuthChange(AuthProvider auth) {
-    String? key;
-    bool isLoggedIn;
-    if (auth.status == AuthStatus.loggedIn) {
-      key = auth.currentUser?.id;
-      isLoggedIn = true;
-    } else if (auth.status == AuthStatus.guest) {
-      key = 'guest';
-      isLoggedIn = false;
-    } else {
-      return;
+    final String? key;
+    final bool isLoggedIn;
+    switch (auth.status) {
+      case AuthStatus.unknown:
+        return;
+      case AuthStatus.loggedIn:
+        key = auth.currentUser?.id;
+        isLoggedIn = true;
+      case AuthStatus.guest:
+        key = 'guest';
+        isLoggedIn = false;
+      case AuthStatus.loggedOut:
+        key = 'loggedOut';
+        isLoggedIn = false;
     }
 
     if (key == _lastSyncedKey) return;
@@ -84,8 +92,17 @@ class _AuthGateState extends State<_AuthGate> {
 
   @override
   Widget build(BuildContext context) {
+    _syncOnAuthChange(context.watch<AuthProvider>());
+    return widget.child;
+  }
+}
+
+class _AuthGate extends StatelessWidget {
+  const _AuthGate();
+
+  @override
+  Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    _syncOnAuthChange(auth);
 
     if (auth.status == AuthStatus.unknown) {
       return Scaffold(

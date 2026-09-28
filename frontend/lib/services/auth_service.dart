@@ -65,6 +65,8 @@ class AuthService {
   }
 
   /// เรียกตอนเปิดแอป เพื่อดูว่ามี session ค้างอยู่ไหม (auto-login) — ยืนยันกับ backend เสมอ
+  /// ลบ token ทิ้งเฉพาะเมื่อ backend ปฏิเสธ (401) — ถ้าแค่ต่อ server ไม่ได้ ให้จำไว้ลองใหม่ตอนเปิดแอปครั้งหน้า
+  /// แต่ไม่ใช้ใน session นี้ ไม่งั้นโหมดผู้เยี่ยมชมจะยิง request ในนามบัญชีที่จำไว้
   Future<AppUser?> restoreSession() async {
     final hasToken = await _api.loadToken();
     if (!hasToken) return null;
@@ -72,30 +74,41 @@ class AuthService {
     try {
       final data = await _api.get('/auth/me') as Map<String, dynamic>;
       return AppUser.fromApi(data);
-    } on ApiException {
-      await logout();
+    } on ApiException catch (e) {
+      if (e.statusCode == 401) {
+        await logout();
+      } else {
+        _api.forgetTokenForSession();
+      }
       return null;
     }
   }
 
-  Future<bool> checkUserExists(String email) async {
-    final normalizedEmail = email.trim().toLowerCase();
-    final data =
-        await _api.get('/auth/exists/${Uri.encodeComponent(normalizedEmail)}', auth: false)
-            as Map<String, dynamic>;
-    return data['exists'] == true;
+  /// ขอรหัสยืนยัน 6 หลักสำหรับหน้า "ลืมรหัสผ่าน" — ยังไม่มีระบบส่งอีเมล backend จึงเขียนรหัสลง log ของ server
+  Future<String?> requestPasswordReset(String email) async {
+    try {
+      await _api.post(
+        '/auth/forgot-password',
+        auth: false,
+        body: {'email': email.trim().toLowerCase()},
+      );
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
+    }
   }
 
-  /// ใช้สำหรับหน้า "ลืมรหัสผ่าน" — ตั้งรหัสผ่านใหม่ตรง ๆ ผ่าน backend (ไม่มีระบบส่งอีเมลยืนยัน)
+  /// ตั้งรหัสผ่านใหม่ด้วยรหัสยืนยันที่ได้จาก [requestPasswordReset]
   Future<String?> resetPassword({
     required String email,
+    required String code,
     required String newPassword,
   }) async {
     try {
       await _api.post(
         '/auth/reset-password',
         auth: false,
-        body: {'email': email.trim().toLowerCase(), 'newPassword': newPassword},
+        body: {'email': email.trim().toLowerCase(), 'code': code.trim(), 'newPassword': newPassword},
       );
       return null;
     } on ApiException catch (e) {
