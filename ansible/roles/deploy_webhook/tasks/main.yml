@@ -1,0 +1,68 @@
+# Push-style deploy trigger: after CI publishes an image it POSTs a signed request to a
+# webhook on the VM, reached through Tailscale Funnel (the VM sits on a private network).
+# The request can only ask for a deploy: the hook touches a file, a systemd path unit
+# starts recipe-deploy.service, and the VM still pulls the image from GHCR itself.
+- name: Install webhook listener
+  ansible.builtin.apt:
+    name: webhook
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+# Generated once and never overwritten, so the DEPLOY_WEBHOOK_SECRET stored in GitHub stays valid.
+- name: Create webhook secret if missing
+  ansible.builtin.copy:
+    content: "DEPLOY_WEBHOOK_SECRET={{ lookup('ansible.builtin.password', '/dev/null', length=64, chars=['ascii_letters', 'digits']) }}\n"
+    dest: "{{ deploy_webhook_env_file }}"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0600"
+    force: false
+  no_log: true
+
+- name: Create hooks directory
+  ansible.builtin.file:
+    path: /etc/recipe-webhook
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# Holds no secret: webhook reads it from the environment when it renders the file (-template).
+- name: Install hook definition
+  ansible.builtin.template:
+    src: hooks.json.j2
+    dest: /etc/recipe-webhook/hooks.json
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart recipe webhook
+
+- name: Install systemd units
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - recipe-webhook.service
+    - recipe-deploy.path
+  notify:
+    - Reload systemd for webhook
+    - Restart recipe webhook
+
+- name: Apply systemd changes before starting the units
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable and start webhook listener and deploy path unit
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  loop:
+    - recipe-webhook.service
+    - recipe-deploy.path
+
+- name: Expose the webhook through Tailscale Funnel
+  ansible.builtin.import_tasks: tailscale.yml

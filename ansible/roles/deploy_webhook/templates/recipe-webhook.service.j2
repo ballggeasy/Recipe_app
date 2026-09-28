@@ -1,0 +1,20 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Webhook that lets CI request a recipe backend deploy
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User={{ deploy_user }}
+EnvironmentFile={{ deploy_webhook_env_file }}
+# Localhost only; Tailscale Funnel is the one way in from outside.
+ExecStart=/usr/bin/webhook -hooks /etc/recipe-webhook/hooks.json -template -ip 127.0.0.1 -port {{ deploy_webhook_port }}
+Restart=on-failure
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths={{ app_dir }}
+
+[Install]
+WantedBy=multi-user.target

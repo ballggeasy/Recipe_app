@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Deploy the recipe backend when CI requests it through the webhook
+
+[Path]
+PathChanged={{ deploy_request_file }}
+Unit=recipe-deploy.service
+
+[Install]
+WantedBy=paths.target

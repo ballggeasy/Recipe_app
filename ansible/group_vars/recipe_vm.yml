@@ -2,13 +2,22 @@
 app_dir: /opt/recipe-backend
 app_env_file: "{{ app_dir }}/.env"
 
-# Pull-based deploy: the VM polls GHCR for the image CI publishes from main.
-# Nothing in GitHub can push to or run code on the VM.
+# The VM always pulls the image CI publishes from main itself; nothing in GitHub can
+# run code on the VM. CI only asks for a deploy through a signed webhook call.
 deploy_user: recipe-deploy
 deploy_repo_url: https://github.com/ballggeasy/Recipe_app.git
 deploy_repo_dir: "{{ app_dir }}/repo"
 backend_image: ghcr.io/ballggeasy/recipe-backend:latest
-deploy_interval: 2min
+# Fallback poll, for a webhook call that never arrived (VM offline, tunnel down).
+deploy_interval: 1h
+
+# Webhook CI calls after publishing an image, exposed through Tailscale Funnel.
+# First run needs -e tailscale_authkey=tskey-auth-... (never commit the key).
+manage_deploy_webhook: true
+deploy_webhook_port: 9000
+deploy_webhook_env_file: "{{ app_dir }}/webhook.env"
+deploy_request_file: "{{ app_dir }}/.deploy-request"
+tailscale_hostname: recipe-vm
 
 # Optional host firewall (ufw). The network firewall in front of the VM is separate.
 manage_ufw: false

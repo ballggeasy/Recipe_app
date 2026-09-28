@@ -13,5 +13,7 @@
     - docker
     - app_env
     - deploy_agent
+    - role: deploy_webhook
+      when: manage_deploy_webhook | bool
     - role: firewall
       when: manage_ufw | bool

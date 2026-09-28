@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # {{ ansible_managed }}
 #
-# Pull-based deploy, run by recipe-deploy.timer as {{ deploy_user }}:
+# Pull-based deploy, run as {{ deploy_user }} by recipe-deploy.path (CI called the
+# webhook) or recipe-deploy.timer (fallback):
 #   1. pull the image CI published from main (only built after tests pass)
 #   2. check out the commit that image was built from (compose + monitoring config)
 #   3. docker compose up, reload Prometheus, smoke test

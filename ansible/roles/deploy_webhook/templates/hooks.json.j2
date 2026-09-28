@@ -1,0 +1,21 @@
+[
+  {
+    "id": "recipe-deploy",
+    "execute-command": "/usr/bin/touch",
+    "pass-arguments-to-command": [
+      { "source": "string", "name": "{{ deploy_request_file }}" }
+    ],
+    "http-methods": ["POST"],
+    "response-message": "Deploy requested\n",
+    "trigger-rule-mismatch-http-response-code": 403,
+    "trigger-rule": {
+      "match": {
+        "type": "payload-hmac-sha256",
+{% raw %}
+        "secret": "{{ getenv "DEPLOY_WEBHOOK_SECRET" | js }}",
+{% endraw %}
+        "parameter": { "source": "header", "name": "X-Signature" }
+      }
+    }
+  }
+]

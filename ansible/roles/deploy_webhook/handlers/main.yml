@@ -1,0 +1,8 @@
+- name: Reload systemd for webhook
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
+- name: Restart recipe webhook
+  ansible.builtin.systemd_service:
+    name: recipe-webhook.service
+    state: restarted
