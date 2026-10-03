@@ -14,7 +14,7 @@
 
 ### 1. Backend (NestJS)
 
-ต้องมี [Node.js](https://nodejs.org/) (แนะนำ v18+)
+ต้องมี [Node.js](https://nodejs.org/) (v20.17 ขึ้นไป แนะนำ v22)
 
 ```bash
 cd backend
