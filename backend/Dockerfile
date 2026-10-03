@@ -23,4 +23,7 @@ ENV APP_REVISION=$REVISION
 RUN mkdir -p data uploads/avatars && chown -R node:node data uploads
 USER node
 EXPOSE 3000
+# Readiness probe for `docker ps` and orchestrators: unhealthy when the app or its database stops
+# answering. Uses Node itself because the slim image has no curl.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD ["node", "-e", "fetch('http://127.0.0.1:' + (process.env.PORT || 3000) + '/health/ready').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
 CMD ["node", "dist/main.js"]
