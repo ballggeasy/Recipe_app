@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
 export interface IngredientItem {
   name: string;
@@ -15,6 +15,8 @@ export interface NutritionInfo {
   sodium: number;
 }
 
+@Index('IDX_recipes_created', ['createdAt'])
+@Index('IDX_recipes_uploader', ['uploaderId'])
 @Entity('recipes')
 export class Recipe {
   @PrimaryGeneratedColumn('uuid')

@@ -1,5 +1,6 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
+@Index('IDX_favorite_folders_user', ['userId'])
 @Entity('favorite_folders')
 export class FavoriteFolder {
   @PrimaryGeneratedColumn('uuid')

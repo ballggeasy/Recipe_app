@@ -7,11 +7,12 @@ import { Recipe } from '../recipes/recipe.entity';
 import { Review, ReviewReply } from '../reviews/review.entity';
 import { User } from '../users/user.entity';
 import { InitialSchema1790985600000 } from './migrations/1790985600000-InitialSchema';
+import { AddLookupIndexes1790985700000 } from './migrations/1790985700000-AddLookupIndexes';
 
 export const entities = [User, Recipe, Favorite, FavoriteFolder, Review, ReviewReply, Comment, MealPlanEntry];
 
 /** Listed explicitly (not globbed) so ts-node, ts-jest and the compiled dist/ all load the same set, in order. */
-export const migrations = [InitialSchema1790985600000];
+export const migrations = [InitialSchema1790985600000, AddLookupIndexes1790985700000];
 
 /**
  * The schema is owned by migrations: they run on boot and `synchronize` stays off, so a changed

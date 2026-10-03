@@ -48,6 +48,25 @@ describe('database migrations', () => {
     expect(pending.upQueries.map((q) => q.query)).toEqual([]);
   });
 
+  it('give the hot lookups an index instead of a full table scan', async () => {
+    const ds = await open({ ...databaseOptions(), database: ':memory:' });
+    const plan = async (sql: string) =>
+      (await ds.query(`EXPLAIN QUERY PLAN ${sql}`)).map((row: { detail: string }) => row.detail).join(' | ');
+
+    expect(await plan(`SELECT * FROM reviews WHERE recipeId = 'r' ORDER BY createdAt DESC`)).toContain(
+      'IDX_reviews_recipe_created',
+    );
+    expect(await plan(`SELECT * FROM comments WHERE recipeId = 'r' ORDER BY createdAt ASC`)).toContain(
+      'IDX_comments_recipe_created',
+    );
+    expect(await plan(`SELECT * FROM review_replies WHERE reviewId = 'x'`)).toContain('IDX_review_replies_review');
+    expect(await plan(`SELECT * FROM meal_plan_entries WHERE userId = 'u' ORDER BY date ASC`)).toContain(
+      'IDX_meal_plan_user_date',
+    );
+    expect(await plan(`SELECT * FROM favorite_folders WHERE userId = 'u'`)).toContain('IDX_favorite_folders_user');
+    expect(await plan(`SELECT * FROM recipes ORDER BY createdAt DESC`)).toContain('IDX_recipes_created');
+  });
+
   it('leave a database created by the old `synchronize` untouched and keep its data', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'recipe-migrations-'));
     const file = join(dir, 'legacy.sqlite');
