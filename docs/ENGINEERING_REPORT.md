@@ -14,7 +14,7 @@ The app was already tidy (thin controllers, tests, a working pull-based deploy).
 
 All of these are fixed or consciously handled (below). Tests went from 126 to 190, lint/format/audit/Docker/compile checks were added to CI, and operations are documented.
 
-**What still needs a human** (not fakeable from a repo): a real password-reset email flow needs SMTP credentials; the first push is the first real CI run; one rollback rehearsal on the VM; a release keystore for Android; a database backup routine. See [Remaining Technical Debt](#remaining-technical-debt).
+**What still needs a human** (not fakeable from a repo): a real password-reset email flow needs SMTP credentials; one rollback rehearsal on the VM; a release keystore for Android; a database backup routine. See [Remaining Technical Debt](#remaining-technical-debt).
 
 **Behaviour changes to know before deploying**
 - "Forgot password" no longer works for users (it was the vulnerability). The screen shows "reset is not enabled, contact the admin".
@@ -91,7 +91,7 @@ README refresh (config, `--dart-define`, lint/format, docs index, Windows path c
 - **Architect**: layering is consistent and unchanged; new cross-cutting code is in one place (`app.setup.ts`, `common/`). `reviews.service` touches the `Recipe` entity directly for the transaction: acceptable, flagged here.
 - **Backend**: errors, validation, ownership and transactions are uniform; two known weak spots (like toggle race, no pagination) are documented.
 - **Flutter**: error and session handling are now explicit; many screens still swallow API errors silently (e.g. reviews, comments) and show nothing to the user. Worth a pass, and a prerequisite for a "one review per user" rule.
-- **DevOps**: pipeline is complete on paper and each command was run locally; **the first push is the first true run** and may need small fixes (APK build, Docker steps). Rollback is stub-tested only.
+- **DevOps**: the pipeline is green on PR #48. Its first run **caught a real bug the local checks could not**: the sqlite3 6 prebuilt binary needs glibc >= 2.38 and the old `node:22-bookworm-slim` image has 2.36, so the container could not open its database. Fixed by moving to `node:22-trixie-slim`; the smoke test now checks that the native module loads. Rollback is stub-tested only.
 - **Security**: highest-impact holes closed; open items listed with owners' decisions needed (SMTP, `/metrics` exposure).
 - **QA**: critical flows and authorization are covered; no browser/device integration tests exist (not added: they would need an emulator or browser in CI).
 - **New developer**: can run, test, configure, deploy and roll back from README + docs; the Thai-path analyzer problem is called out.
@@ -125,8 +125,8 @@ README refresh (config, `--dart-define`, lint/format, docs index, Windows path c
 - [PASS] Schema under migrations, existing DB upgrade verified
 - [PASS] Lint, format, build and tests pass locally (backend and Flutter)
 - [PASS] Environment and deployment documented, rollback documented
-- [PARTIAL] CI: all steps verified locally, not yet executed on GitHub
-- [PARTIAL] Docker image: build steps verified, image build and smoke run in CI only
+- [PASS] CI: all jobs green on PR #48 (`publish` is main-only and has not run yet)
+- [PASS] Docker image builds and passes the smoke test in CI (after the glibc fix below)
 - [PARTIAL] Rollback: stub-tested, not rehearsed on the VM
 - [PARTIAL] Dependencies: no high/critical; 4 moderate documented
 - [TODO] Password reset for real users

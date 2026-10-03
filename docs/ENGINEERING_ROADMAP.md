@@ -211,7 +211,7 @@ Status of every backlog item. Details of what changed and how it was verified: [
 | FE-01…FE-06 | Done | Retry state, 401 handling, `API_BASE_URL`, async-gap fixes, analyzer clean, formatted. |
 | FE-07 | N/A | Opportunistic. |
 | QA-01 | Done | 91 backend + 99 frontend tests (from 42 + 84). |
-| CI-01…CI-03 | Done, not yet run on GitHub | Each command was run locally; workflow YAML parsed. The first push will be the first real run (APK build and Docker steps can only run there). |
+| CI-01…CI-03 | Done, green on PR #48 | The first run failed the Docker job and caught a real bug (sqlite3 6 needs glibc >= 2.38; image moved to `node:22-trixie-slim`). `publish` is main-only and has not run yet. |
 | CD-01, CD-02 | Done, not rehearsed on the VM | Behaviour proven against stubs in CI; rehearse once on the VM. |
 | OPS-01 | Done | `HEALTHCHECK`; Grafana bind option (default unchanged). |
 | DOC-01 | Done | README, ARCHITECTURE, DATABASE, DEPLOYMENT, SECURITY, REPORT. |
