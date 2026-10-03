@@ -39,6 +39,21 @@ Server default: `http://localhost:3000`, DB: SQLite ไฟล์ที่ `./dat
 | POST   | /auth/change-password    | JWT  | `{ currentPassword, newPassword }`       |
 | DELETE | /auth/account             | JWT  | -                                         |
 
+### Health & metrics
+
+| Method | Path          | Auth | หมายเหตุ                                                                 |
+|--------|---------------|------|----------------------------------------------------------------------------|
+| GET    | /health        | -    | liveness: `{ status, revision }` — `revision` คือ commit ที่ build image    |
+| GET    | /health/ready  | -    | readiness: 200 เมื่อ database ตอบ, 503 ถ้าไม่ตอบ                          |
+| GET    | /metrics       | -    | Prometheus metrics                                                          |
+
+### รูปแบบ error
+
+ทุก error เป็น JSON เดียวกัน: `{ statusCode, error, message, requestId, path, timestamp }` (`message` เป็น string หรือ list ของ string กรณี validation) และ `requestId` ตรงกับ header `X-Request-Id` ใน response — ใช้ค้น log ได้
+
+- `401` = token ไม่มี/ไม่ถูกต้อง/หมดอายุ เท่านั้น (แอปจะ logout เมื่อเจอ 401) — รหัสผ่านปัจจุบันผิดตอนเปลี่ยนรหัสผ่านเป็น `400`
+- `429` = ยิงถี่เกิน (login/register/เปลี่ยนรหัสผ่าน 10 ครั้ง/นาที/IP, ที่อื่น 120 ครั้ง/นาที/IP)
+
 ### Recipes
 
 | Method | Path              | Auth | Body/หมายเหตุ                                         |

@@ -181,3 +181,37 @@ Reordered from the template because the repository's dependency order is *securi
 | 9 | Documentation & final review | DOC-01, ENGINEERING_REPORT.md |
 
 Constraint recorded: work happens on branch `chore/engineering-upgrade`; nothing is pushed or deployed. Anything needing real infrastructure (VM rollback drill, SMTP for real password reset, signing keystore) is documented rather than faked.
+
+## 11. Outcome (after implementation)
+
+Status of every backlog item. Details of what changed and how it was verified: [ENGINEERING_REPORT.md](ENGINEERING_REPORT.md); live status: [ENGINEERING_CHECKLIST.md](ENGINEERING_CHECKLIST.md).
+
+| ID | Result | Note |
+|----|--------|------|
+| SEC-01 | Done | Endpoints return 403 unless `ALLOW_INSECURE_PASSWORD_RESET=true`. A real reset flow still needs SMTP credentials (see SECURITY.md #1). |
+| SEC-02 | Done | Boot-time validation, no fallback secret, `JwtModule` now reads the secret after `.env` is loaded (it used to read `process.env` too early). |
+| SEC-03 | Done | One 401 body for unknown email and wrong password, equal work. |
+| SEC-04 | Done (4 moderate left) | 19 → 4 moderate. Remaining need Nest 11+ and are documented with reachability analysis. |
+| SEC-05 | Done | helmet, CORS allow-list, rate limits (`TRUST_PROXY` for proxies). |
+| SEC-06 | Deferred | Needs VM provisioning changes that cannot be tested here; options in SECURITY.md #2. |
+| SEC-07 | Done | `isRecommended` removed from the DTO. |
+| SEC-08 | Documented | Token lifetime/storage trade-off in SECURITY.md #3, #4. |
+| SEC-09 | Documented | Release signing needs a keystore (DEPLOYMENT.md). |
+| BE-01 | Done | Migrations on boot, `synchronize` off, verified on a copy of the real dev DB. |
+| BE-02 | Done | Error filter, request id, JSON logs. |
+| BE-03 | Done | `/health/ready`. |
+| BE-04 | Done | 7 indexes, query plans asserted in a test. |
+| BE-05 | Partial | Recipe existence and comment-thread checks done. **"One review per user per recipe" not done**: the app swallows review errors, so the rule would fail silently; do it together with the app change. |
+| BE-06 | Partial | Rating aggregate in SQL inside a transaction. Like toggling is still read-modify-write (documented in DATABASE.md). |
+| BE-07 | Deferred | Pagination is a contract change for the app; current catalog is small. |
+| BE-08 | Done | View counter. |
+| BE-09 | Partial | Size limits on all DTOs. `ParseUUIDPipe` skipped on purpose (it would turn today's 404s into 400s the app does not expect). |
+| BE-10 | Done | ESLint + Prettier, scripts, CI. |
+| BE-11 | Skipped | Swagger adds a dependency and a public surface; the endpoint tables in `backend/README.md` are accurate. Revisit if third parties consume the API. |
+| FE-01…FE-06 | Done | Retry state, 401 handling, `API_BASE_URL`, async-gap fixes, analyzer clean, formatted. |
+| FE-07 | N/A | Opportunistic. |
+| QA-01 | Done | 91 backend + 99 frontend tests (from 42 + 84). |
+| CI-01…CI-03 | Done, not yet run on GitHub | Each command was run locally; workflow YAML parsed. The first push will be the first real run (APK build and Docker steps can only run there). |
+| CD-01, CD-02 | Done, not rehearsed on the VM | Behaviour proven against stubs in CI; rehearse once on the VM. |
+| OPS-01 | Done | `HEALTHCHECK`; Grafana bind option (default unchanged). |
+| DOC-01 | Done | README, ARCHITECTURE, DATABASE, DEPLOYMENT, SECURITY, REPORT. |
