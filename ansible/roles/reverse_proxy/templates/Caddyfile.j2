@@ -1,0 +1,6 @@
+# {{ ansible_managed }}
+{{ api_domain }} {
+	encode gzip
+	# X-Forwarded-For is set by Caddy; the backend trusts exactly this one proxy (TRUST_PROXY=1).
+	reverse_proxy 127.0.0.1:{{ backend_port }}
+}

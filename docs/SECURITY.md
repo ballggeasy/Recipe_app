@@ -17,6 +17,7 @@ What protects the API today, what was deliberately left open, and what to do abo
 | HTTP | `helmet` headers (cross-origin resource policy relaxed for `/uploads` images), CORS allow-list from `CORS_ORIGINS` (none in production unless set), `x-powered-by` removed. |
 | Errors and logs | Uniform error body; unexpected errors become a generic 500 without stack or database details; access log records the path only (no query string, headers or bodies), so tokens and passwords cannot reach the logs. |
 | Dependencies | `npm audit --omit=dev` runs in CI and fails on high/critical; Dependabot proposes updates weekly. |
+| Transport | The API is served over HTTPS (Caddy, Let's Encrypt certificate renewed automatically); the Android app only allows plain HTTP to the emulator and localhost. |
 | Supply chain / deploy | Pull-based deploy; webhook requests must carry a valid HMAC-SHA256 signature; image tags are immutable (`sha-<commit>`). |
 
 ## Accepted risks and open items
@@ -31,6 +32,7 @@ What protects the API today, what was deliberately left open, and what to do abo
 | 6 | The Android release build is signed with the debug key. | Needs a keystore. | See [DEPLOYMENT.md](DEPLOYMENT.md#configuration). |
 | 7 | Grafana is published on all interfaces by default (login required, sign-up disabled, password set by Ansible). | Changing the default could lock current users out of dashboards. | Set `GRAFANA_BIND=127.0.0.1` and use an SSH tunnel, or firewall port 3001. |
 | 8 | Image URLs in recipes/comments/reviews are free-form strings (a client may point at any host). | The app also uses external image URLs. | If it becomes a concern, restrict to `/uploads/...` and an allow-list of hosts. |
+| 9 | TLS terminates on the VM (Caddy, `docs/DEPLOYMENT.md#https`). The backend listens on localhost only, but the network firewall rules (Azure NSG) are set by hand, not by this repo. | Not manageable from the repo. | Once HTTPS works, close TCP 3000 in the network firewall and keep only 22, 80 and 443. Restrict 22 to known IPs if they are stable. |
 
 ## Reporting
 

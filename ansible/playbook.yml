@@ -13,6 +13,8 @@
     - docker
     - app_env
     - deploy_agent
+    - role: reverse_proxy
+      when: api_domain | length > 0
     - role: deploy_webhook
       when: manage_deploy_webhook | bool
     - role: firewall

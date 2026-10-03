@@ -1,0 +1,34 @@
+# HTTPS in front of the API: Caddy terminates TLS (certificate from Let's Encrypt, renewed
+# automatically) and proxies to the backend on localhost. Needs api_domain to resolve to this
+# VM and ports 80 (ACME challenge) and 443 open in the network firewall.
+- name: Add Caddy apt repository
+  ansible.builtin.deb822_repository:
+    name: caddy
+    types: deb
+    uris: https://dl.cloudsmith.io/public/caddy/stable/deb/debian
+    suites: any-version
+    components: main
+    signed_by: https://dl.cloudsmith.io/public/caddy/stable/gpg.key
+    state: present
+
+- name: Install Caddy
+  ansible.builtin.apt:
+    name: caddy
+    state: present
+    update_cache: true
+
+- name: Configure Caddy
+  ansible.builtin.template:
+    src: Caddyfile.j2
+    dest: /etc/caddy/Caddyfile
+    owner: root
+    group: caddy
+    mode: "0640"
+    validate: caddy validate --adapter caddyfile --config %s
+  notify: Reload Caddy
+
+- name: Enable and start Caddy
+  ansible.builtin.systemd_service:
+    name: caddy
+    state: started
+    enabled: true

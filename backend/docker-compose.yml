@@ -12,7 +12,8 @@ services:
       PORT: 3000
       DB_PATH: /app/data/app.sqlite
     ports:
-      - "${HOST_PORT:-3000}:3000"
+      # BACKEND_BIND=127.0.0.1 (set by Ansible when HTTPS is on) keeps the API reachable only through the proxy.
+      - "${BACKEND_BIND:-0.0.0.0}:${HOST_PORT:-3000}:3000"
     volumes:
       - data:/app/data
       - uploads:/app/uploads
