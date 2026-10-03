@@ -74,7 +74,8 @@ jobs:
           cache-to: type=gha,mode=max
       - name: Smoke test image
         run: |
-          docker run -d --name smoke -p 3000:3000 -e JWT_SECRET=ci-smoke-test recipe-backend:ci
+          # The image runs with NODE_ENV=production, which requires a JWT_SECRET of 32+ chars.
+          docker run -d --name smoke -p 3000:3000 -e JWT_SECRET=ci-smoke-test-secret-not-used-anywhere-else recipe-backend:ci
           for i in $(seq 1 30); do
             if curl -fsS http://localhost:3000/recipes > /dev/null && curl -fsS http://localhost:3000/metrics > /dev/null \
                 && curl -fsS http://localhost:3000/health | grep -q "$GITHUB_SHA"; then

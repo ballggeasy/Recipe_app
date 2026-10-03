@@ -18,10 +18,11 @@ import { MealPlanEntry } from './meal-plan/meal-plan-entry.entity';
 import { SeedModule } from './seed/seed.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { HealthModule } from './health/health.module';
+import { validateEnv } from './config/env.validation';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: process.env.DB_PATH ?? './data/app.sqlite',
