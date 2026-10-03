@@ -1,4 +1,10 @@
-import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { removeUploadedFile } from '../common/image-upload';
@@ -90,7 +96,8 @@ export class AuthService {
   async changePassword(user: User, currentPassword: string, newPassword: string): Promise<void> {
     const passwordMatches = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!passwordMatches) {
-      throw new UnauthorizedException('รหัสผ่านปัจจุบันไม่ถูกต้อง');
+      // 400, not 401: a wrong form field must not look like an expired session (the app logs out on 401).
+      throw new BadRequestException('รหัสผ่านปัจจุบันไม่ถูกต้อง');
     }
     user.passwordHash = await this.hashPassword(newPassword);
     await this.usersService.save(user);

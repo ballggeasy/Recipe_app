@@ -296,7 +296,7 @@ describe('Favorites, reviews, comments, meal plan and profile (e2e)', () => {
         .post('/auth/change-password')
         .set(bearer(token))
         .send({ currentPassword: 'wrong-guess', newPassword: 'new-password' })
-        .expect(401);
+        .expect(400); // not 401: the app treats 401 as an expired session and logs out
       await http()
         .post('/auth/change-password')
         .set(bearer(token))

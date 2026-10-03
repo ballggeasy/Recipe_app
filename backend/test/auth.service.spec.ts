@@ -1,4 +1,4 @@
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import * as bcrypt from 'bcryptjs';
@@ -116,7 +116,7 @@ describe('AuthService', () => {
     it('rejects a wrong current password and keeps the old one', async () => {
       const oldHash = user.passwordHash;
       await expect(service.changePassword(user, 'wrong-pass', 'newpass123')).rejects.toBeInstanceOf(
-        UnauthorizedException,
+        BadRequestException,
       );
       expect(usersService.users.get(user.id)!.passwordHash).toBe(oldHash);
     });
