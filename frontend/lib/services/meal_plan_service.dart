@@ -9,7 +9,9 @@ class MealPlanService {
 
   Future<List<MealPlanEntry>> fetchAll() async {
     final data = await _api.get('/meal-plan') as List;
-    return data.map((e) => MealPlanEntry.fromApi(e as Map<String, dynamic>)).toList();
+    return data
+        .map((e) => MealPlanEntry.fromApi(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<MealPlanEntry> create({
@@ -18,15 +20,17 @@ class MealPlanService {
     required MealType mealType,
     int servings = 1,
   }) async {
-    final data = await _api.post(
-      '/meal-plan',
-      body: {
-        'recipeId': recipeId,
-        'date': date.toIso8601String(),
-        'mealType': mealType.name,
-        'servings': servings,
-      },
-    ) as Map<String, dynamic>;
+    final data =
+        await _api.post(
+              '/meal-plan',
+              body: {
+                'recipeId': recipeId,
+                'date': date.toIso8601String(),
+                'mealType': mealType.name,
+                'servings': servings,
+              },
+            )
+            as Map<String, dynamic>;
     return MealPlanEntry.fromApi(data);
   }
 

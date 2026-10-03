@@ -38,7 +38,9 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   final List<String> _selectedDietTags = [];
   XFile? _image;
 
-  final List<_IngredientControllers> _ingredientControllers = [_IngredientControllers()];
+  final List<_IngredientControllers> _ingredientControllers = [
+    _IngredientControllers(),
+  ];
 
   @override
   void dispose() {
@@ -61,7 +63,12 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.base, AppSpacing.lg, AppSpacing.xxl),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.base,
+            AppSpacing.lg,
+            AppSpacing.xxl,
+          ),
           children: [
             _FormSection(
               title: 'รูปภาพ',
@@ -73,7 +80,9 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                     Expanded(
                       child: Text(
                         'อีโมจิประจำเมนู (ใช้แทนรูปเมื่อไม่มีรูป)',
-                        style: AppTypography.body(color: AppTheme.txtSecondary(context)),
+                        style: AppTypography.body(
+                          color: AppTheme.txtSecondary(context),
+                        ),
                       ),
                     ),
                     SizedBox(
@@ -81,7 +90,10 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                       child: TextField(
                         controller: _emojiController,
                         textAlign: TextAlign.center,
-                        decoration: const InputDecoration(isDense: true, hintText: '🍽️'),
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          hintText: '🍽️',
+                        ),
                       ),
                     ),
                   ],
@@ -95,32 +107,73 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                   label: 'ชื่อเมนู *',
                   controller: _nameController,
                   hint: 'เช่น ต้มยำกุ้งน้ำข้น',
-                  validator: (v) => v?.trim().isEmpty == true ? 'กรุณากรอกชื่อเมนู' : null,
+                  validator: (v) =>
+                      v?.trim().isEmpty == true ? 'กรุณากรอกชื่อเมนู' : null,
                 ),
                 const SizedBox(height: AppSpacing.md),
-                _Dropdown('ประเภท', _category, recipeProvider.categories.where((c) => c != 'ทั้งหมด').toList(),
-                    (v) => setState(() => _category = v!)),
+                _Dropdown(
+                  'ประเภท',
+                  _category,
+                  recipeProvider.categories
+                      .where((c) => c != 'ทั้งหมด')
+                      .toList(),
+                  (v) => setState(() => _category = v!),
+                ),
                 const SizedBox(height: AppSpacing.md),
-                _Dropdown('ประเทศ', _country, recipeProvider.countries.where((c) => c != 'ทั้งหมด').toList(),
-                    (v) => setState(() => _country = v!)),
+                _Dropdown(
+                  'ประเทศ',
+                  _country,
+                  recipeProvider.countries
+                      .where((c) => c != 'ทั้งหมด')
+                      .toList(),
+                  (v) => setState(() => _country = v!),
+                ),
               ],
             ),
             _FormSection(
               title: 'รายละเอียดการทำ',
               children: [
-                _Dropdown('ความยาก', _difficulty, AppConstants.difficulties, (v) => setState(() => _difficulty = v!)),
+                _Dropdown(
+                  'ความยาก',
+                  _difficulty,
+                  AppConstants.difficulties,
+                  (v) => setState(() => _difficulty = v!),
+                ),
                 const SizedBox(height: AppSpacing.md),
                 Row(
                   children: [
-                    Expanded(child: _NumberField('เตรียม (นาที)', _prepTime, (v) => _prepTime = v)),
+                    Expanded(
+                      child: _NumberField(
+                        'เตรียม (นาที)',
+                        _prepTime,
+                        (v) => _prepTime = v,
+                      ),
+                    ),
                     const SizedBox(width: AppSpacing.sm),
-                    Expanded(child: _NumberField('ปรุง (นาที)', _cookTime, (v) => _cookTime = v)),
+                    Expanded(
+                      child: _NumberField(
+                        'ปรุง (นาที)',
+                        _cookTime,
+                        (v) => _cookTime = v,
+                      ),
+                    ),
                     const SizedBox(width: AppSpacing.sm),
-                    Expanded(child: _NumberField('เสิร์ฟ', _servings, (v) => _servings = v)),
+                    Expanded(
+                      child: _NumberField(
+                        'เสิร์ฟ',
+                        _servings,
+                        (v) => _servings = v,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.md),
-                Text('แท็กโภชนาการ', style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context))),
+                Text(
+                  'แท็กโภชนาการ',
+                  style: AppTypography.bodyStrong(
+                    color: AppTheme.txtPrimary(context),
+                  ),
+                ),
                 const SizedBox(height: AppSpacing.sm),
                 Wrap(
                   spacing: AppSpacing.sm,
@@ -145,24 +198,28 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
             _FormSection(
               title: 'ส่วนผสม',
               children: [
-                ..._ingredientControllers.asMap().entries.map((e) => Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: _IngredientRow(
-                        index: e.key,
-                        controllers: e.value,
-                        onRemove: _ingredientControllers.length > 1
-                            ? () => setState(() {
-                                  _ingredientControllers.removeAt(e.key).dispose();
-                                })
-                            : null,
-                      ),
-                    )),
+                ..._ingredientControllers.asMap().entries.map(
+                  (e) => Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: _IngredientRow(
+                      index: e.key,
+                      controllers: e.value,
+                      onRemove: _ingredientControllers.length > 1
+                          ? () => setState(() {
+                              _ingredientControllers.removeAt(e.key).dispose();
+                            })
+                          : null,
+                    ),
+                  ),
+                ),
                 AppButton.ghost(
                   label: 'เพิ่มวัตถุดิบ',
                   icon: Icons.add_rounded,
                   fullWidth: false,
                   size: AppButtonSize.small,
-                  onPressed: () => setState(() => _ingredientControllers.add(_IngredientControllers())),
+                  onPressed: () => setState(
+                    () => _ingredientControllers.add(_IngredientControllers()),
+                  ),
                 ),
               ],
             ),
@@ -174,16 +231,30 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                   maxLines: 6,
                   hint: 'พิมพ์ 1 บรรทัดต่อ 1 ขั้นตอน',
                   label: 'ขั้นตอน (แยกบรรทัด) *',
-                  validator: (v) => v?.trim().isEmpty == true ? 'กรุณากรอกขั้นตอน' : null,
+                  validator: (v) =>
+                      v?.trim().isEmpty == true ? 'กรุณากรอกขั้นตอน' : null,
                 ),
                 const SizedBox(height: AppSpacing.md),
-                AppTextField(controller: _tipsController, label: 'เคล็ดลับ', hint: 'ไม่บังคับ'),
+                AppTextField(
+                  controller: _tipsController,
+                  label: 'เคล็ดลับ',
+                  hint: 'ไม่บังคับ',
+                ),
                 const SizedBox(height: AppSpacing.md),
-                AppTextField(controller: _platingController, label: 'วิธีจัดจาน', hint: 'ไม่บังคับ'),
+                AppTextField(
+                  controller: _platingController,
+                  label: 'วิธีจัดจาน',
+                  hint: 'ไม่บังคับ',
+                ),
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
-            AppButton.primary(label: 'บันทึกสูตร', icon: Icons.check_rounded, onPressed: _save, loading: _isSaving),
+            AppButton.primary(
+              label: 'บันทึกสูตร',
+              icon: Icons.check_rounded,
+              onPressed: _save,
+              loading: _isSaving,
+            ),
           ],
         ),
       ),
@@ -195,7 +266,10 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
 
     setState(() => _isSaving = true);
     final provider = context.read<RecipeProvider>();
-    final steps = _stepsController.text.split('\n').where((s) => s.trim().isNotEmpty).toList();
+    final steps = _stepsController.text
+        .split('\n')
+        .where((s) => s.trim().isNotEmpty)
+        .toList();
     final items = _ingredientControllers
         .map((c) => c.toItem())
         .where((i) => i.name.trim().isNotEmpty)
@@ -203,7 +277,9 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
 
     final result = await provider.addRecipe(
       name: _nameController.text.trim(),
-      emoji: _emojiController.text.trim().isEmpty ? '🍽️' : _emojiController.text.trim(),
+      emoji: _emojiController.text.trim().isEmpty
+          ? '🍽️'
+          : _emojiController.text.trim(),
       category: _category,
       country: _country,
       prepTime: _prepTime,
@@ -212,8 +288,12 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
       servings: _servings,
       steps: steps,
       items: items,
-      tips: _tipsController.text.trim().isEmpty ? null : _tipsController.text.trim(),
-      platingTips: _platingController.text.trim().isEmpty ? null : _platingController.text.trim(),
+      tips: _tipsController.text.trim().isEmpty
+          ? null
+          : _tipsController.text.trim(),
+      platingTips: _platingController.text.trim().isEmpty
+          ? null
+          : _platingController.text.trim(),
       dietTags: _selectedDietTags,
       image: _image,
     );
@@ -222,7 +302,9 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     setState(() => _isSaving = false);
 
     if (result.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.error!)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result.error!)));
       return;
     }
 
@@ -254,7 +336,10 @@ class _FormSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AppTypography.h2(color: AppTheme.txtPrimary(context))),
+          Text(
+            title,
+            style: AppTypography.h2(color: AppTheme.txtPrimary(context)),
+          ),
           const SizedBox(height: AppSpacing.md),
           ...children,
         ],
@@ -276,7 +361,9 @@ class _Dropdown extends StatelessWidget {
     return DropdownButtonFormField<String>(
       initialValue: value,
       decoration: InputDecoration(labelText: label),
-      items: items.map((i) => DropdownMenuItem(value: i, child: Text(i))).toList(),
+      items: items
+          .map((i) => DropdownMenuItem(value: i, child: Text(i)))
+          .toList(),
       onChanged: onChanged,
     );
   }
@@ -306,12 +393,16 @@ class _IngredientControllers {
   final TextEditingController unit;
   final TextEditingController name;
 
-  _IngredientControllers({String amount = '', String unit = 'กรัม', String name = ''})
-      : amount = TextEditingController(text: amount),
-        unit = TextEditingController(text: unit),
-        name = TextEditingController(text: name);
+  _IngredientControllers({
+    String amount = '',
+    String unit = 'กรัม',
+    String name = '',
+  }) : amount = TextEditingController(text: amount),
+       unit = TextEditingController(text: unit),
+       name = TextEditingController(text: name);
 
-  IngredientItem toItem() => IngredientItem(name: name.text, amount: amount.text, unit: unit.text);
+  IngredientItem toItem() =>
+      IngredientItem(name: name.text, amount: amount.text, unit: unit.text);
 
   void dispose() {
     amount.dispose();
@@ -340,7 +431,10 @@ class _IngredientRow extends StatelessWidget {
           flex: 2,
           child: TextFormField(
             controller: controllers.amount,
-            decoration: const InputDecoration(hintText: 'ปริมาณ', isDense: true),
+            decoration: const InputDecoration(
+              hintText: 'ปริมาณ',
+              isDense: true,
+            ),
           ),
         ),
         const SizedBox(width: 6),
@@ -355,13 +449,20 @@ class _IngredientRow extends StatelessWidget {
           flex: 3,
           child: TextFormField(
             controller: controllers.name,
-            decoration: InputDecoration(hintText: 'วัตถุดิบ ${index + 1}', isDense: true),
+            decoration: InputDecoration(
+              hintText: 'วัตถุดิบ ${index + 1}',
+              isDense: true,
+            ),
           ),
         ),
         if (onRemove != null)
           IconButton(
             tooltip: 'ลบวัตถุดิบนี้',
-            icon: Icon(Icons.remove_circle_outline_rounded, size: 20, color: AppTheme.error(context)),
+            icon: Icon(
+              Icons.remove_circle_outline_rounded,
+              size: 20,
+              color: AppTheme.error(context),
+            ),
             onPressed: onRemove,
           ),
       ],

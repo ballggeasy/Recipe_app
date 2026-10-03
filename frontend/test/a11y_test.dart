@@ -30,20 +30,33 @@ import 'helpers/fake_api.dart';
 final _catalog = [
   recipeJson(id: 'krapao', name: 'ผัดกะเพรา'),
   recipeJson(id: 'tomyum', name: 'ต้มยำกุ้ง', category: 'ต้ม', rating: 4.8),
-  recipeJson(id: 'carbonara', name: 'Carbonara', category: 'เส้น', country: 'อิตาลี', isOfficial: false),
+  recipeJson(
+    id: 'carbonara',
+    name: 'Carbonara',
+    category: 'เส้น',
+    country: 'อิตาลี',
+    isOfficial: false,
+  ),
 ];
 
 ApiClient _api() => fakeApi({
-      'GET /recipes': (_) => jsonResponse(_catalog),
-      'GET /recipes/krapao/reviews': (_) => jsonResponse([]),
-      'GET /recipes/krapao/comments': (_) => jsonResponse([]),
-    });
+  'GET /recipes': (_) => jsonResponse(_catalog),
+  'GET /recipes/krapao/reviews': (_) => jsonResponse([]),
+  'GET /recipes/krapao/comments': (_) => jsonResponse([]),
+});
 
 /// ครอบ [home] ด้วย provider ชุดเดียวกับ main.dart แต่ทุก service คุยกับ fake API
-Future<AuthProvider> _pump(WidgetTester tester, Widget home, {ThemeMode themeMode = ThemeMode.light}) async {
+Future<AuthProvider> _pump(
+  WidgetTester tester,
+  Widget home, {
+  ThemeMode themeMode = ThemeMode.light,
+}) async {
   final api = _api();
   final auth = AuthProvider(authService: AuthService(api: api));
-  final recipes = RecipeProvider(recipeService: RecipeService(api: api), favoriteService: FavoriteService(api: api));
+  final recipes = RecipeProvider(
+    recipeService: RecipeService(api: api),
+    favoriteService: FavoriteService(api: api),
+  );
   await recipes.init();
 
   await tester.pumpWidget(
@@ -52,10 +65,21 @@ Future<AuthProvider> _pump(WidgetTester tester, Widget home, {ThemeMode themeMod
         ChangeNotifierProvider.value(value: recipes),
         ChangeNotifierProvider.value(value: auth),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => FavoriteProvider(favoriteService: FavoriteService(api: api))),
-        ChangeNotifierProvider(create: (_) => ReviewProvider(reviewService: ReviewService(api: api))),
-        ChangeNotifierProvider(create: (_) => CommentProvider(commentService: CommentService(api: api))),
-        ChangeNotifierProvider(create: (_) => MealPlannerProvider(mealPlanService: MealPlanService(api: api))),
+        ChangeNotifierProvider(
+          create: (_) =>
+              FavoriteProvider(favoriteService: FavoriteService(api: api)),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ReviewProvider(reviewService: ReviewService(api: api)),
+        ),
+        ChangeNotifierProvider(
+          create: (_) =>
+              CommentProvider(commentService: CommentService(api: api)),
+        ),
+        ChangeNotifierProvider(
+          create: (_) =>
+              MealPlannerProvider(mealPlanService: MealPlanService(api: api)),
+        ),
       ],
       child: MaterialApp(
         theme: AppTheme.lightTheme,
@@ -83,7 +107,9 @@ void main() {
 
   for (final mode in [ThemeMode.light, ThemeMode.dark]) {
     group('${mode.name} mode', () {
-      testWidgets('login screen meets accessibility guidelines', (tester) async {
+      testWidgets('login screen meets accessibility guidelines', (
+        tester,
+      ) async {
         final handle = tester.ensureSemantics();
         await _pump(tester, const LoginScreen(), themeMode: mode);
 
@@ -91,7 +117,9 @@ void main() {
         handle.dispose();
       });
 
-      testWidgets('home screen (guest) meets accessibility guidelines', (tester) async {
+      testWidgets('home screen (guest) meets accessibility guidelines', (
+        tester,
+      ) async {
         final handle = tester.ensureSemantics();
         final auth = await _pump(tester, const MainScreen(), themeMode: mode);
         auth.continueAsGuest();
@@ -101,9 +129,15 @@ void main() {
         handle.dispose();
       });
 
-      testWidgets('recipe detail screen meets accessibility guidelines', (tester) async {
+      testWidgets('recipe detail screen meets accessibility guidelines', (
+        tester,
+      ) async {
         final handle = tester.ensureSemantics();
-        await _pump(tester, DetailScreen(recipe: Recipe.fromApi(_catalog.first)), themeMode: mode);
+        await _pump(
+          tester,
+          DetailScreen(recipe: Recipe.fromApi(_catalog.first)),
+          themeMode: mode,
+        );
 
         await _expectMeetsGuidelines(tester);
         handle.dispose();

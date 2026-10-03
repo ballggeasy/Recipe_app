@@ -20,7 +20,8 @@ class AuthService {
   AuthService({ApiClient? api}) : _api = api ?? ApiClient();
 
   /// เรียกเมื่อ backend ปฏิเสธ token ของผู้ใช้ที่ล็อกอินอยู่ (หมดอายุ/ถูกลบบัญชี) — token ถูกล้างแล้ว
-  set onSessionExpired(void Function()? callback) => _api.onUnauthorized = callback;
+  set onSessionExpired(void Function()? callback) =>
+      _api.onUnauthorized = callback;
 
   Future<AuthResult> register({
     required String name,
@@ -28,11 +29,17 @@ class AuthService {
     required String password,
   }) async {
     try {
-      final data = await _api.post(
-        '/auth/register',
-        auth: false,
-        body: {'name': name.trim(), 'email': email.trim().toLowerCase(), 'password': password},
-      ) as Map<String, dynamic>;
+      final data =
+          await _api.post(
+                '/auth/register',
+                auth: false,
+                body: {
+                  'name': name.trim(),
+                  'email': email.trim().toLowerCase(),
+                  'password': password,
+                },
+              )
+              as Map<String, dynamic>;
 
       final user = AppUser.fromApi(data['user'] as Map<String, dynamic>);
       await _api.setToken(data['accessToken'] as String);
@@ -49,11 +56,16 @@ class AuthService {
     bool remember = true,
   }) async {
     try {
-      final data = await _api.post(
-        '/auth/login',
-        auth: false,
-        body: {'email': email.trim().toLowerCase(), 'password': password},
-      ) as Map<String, dynamic>;
+      final data =
+          await _api.post(
+                '/auth/login',
+                auth: false,
+                body: {
+                  'email': email.trim().toLowerCase(),
+                  'password': password,
+                },
+              )
+              as Map<String, dynamic>;
 
       final user = AppUser.fromApi(data['user'] as Map<String, dynamic>);
       await _api.setToken(data['accessToken'] as String, persist: remember);
@@ -84,7 +96,10 @@ class AuthService {
   Future<bool> checkUserExists(String email) async {
     final normalizedEmail = email.trim().toLowerCase();
     final data =
-        await _api.get('/auth/exists/${Uri.encodeComponent(normalizedEmail)}', auth: false)
+        await _api.get(
+              '/auth/exists/${Uri.encodeComponent(normalizedEmail)}',
+              auth: false,
+            )
             as Map<String, dynamic>;
     return data['exists'] == true;
   }
@@ -122,10 +137,9 @@ class AuthService {
   }
 
   Future<AppUser> updateProfile({required String name}) async {
-    final data = await _api.patch(
-      '/auth/profile',
-      body: {'name': name.trim()},
-    ) as Map<String, dynamic>;
+    final data =
+        await _api.patch('/auth/profile', body: {'name': name.trim()})
+            as Map<String, dynamic>;
 
     return AppUser.fromApi(data);
   }
@@ -133,13 +147,15 @@ class AuthService {
   /// อัปโหลดรูปโปรไฟล์ขึ้น backend แล้วคืน user ที่มี profileImagePath ใหม่ (sync ข้ามเครื่องได้)
   Future<AppUser> uploadAvatar(XFile file) async {
     final bytes = await file.readAsBytes();
-    final data = await _api.uploadFile(
-      '/auth/avatar',
-      fieldName: 'file',
-      bytes: bytes,
-      filename: file.name,
-      contentType: file.mimeType,
-    ) as Map<String, dynamic>;
+    final data =
+        await _api.uploadFile(
+              '/auth/avatar',
+              fieldName: 'file',
+              bytes: bytes,
+              filename: file.name,
+              contentType: file.mimeType,
+            )
+            as Map<String, dynamic>;
 
     return AppUser.fromApi(data);
   }

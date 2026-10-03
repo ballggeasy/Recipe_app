@@ -23,35 +23,49 @@ void main() {
 
   Future<RecipeProvider> pumpHome(WidgetTester tester) async {
     final api = fakeApi({
-      'GET /recipes': (_) =>
-          backendUp ? jsonResponse([recipeJson(id: 'krapao', name: 'ผัดกะเพรา')]) : jsonResponse({'message': 'เซิร์ฟเวอร์ไม่ตอบสนอง'}, 503),
+      'GET /recipes': (_) => backendUp
+          ? jsonResponse([recipeJson(id: 'krapao', name: 'ผัดกะเพรา')])
+          : jsonResponse({'message': 'เซิร์ฟเวอร์ไม่ตอบสนอง'}, 503),
     });
-    final recipes = RecipeProvider(recipeService: RecipeService(api: api), favoriteService: FavoriteService(api: api));
+    final recipes = RecipeProvider(
+      recipeService: RecipeService(api: api),
+      favoriteService: FavoriteService(api: api),
+    );
     await recipes.init();
 
     await tester.pumpWidget(
       MultiProvider(
         providers: [
           ChangeNotifierProvider.value(value: recipes),
-          ChangeNotifierProvider(create: (_) => AuthProvider(authService: AuthService(api: api))),
+          ChangeNotifierProvider(
+            create: (_) => AuthProvider(authService: AuthService(api: api)),
+          ),
         ],
-        child: MaterialApp(theme: AppTheme.lightTheme, home: const HomeScreen()),
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const HomeScreen(),
+        ),
       ),
     );
     await tester.pumpAndSettle();
     return recipes;
   }
 
-  testWidgets('shows the error with a retry button instead of "no results" when loading fails', (tester) async {
-    backendUp = false;
-    await pumpHome(tester);
+  testWidgets(
+    'shows the error with a retry button instead of "no results" when loading fails',
+    (tester) async {
+      backendUp = false;
+      await pumpHome(tester);
 
-    expect(find.text('โหลดเมนูไม่สำเร็จ'), findsOneWidget);
-    expect(find.text('เซิร์ฟเวอร์ไม่ตอบสนอง'), findsOneWidget);
-    expect(find.text('ไม่พบเมนูที่ตรงกับการค้นหา'), findsNothing);
-  });
+      expect(find.text('โหลดเมนูไม่สำเร็จ'), findsOneWidget);
+      expect(find.text('เซิร์ฟเวอร์ไม่ตอบสนอง'), findsOneWidget);
+      expect(find.text('ไม่พบเมนูที่ตรงกับการค้นหา'), findsNothing);
+    },
+  );
 
-  testWidgets('retry reloads the recipes and replaces the error state', (tester) async {
+  testWidgets('retry reloads the recipes and replaces the error state', (
+    tester,
+  ) async {
     backendUp = false;
     await pumpHome(tester);
 

@@ -80,7 +80,10 @@ class AppButton extends StatelessWidget {
         ? SizedBox(
             width: 20,
             height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2.4, color: colors.foreground),
+            child: CircularProgressIndicator(
+              strokeWidth: 2.4,
+              color: colors.foreground,
+            ),
           )
         : Row(
             mainAxisSize: MainAxisSize.min,
@@ -98,9 +101,13 @@ class AppButton extends StatelessWidget {
       height: _height,
       width: fullWidth ? double.infinity : null,
       decoration: BoxDecoration(
-        color: isDisabled ? colors.background.withValues(alpha: 0.55) : colors.background,
+        color: isDisabled
+            ? colors.background.withValues(alpha: 0.55)
+            : colors.background,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: colors.border != null ? Border.all(color: colors.border!) : null,
+        border: colors.border != null
+            ? Border.all(color: colors.border!)
+            : null,
       ),
       child: Material(
         color: Colors.transparent,
@@ -123,7 +130,9 @@ class AppButton extends StatelessWidget {
       label,
       textAlign: TextAlign.center,
       overflow: TextOverflow.ellipsis,
-      style: AppTypography.button(color: color).copyWith(fontSize: size == AppButtonSize.small ? 13.5 : 15),
+      style: AppTypography.button(
+        color: color,
+      ).copyWith(fontSize: size == AppButtonSize.small ? 13.5 : 15),
     );
     // Row gives unbounded main-axis space to non-flex children, so a long label
     // needs Flexible to wrap/ellipsize instead of overflowing. Skipped when the
@@ -135,9 +144,15 @@ class AppButton extends StatelessWidget {
   _ButtonColors _colorsFor(BuildContext context) {
     switch (variant) {
       case AppButtonVariant.primary:
-        return _ButtonColors(background: AppTheme.prim(context), foreground: AppTheme.onAccent(context));
+        return _ButtonColors(
+          background: AppTheme.prim(context),
+          foreground: AppTheme.onAccent(context),
+        );
       case AppButtonVariant.secondary:
-        return _ButtonColors(background: AppTheme.secondary(context), foreground: AppTheme.onAccent(context));
+        return _ButtonColors(
+          background: AppTheme.secondary(context),
+          foreground: AppTheme.onAccent(context),
+        );
       case AppButtonVariant.outline:
         return _ButtonColors(
           background: AppTheme.surf(context),
@@ -150,7 +165,10 @@ class AppButton extends StatelessWidget {
           foreground: AppTheme.prim(context),
         );
       case AppButtonVariant.danger:
-        return _ButtonColors(background: AppTheme.error(context), foreground: AppTheme.onAccent(context));
+        return _ButtonColors(
+          background: AppTheme.error(context),
+          foreground: AppTheme.onAccent(context),
+        );
     }
   }
 }
@@ -160,5 +178,9 @@ class _ButtonColors {
   final Color foreground;
   final Color? border;
 
-  const _ButtonColors({required this.background, required this.foreground, this.border});
+  const _ButtonColors({
+    required this.background,
+    required this.foreground,
+    this.border,
+  });
 }

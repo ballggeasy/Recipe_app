@@ -42,14 +42,15 @@ class RecipeImage extends StatelessWidget {
                       color: AppTheme.prim(context),
                       value: loadingProgress.expectedTotalBytes != null
                           ? loadingProgress.cumulativeBytesLoaded /
-                              loadingProgress.expectedTotalBytes!
+                                loadingProgress.expectedTotalBytes!
                           : null,
                     ),
                   ),
                 ),
               );
             },
-            errorBuilder: (context, error, stackTrace) => _buildEmojiFallback(context),
+            errorBuilder: (context, error, stackTrace) =>
+                _buildEmojiFallback(context),
           );
 
     if (borderRadius != null) {
@@ -64,7 +65,9 @@ class RecipeImage extends StatelessWidget {
       height: double.infinity,
       color: AppTheme.primLight(context),
       child: Center(
-        child: ExcludeSemantics(child: Text(recipe.emoji, style: TextStyle(fontSize: emojiSize))),
+        child: ExcludeSemantics(
+          child: Text(recipe.emoji, style: TextStyle(fontSize: emojiSize)),
+        ),
       ),
     );
   }

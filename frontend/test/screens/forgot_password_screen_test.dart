@@ -11,45 +11,62 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/fake_api.dart';
 
-const _disabledMessage = 'ระบบรีเซ็ตรหัสผ่านยังไม่เปิดใช้งาน กรุณาติดต่อผู้ดูแลระบบ';
+const _disabledMessage =
+    'ระบบรีเซ็ตรหัสผ่านยังไม่เปิดใช้งาน กรุณาติดต่อผู้ดูแลระบบ';
 
 void main() {
   GoogleFonts.config.allowRuntimeFetching = false;
 
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  Future<void> pumpScreen(WidgetTester tester, Map<String, RouteHandler> routes) async {
+  Future<void> pumpScreen(
+    WidgetTester tester,
+    Map<String, RouteHandler> routes,
+  ) async {
     final auth = AuthProvider(authService: AuthService(api: fakeApi(routes)));
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: auth,
-        child: MaterialApp(theme: AppTheme.lightTheme, home: const ForgotPasswordScreen()),
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const ForgotPasswordScreen(),
+        ),
       ),
     );
     await tester.pumpAndSettle();
   }
 
   Future<void> checkEmail(WidgetTester tester) async {
-    await tester.enterText(find.byType(TextFormField).first, 'somchai@example.com');
+    await tester.enterText(
+      find.byType(TextFormField).first,
+      'somchai@example.com',
+    );
     await tester.tap(find.widgetWithText(AppButton, 'ตรวจสอบอีเมล'));
     await tester.pumpAndSettle();
   }
 
-  testWidgets('shows the server message and never asks for a new password when reset is disabled', (tester) async {
+  testWidgets(
+    'shows the server message and never asks for a new password when reset is disabled',
+    (tester) async {
+      await pumpScreen(tester, {
+        'GET /auth/exists/somchai%40example.com': (_) =>
+            jsonResponse({'message': _disabledMessage}, 403),
+      });
+
+      await checkEmail(tester);
+
+      expect(find.text(_disabledMessage), findsOneWidget);
+      expect(find.text('รหัสผ่านใหม่'), findsNothing);
+      expect(find.widgetWithText(AppButton, 'ตรวจสอบอีเมล'), findsOneWidget);
+    },
+  );
+
+  testWidgets('asks for a new password once the email is confirmed to exist', (
+    tester,
+  ) async {
     await pumpScreen(tester, {
-      'GET /auth/exists/somchai%40example.com': (_) => jsonResponse({'message': _disabledMessage}, 403),
-    });
-
-    await checkEmail(tester);
-
-    expect(find.text(_disabledMessage), findsOneWidget);
-    expect(find.text('รหัสผ่านใหม่'), findsNothing);
-    expect(find.widgetWithText(AppButton, 'ตรวจสอบอีเมล'), findsOneWidget);
-  });
-
-  testWidgets('asks for a new password once the email is confirmed to exist', (tester) async {
-    await pumpScreen(tester, {
-      'GET /auth/exists/somchai%40example.com': (_) => jsonResponse({'exists': true}),
+      'GET /auth/exists/somchai%40example.com': (_) =>
+          jsonResponse({'exists': true}),
     });
 
     await checkEmail(tester);

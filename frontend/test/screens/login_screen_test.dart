@@ -20,7 +20,10 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: auth,
-        child: MaterialApp(theme: AppTheme.lightTheme, home: const LoginScreen()),
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const LoginScreen(),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -38,13 +41,16 @@ void main() {
     auth = AuthProvider(
       authService: AuthService(
         api: fakeApi({
-          'POST /auth/login': (_) => jsonResponse({'message': 'รหัสผ่านไม่ถูกต้อง'}, 401),
+          'POST /auth/login': (_) =>
+              jsonResponse({'message': 'รหัสผ่านไม่ถูกต้อง'}, 401),
         }),
       ),
     );
   });
 
-  testWidgets('asks for email and password when the form is empty', (tester) async {
+  testWidgets('asks for email and password when the form is empty', (
+    tester,
+  ) async {
     await pumpLogin(tester);
 
     await tapLogin(tester);
@@ -53,15 +59,21 @@ void main() {
     expect(auth.isLoggedIn, isFalse);
   });
 
-  testWidgets('shows the backend error for wrong credentials and stays on the login screen', (tester) async {
-    await pumpLogin(tester);
+  testWidgets(
+    'shows the backend error for wrong credentials and stays on the login screen',
+    (tester) async {
+      await pumpLogin(tester);
 
-    await tester.enterText(find.byType(TextFormField).at(0), 'somchai@example.com');
-    await tester.enterText(find.byType(TextFormField).at(1), 'wrong-pass');
-    await tapLogin(tester);
+      await tester.enterText(
+        find.byType(TextFormField).at(0),
+        'somchai@example.com',
+      );
+      await tester.enterText(find.byType(TextFormField).at(1), 'wrong-pass');
+      await tapLogin(tester);
 
-    expect(find.text('รหัสผ่านไม่ถูกต้อง'), findsOneWidget);
-    expect(find.byType(LoginScreen), findsOneWidget);
-    expect(auth.isLoggedIn, isFalse);
-  });
+      expect(find.text('รหัสผ่านไม่ถูกต้อง'), findsOneWidget);
+      expect(find.byType(LoginScreen), findsOneWidget);
+      expect(auth.isLoggedIn, isFalse);
+    },
+  );
 }

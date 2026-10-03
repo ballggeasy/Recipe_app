@@ -31,7 +31,9 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
     super.initState();
     _nameController = TextEditingController(text: widget.recipe.name);
     _tipsController = TextEditingController(text: widget.recipe.tips ?? '');
-    _cookTimeController = TextEditingController(text: '${widget.recipe.cookTimeMinutes}');
+    _cookTimeController = TextEditingController(
+      text: '${widget.recipe.cookTimeMinutes}',
+    );
   }
 
   @override
@@ -51,8 +53,18 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
           TextButton(
             onPressed: _isSaving ? null : _save,
             child: _isSaving
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                : Text('บันทึก', style: TextStyle(color: AppTheme.prim(context), fontWeight: FontWeight.w700)),
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(
+                    'บันทึก',
+                    style: TextStyle(
+                      color: AppTheme.prim(context),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
           ),
         ],
       ),
@@ -64,7 +76,10 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
             onChanged: (file) => _newImage = file,
           ),
           const SizedBox(height: AppSpacing.xl),
-          Text('ข้อมูลพื้นฐาน', style: AppTypography.h2(color: AppTheme.txtPrimary(context))),
+          Text(
+            'ข้อมูลพื้นฐาน',
+            style: AppTypography.h2(color: AppTheme.txtPrimary(context)),
+          ),
           const SizedBox(height: AppSpacing.md),
           AppTextField(label: 'ชื่อเมนู', controller: _nameController),
           const SizedBox(height: AppSpacing.md),
@@ -74,7 +89,11 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
             keyboardType: TextInputType.number,
           ),
           const SizedBox(height: AppSpacing.md),
-          AppTextField(label: 'เคล็ดลับ', controller: _tipsController, maxLines: 3),
+          AppTextField(
+            label: 'เคล็ดลับ',
+            controller: _tipsController,
+            maxLines: 3,
+          ),
         ],
       ),
     );
@@ -83,11 +102,14 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
   Future<void> _save() async {
     setState(() => _isSaving = true);
     final provider = context.read<RecipeProvider>();
-    final cookTime = int.tryParse(_cookTimeController.text) ?? widget.recipe.cookTimeMinutes;
+    final cookTime =
+        int.tryParse(_cookTimeController.text) ?? widget.recipe.cookTimeMinutes;
     final updated = widget.recipe.copyWith(
       name: _nameController.text.trim(),
       cookTimeMinutes: cookTime,
-      tips: _tipsController.text.trim().isEmpty ? null : _tipsController.text.trim(),
+      tips: _tipsController.text.trim().isEmpty
+          ? null
+          : _tipsController.text.trim(),
     );
 
     var error = await provider.updateRecipe(updated);
@@ -100,14 +122,14 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
     setState(() => _isSaving = false);
 
     if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
       return;
     }
 
     final messenger = ScaffoldMessenger.of(context);
     Navigator.pop(context);
-    messenger.showSnackBar(
-      const SnackBar(content: Text('แก้ไขสูตรเรียบร้อย')),
-    );
+    messenger.showSnackBar(const SnackBar(content: Text('แก้ไขสูตรเรียบร้อย')));
   }
 }

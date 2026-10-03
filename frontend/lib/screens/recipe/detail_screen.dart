@@ -37,7 +37,8 @@ class _DetailScreenState extends State<DetailScreen> {
   int _imageIndex = 0;
 
   Recipe get recipe {
-    return context.watch<RecipeProvider>().getById(widget.recipe.id) ?? widget.recipe;
+    return context.watch<RecipeProvider>().getById(widget.recipe.id) ??
+        widget.recipe;
   }
 
   @override
@@ -88,7 +89,9 @@ class _DetailScreenState extends State<DetailScreen> {
                   tooltip: 'แก้ไขสูตร',
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => EditRecipeScreen(recipe: recipe)),
+                    MaterialPageRoute(
+                      builder: (_) => EditRecipeScreen(recipe: recipe),
+                    ),
                   ),
                 ),
               ),
@@ -108,14 +111,21 @@ class _DetailScreenState extends State<DetailScreen> {
               Padding(
                 padding: const EdgeInsets.all(4),
                 child: _RoundIconButton(
-                  icon: isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  icon: isFav
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
                   tooltip: isFav ? 'เอาออกจากสูตรโปรด' : 'บันทึกเป็นสูตรโปรด',
                   iconColor: isFav ? AppTheme.error(context) : null,
                   onTap: () => provider.toggleFavorite(recipe.id),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(left: 4, right: 8, top: 4, bottom: 4),
+                padding: const EdgeInsets.only(
+                  left: 4,
+                  right: 8,
+                  top: 4,
+                  bottom: 4,
+                ),
                 child: _RoundIconButton(
                   icon: Icons.more_vert_rounded,
                   tooltip: 'ตัวเลือกเพิ่มเติม',
@@ -133,29 +143,74 @@ class _DetailScreenState extends State<DetailScreen> {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 120),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.lg,
+                120,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SourceBadge(recipe: recipe),
                   const SizedBox(height: AppSpacing.md),
-                  Text(recipe.name, style: AppTypography.display(color: AppTheme.txtPrimary(context)).copyWith(fontSize: 26)),
+                  Text(
+                    recipe.name,
+                    style: AppTypography.display(
+                      color: AppTheme.txtPrimary(context),
+                    ).copyWith(fontSize: 26),
+                  ),
                   const SizedBox(height: AppSpacing.sm),
-                  RatingDisplay(rating: recipe.rating, reviewCount: recipe.reviewCount, fontSize: 13.5, starSize: 16),
+                  RatingDisplay(
+                    rating: recipe.rating,
+                    reviewCount: recipe.reviewCount,
+                    fontSize: 13.5,
+                    starSize: 16,
+                  ),
                   const SizedBox(height: AppSpacing.base),
                   Wrap(
                     spacing: AppSpacing.sm,
                     runSpacing: AppSpacing.sm,
                     children: [
-                      _InfoTag(icon: Icons.public_rounded, label: recipe.country),
-                      _InfoTag(icon: Icons.timer_outlined, label: 'เตรียม ${recipe.prepTimeMinutes} นาที'),
-                      _InfoTag(icon: Icons.access_time_rounded, label: 'ปรุง ${recipe.cookTimeMinutes} นาที'),
-                      _InfoTag(icon: Icons.schedule_rounded, label: 'รวม ${recipe.totalTimeMinutes} นาที'),
-                      _InfoTag(icon: Icons.bar_chart_rounded, label: recipe.difficulty),
-                      _InfoTag(icon: Icons.restaurant_rounded, label: '${recipe.servings} เสิร์ฟ'),
-                      _InfoTag(icon: Icons.category_outlined, label: recipe.category),
-                      if (recipe.season != 'ตลอดปี') _InfoTag(icon: Icons.wb_sunny_outlined, label: recipe.season),
-                      ...recipe.dietTags.map((t) => _InfoTag(icon: Icons.local_offer_outlined, label: t)),
+                      _InfoTag(
+                        icon: Icons.public_rounded,
+                        label: recipe.country,
+                      ),
+                      _InfoTag(
+                        icon: Icons.timer_outlined,
+                        label: 'เตรียม ${recipe.prepTimeMinutes} นาที',
+                      ),
+                      _InfoTag(
+                        icon: Icons.access_time_rounded,
+                        label: 'ปรุง ${recipe.cookTimeMinutes} นาที',
+                      ),
+                      _InfoTag(
+                        icon: Icons.schedule_rounded,
+                        label: 'รวม ${recipe.totalTimeMinutes} นาที',
+                      ),
+                      _InfoTag(
+                        icon: Icons.bar_chart_rounded,
+                        label: recipe.difficulty,
+                      ),
+                      _InfoTag(
+                        icon: Icons.restaurant_rounded,
+                        label: '${recipe.servings} เสิร์ฟ',
+                      ),
+                      _InfoTag(
+                        icon: Icons.category_outlined,
+                        label: recipe.category,
+                      ),
+                      if (recipe.season != 'ตลอดปี')
+                        _InfoTag(
+                          icon: Icons.wb_sunny_outlined,
+                          label: recipe.season,
+                        ),
+                      ...recipe.dietTags.map(
+                        (t) => _InfoTag(
+                          icon: Icons.local_offer_outlined,
+                          label: t,
+                        ),
+                      ),
                     ],
                   ),
                   if (recipe.videoUrl != null) ...[
@@ -166,7 +221,10 @@ class _DetailScreenState extends State<DetailScreen> {
                   const SectionHeader(title: 'ส่วนผสม'),
                   const SizedBox(height: AppSpacing.md),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base, vertical: AppSpacing.xs),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.base,
+                      vertical: AppSpacing.xs,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTheme.surf(context),
                       borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -175,15 +233,21 @@ class _DetailScreenState extends State<DetailScreen> {
                     child: Column(
                       children: [
                         if (recipe.ingredientItems.isNotEmpty)
-                          ...recipe.ingredientItems.asMap().entries.map((e) => _IngredientRow(
-                                item: e.value,
-                                showDivider: e.key != recipe.ingredientItems.length - 1,
-                              ))
+                          ...recipe.ingredientItems.asMap().entries.map(
+                            (e) => _IngredientRow(
+                              item: e.value,
+                              showDivider:
+                                  e.key != recipe.ingredientItems.length - 1,
+                            ),
+                          )
                         else
-                          ...recipe.ingredients.asMap().entries.map((e) => _IngredientRow(
-                                text: e.value,
-                                showDivider: e.key != recipe.ingredients.length - 1,
-                              )),
+                          ...recipe.ingredients.asMap().entries.map(
+                            (e) => _IngredientRow(
+                              text: e.value,
+                              showDivider:
+                                  e.key != recipe.ingredients.length - 1,
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -191,17 +255,25 @@ class _DetailScreenState extends State<DetailScreen> {
                     const SizedBox(height: AppSpacing.xl),
                     const SectionHeader(title: 'เคล็ดลับ'),
                     const SizedBox(height: AppSpacing.sm),
-                    _TipBox(text: recipe.tips!, icon: Icons.lightbulb_outline_rounded),
+                    _TipBox(
+                      text: recipe.tips!,
+                      icon: Icons.lightbulb_outline_rounded,
+                    ),
                   ],
                   const SizedBox(height: AppSpacing.xl),
                   const SectionHeader(title: 'ขั้นตอนการทำ'),
                   const SizedBox(height: AppSpacing.md),
-                  ...recipe.steps.asMap().entries.map((e) => _StepRow(number: e.key + 1, text: e.value)),
+                  ...recipe.steps.asMap().entries.map(
+                    (e) => _StepRow(number: e.key + 1, text: e.value),
+                  ),
                   if (recipe.platingTips != null) ...[
                     const SizedBox(height: AppSpacing.xl),
                     const SectionHeader(title: 'วิธีจัดจาน'),
                     const SizedBox(height: AppSpacing.sm),
-                    _TipBox(text: recipe.platingTips!, icon: Icons.restaurant_menu_rounded),
+                    _TipBox(
+                      text: recipe.platingTips!,
+                      icon: Icons.restaurant_menu_rounded,
+                    ),
                   ],
                   if (recipe.nutrition != null) ...[
                     const SizedBox(height: AppSpacing.xl),
@@ -217,20 +289,28 @@ class _DetailScreenState extends State<DetailScreen> {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   if (reviews.isEmpty)
-                    Text('ยังไม่มีรีวิว', style: AppTypography.body(color: AppTheme.txtSecondary(context)))
+                    Text(
+                      'ยังไม่มีรีวิว',
+                      style: AppTypography.body(
+                        color: AppTheme.txtSecondary(context),
+                      ),
+                    )
                   else
-                    ...reviews.map((r) => ReviewCard(
-                          review: r,
-                          isLiked: r.likedBy(currentUserId),
-                          onLike: () => reviewProvider.toggleLike(r.id),
-                          onReport: () {
-                            reviewProvider.reportReview(r.id);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('รายงานรีวิวแล้ว')),
-                            );
-                          },
-                          onReply: () => _showReplyDialog(context, r.id, userName),
-                        )),
+                    ...reviews.map(
+                      (r) => ReviewCard(
+                        review: r,
+                        isLiked: r.likedBy(currentUserId),
+                        onLike: () => reviewProvider.toggleLike(r.id),
+                        onReport: () {
+                          reviewProvider.reportReview(r.id);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('รายงานรีวิวแล้ว')),
+                          );
+                        },
+                        onReply: () =>
+                            _showReplyDialog(context, r.id, userName),
+                      ),
+                    ),
                   const SizedBox(height: AppSpacing.xxl),
                   SectionHeader(
                     title: 'ความคิดเห็น (${comments.length})',
@@ -239,13 +319,25 @@ class _DetailScreenState extends State<DetailScreen> {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   if (comments.isEmpty)
-                    Text('ยังไม่มีความคิดเห็น', style: AppTypography.body(color: AppTheme.txtSecondary(context)))
+                    Text(
+                      'ยังไม่มีความคิดเห็น',
+                      style: AppTypography.body(
+                        color: AppTheme.txtSecondary(context),
+                      ),
+                    )
                   else
-                    ...comments.map((c) => CommentTile(
-                          comment: c,
-                          onReply: () => _showAddCommentDialog(context, userName, parentId: c.id),
-                          onDelete: () => commentProvider.deleteComment(recipe.id, c.id),
-                        )),
+                    ...comments.map(
+                      (c) => CommentTile(
+                        comment: c,
+                        onReply: () => _showAddCommentDialog(
+                          context,
+                          userName,
+                          parentId: c.id,
+                        ),
+                        onDelete: () =>
+                            commentProvider.deleteComment(recipe.id, c.id),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -254,7 +346,12 @@ class _DetailScreenState extends State<DetailScreen> {
       ),
       bottomNavigationBar: SafeArea(
         child: Container(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.md),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.lg,
+            AppSpacing.md,
+          ),
           decoration: BoxDecoration(
             color: AppTheme.surf(context),
             border: Border(top: BorderSide(color: AppTheme.div(context))),
@@ -265,16 +362,22 @@ class _DetailScreenState extends State<DetailScreen> {
             onPressed: recipe.steps.isEmpty
                 ? null
                 : () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => CookingModeScreen(recipe: recipe)),
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CookingModeScreen(recipe: recipe),
                     ),
+                  ),
           ),
         ),
       ),
     );
   }
 
-  void _showMoreMenu(BuildContext context, RecipeProvider provider, FavoriteProvider favProvider) {
+  void _showMoreMenu(
+    BuildContext context,
+    RecipeProvider provider,
+    FavoriteProvider favProvider,
+  ) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -300,8 +403,14 @@ class _DetailScreenState extends State<DetailScreen> {
                 },
               ),
               ListTile(
-                leading: Icon(Icons.delete_outline_rounded, color: AppTheme.error(context)),
-                title: Text('ลบสูตร', style: TextStyle(color: AppTheme.error(context))),
+                leading: Icon(
+                  Icons.delete_outline_rounded,
+                  color: AppTheme.error(context),
+                ),
+                title: Text(
+                  'ลบสูตร',
+                  style: TextStyle(color: AppTheme.error(context)),
+                ),
                 onTap: () {
                   Navigator.pop(ctx);
                   provider.deleteRecipe(recipe.id);
@@ -333,14 +442,20 @@ class _DetailScreenState extends State<DetailScreen> {
                   return IconButton(
                     tooltip: 'ให้ ${i + 1} ดาว',
                     icon: Icon(
-                      i < rating ? Icons.star_rounded : Icons.star_border_rounded,
+                      i < rating
+                          ? Icons.star_rounded
+                          : Icons.star_border_rounded,
                       color: AppTheme.star(ctx),
                     ),
                     onPressed: () => setState(() => rating = i + 1.0),
                   );
                 }),
               ),
-              AppTextField(controller: controller, maxLines: 3, hint: 'เขียนรีวิวของคุณ...'),
+              AppTextField(
+                controller: controller,
+                maxLines: 3,
+                hint: 'เขียนรีวิวของคุณ...',
+              ),
               const SizedBox(height: AppSpacing.sm),
               OutlinedButton.icon(
                 onPressed: () {},
@@ -350,14 +465,17 @@ class _DetailScreenState extends State<DetailScreen> {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('ยกเลิก')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('ยกเลิก'),
+            ),
             TextButton(
               onPressed: () {
                 context.read<ReviewProvider>().addReview(
-                      recipeId: recipe.id,
-                      rating: rating,
-                      content: controller.text.trim(),
-                    );
+                  recipeId: recipe.id,
+                  rating: rating,
+                  content: controller.text.trim(),
+                );
                 Navigator.pop(ctx);
               },
               child: const Text('ส่ง'),
@@ -368,7 +486,11 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 
-  void _showReplyDialog(BuildContext context, String reviewId, String userName) {
+  void _showReplyDialog(
+    BuildContext context,
+    String reviewId,
+    String userName,
+  ) {
     final controller = TextEditingController();
     showDialog(
       context: context,
@@ -376,10 +498,16 @@ class _DetailScreenState extends State<DetailScreen> {
         title: const Text('ตอบกลับรีวิว'),
         content: AppTextField(controller: controller, maxLines: 2),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('ยกเลิก')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('ยกเลิก'),
+          ),
           TextButton(
             onPressed: () {
-              context.read<ReviewProvider>().addReply(reviewId, controller.text.trim());
+              context.read<ReviewProvider>().addReply(
+                reviewId,
+                controller.text.trim(),
+              );
               Navigator.pop(ctx);
             },
             child: const Text('ส่ง'),
@@ -389,7 +517,11 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 
-  void _showAddCommentDialog(BuildContext context, String userName, {String? parentId}) {
+  void _showAddCommentDialog(
+    BuildContext context,
+    String userName, {
+    String? parentId,
+  }) {
     final controller = TextEditingController();
     showDialog(
       context: context,
@@ -406,26 +538,39 @@ class _DetailScreenState extends State<DetailScreen> {
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
-                IconButton(tooltip: 'ใส่อีโมจิ 👍', icon: const Text('😊', style: TextStyle(fontSize: 20)), onPressed: () {
-                  controller.text += ' 👍';
-                }),
-                const IconButton(tooltip: 'แนบรูป (ยังไม่รองรับ)', icon: Icon(Icons.image_outlined), onPressed: null),
+                IconButton(
+                  tooltip: 'ใส่อีโมจิ 👍',
+                  icon: const Text('😊', style: TextStyle(fontSize: 20)),
+                  onPressed: () {
+                    controller.text += ' 👍';
+                  },
+                ),
+                const IconButton(
+                  tooltip: 'แนบรูป (ยังไม่รองรับ)',
+                  icon: Icon(Icons.image_outlined),
+                  onPressed: null,
+                ),
               ],
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('ยกเลิก')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('ยกเลิก'),
+          ),
           TextButton(
             onPressed: () {
               final text = controller.text.trim();
-              final mentions = RegExp(r'@(\S+)').allMatches(text).map((m) => m.group(1)!).toList();
+              final mentions = RegExp(
+                r'@(\S+)',
+              ).allMatches(text).map((m) => m.group(1)!).toList();
               context.read<CommentProvider>().addComment(
-                    recipeId: recipe.id,
-                    content: text,
-                    parentId: parentId,
-                    mentions: mentions,
-                  );
+                recipeId: recipe.id,
+                content: text,
+                parentId: parentId,
+                mentions: mentions,
+              );
               Navigator.pop(ctx);
             },
             child: const Text('ส่ง'),
@@ -443,7 +588,12 @@ class _RoundIconButton extends StatelessWidget {
   final Color? iconColor;
   final VoidCallback onTap;
 
-  const _RoundIconButton({required this.icon, required this.tooltip, required this.onTap, this.iconColor});
+  const _RoundIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    this.iconColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -464,7 +614,11 @@ class _RoundIconButton extends StatelessWidget {
                   color: AppTheme.surf(context).withValues(alpha: 0.92),
                   shape: const CircleBorder(),
                 ),
-                child: Icon(icon, size: 20, color: iconColor ?? AppTheme.txtPrimary(context)),
+                child: Icon(
+                  icon,
+                  size: 20,
+                  color: iconColor ?? AppTheme.txtPrimary(context),
+                ),
               ),
             ),
           ),
@@ -479,7 +633,11 @@ class _ImageGallery extends StatelessWidget {
   final int index;
   final ValueChanged<int> onIndexChanged;
 
-  const _ImageGallery({required this.recipe, required this.index, required this.onIndexChanged});
+  const _ImageGallery({
+    required this.recipe,
+    required this.index,
+    required this.onIndexChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -501,9 +659,13 @@ class _ImageGallery extends StatelessWidget {
           child: Semantics(
             label: 'รูปภาพสูตร',
             value: '${index + 1} จาก $dotCount',
-            increasedValue: index + 1 < dotCount ? '${index + 2} จาก $dotCount' : null,
+            increasedValue: index + 1 < dotCount
+                ? '${index + 2} จาก $dotCount'
+                : null,
             decreasedValue: index > 0 ? '$index จาก $dotCount' : null,
-            onIncrease: index + 1 < dotCount ? () => onIndexChanged(index + 1) : null,
+            onIncrease: index + 1 < dotCount
+                ? () => onIndexChanged(index + 1)
+                : null,
             onDecrease: index > 0 ? () => onIndexChanged(index - 1) : null,
             child: ExcludeSemantics(
               child: Row(
@@ -547,9 +709,16 @@ class _VideoPlaceholder extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.play_circle_outline_rounded, size: 48, color: AppTheme.prim(context)),
+            Icon(
+              Icons.play_circle_outline_rounded,
+              size: 48,
+              color: AppTheme.prim(context),
+            ),
             const SizedBox(height: AppSpacing.sm),
-            Text('วิดีโอการทำอาหาร (Placeholder)', style: AppTypography.body(color: AppTheme.txtSecondary(context))),
+            Text(
+              'วิดีโอการทำอาหาร (Placeholder)',
+              style: AppTypography.body(color: AppTheme.txtSecondary(context)),
+            ),
           ],
         ),
       ),
@@ -589,8 +758,18 @@ class _NutritionGrid extends StatelessWidget {
             children: [
               Text(item.$1, style: const TextStyle(fontSize: 18)),
               const SizedBox(height: 2),
-              Text(item.$2, style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context)).copyWith(fontSize: 14)),
-              Text(item.$3, style: AppTypography.caption(color: AppTheme.txtSecondary(context)).copyWith(fontSize: 10)),
+              Text(
+                item.$2,
+                style: AppTypography.bodyStrong(
+                  color: AppTheme.txtPrimary(context),
+                ).copyWith(fontSize: 14),
+              ),
+              Text(
+                item.$3,
+                style: AppTypography.caption(
+                  color: AppTheme.txtSecondary(context),
+                ).copyWith(fontSize: 10),
+              ),
             ],
           ),
         );
@@ -607,7 +786,10 @@ class _InfoTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: 6,
+      ),
       decoration: BoxDecoration(
         color: AppTheme.primLight(context),
         borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -617,7 +799,12 @@ class _InfoTag extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: AppTheme.prim(context)),
           const SizedBox(width: 6),
-          Text(label, style: AppTypography.caption(color: AppTheme.prim(context)).copyWith(fontWeight: FontWeight.w700)),
+          Text(
+            label,
+            style: AppTypography.caption(
+              color: AppTheme.prim(context),
+            ).copyWith(fontWeight: FontWeight.w700),
+          ),
         ],
       ),
     );
@@ -643,10 +830,20 @@ class _IngredientRow extends StatelessWidget {
               Container(
                 width: 8,
                 height: 8,
-                decoration: BoxDecoration(color: AppTheme.prim(context), shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: AppTheme.prim(context),
+                  shape: BoxShape.circle,
+                ),
               ),
               const SizedBox(width: AppSpacing.md),
-              Expanded(child: Text(display, style: AppTypography.body(color: AppTheme.txtPrimary(context)).copyWith(fontSize: 14.5))),
+              Expanded(
+                child: Text(
+                  display,
+                  style: AppTypography.body(
+                    color: AppTheme.txtPrimary(context),
+                  ).copyWith(fontSize: 14.5),
+                ),
+              ),
             ],
           ),
         ),
@@ -678,16 +875,26 @@ class _StepRow extends StatelessWidget {
             Container(
               width: 28,
               height: 28,
-              decoration: BoxDecoration(color: AppTheme.prim(context), shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: AppTheme.prim(context),
+                shape: BoxShape.circle,
+              ),
               child: Center(
-                child: Text('$number', style: AppTypography.bodyStrong(color: AppTheme.onAccent(context)).copyWith(fontSize: 12)),
+                child: Text(
+                  '$number',
+                  style: AppTypography.bodyStrong(
+                    color: AppTheme.onAccent(context),
+                  ).copyWith(fontSize: 12),
+                ),
               ),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Text(
                 text,
-                style: AppTypography.body(color: AppTheme.txtPrimary(context)).copyWith(fontSize: 14.5, height: 1.5),
+                style: AppTypography.body(
+                  color: AppTheme.txtPrimary(context),
+                ).copyWith(fontSize: 14.5, height: 1.5),
               ),
             ),
           ],

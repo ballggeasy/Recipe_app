@@ -24,8 +24,8 @@ class ApiClient {
   /// [baseUrl] ใช้จำลอง `--dart-define=API_BASE_URL=...`
   @visibleForTesting
   ApiClient.forTesting(http.Client client, {String? baseUrl})
-      : _client = client,
-        _baseUrlOverride = baseUrl;
+    : _client = client,
+      _baseUrlOverride = baseUrl;
 
   final http.Client _client;
   final String? _baseUrlOverride;
@@ -46,7 +46,9 @@ class ApiClient {
   String get baseUrl {
     final configured = _baseUrlOverride ?? _configuredBaseUrl;
     if (configured.isNotEmpty) {
-      return configured.endsWith('/') ? configured.substring(0, configured.length - 1) : configured;
+      return configured.endsWith('/')
+          ? configured.substring(0, configured.length - 1)
+          : configured;
     }
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       return 'http://10.0.2.2:3000';
@@ -56,7 +58,8 @@ class ApiClient {
 
   /// ไฟล์ที่ backend เก็บเอง (เช่นรูปที่อัปโหลด) ส่งมาเป็น path แบบ relative เช่น `/uploads/recipes/x.jpg`
   /// ต้องต่อ [baseUrl] ก่อนนำไปแสดง ส่วน URL เต็ม (เช่นรูปจาก wikimedia) ใช้ได้เลย
-  String resolveUrl(String path) => path.startsWith('/') ? '$baseUrl$path' : path;
+  String resolveUrl(String path) =>
+      path.startsWith('/') ? '$baseUrl$path' : path;
 
   bool get hasToken => _token != null;
 
@@ -88,15 +91,23 @@ class ApiClient {
     return headers;
   }
 
-  Future<dynamic> get(String path, {bool auth = true}) => _send('GET', path, auth: auth);
+  Future<dynamic> get(String path, {bool auth = true}) =>
+      _send('GET', path, auth: auth);
 
-  Future<dynamic> post(String path, {Map<String, dynamic>? body, bool auth = true}) =>
-      _send('POST', path, body: body, auth: auth);
+  Future<dynamic> post(
+    String path, {
+    Map<String, dynamic>? body,
+    bool auth = true,
+  }) => _send('POST', path, body: body, auth: auth);
 
-  Future<dynamic> patch(String path, {Map<String, dynamic>? body, bool auth = true}) =>
-      _send('PATCH', path, body: body, auth: auth);
+  Future<dynamic> patch(
+    String path, {
+    Map<String, dynamic>? body,
+    bool auth = true,
+  }) => _send('PATCH', path, body: body, auth: auth);
 
-  Future<dynamic> delete(String path, {bool auth = true}) => _send('DELETE', path, auth: auth);
+  Future<dynamic> delete(String path, {bool auth = true}) =>
+      _send('DELETE', path, auth: auth);
 
   /// อัปโหลดไฟล์แบบ multipart/form-data (เช่นรูปโปรไฟล์) พร้อม JWT ของ session ปัจจุบัน
   Future<dynamic> uploadFile(
@@ -126,7 +137,9 @@ class ApiClient {
       final streamed = await _client.send(request);
       response = await http.Response.fromStream(streamed);
     } catch (_) {
-      throw ApiException('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบว่า backend กำลังทำงานอยู่');
+      throw ApiException(
+        'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบว่า backend กำลังทำงานอยู่',
+      );
     }
 
     return _decodeOrThrow(response, sentToken: _token != null);
@@ -149,10 +162,18 @@ class ApiClient {
           response = await _client.get(uri, headers: headers);
           break;
         case 'POST':
-          response = await _client.post(uri, headers: headers, body: encodedBody);
+          response = await _client.post(
+            uri,
+            headers: headers,
+            body: encodedBody,
+          );
           break;
         case 'PATCH':
-          response = await _client.patch(uri, headers: headers, body: encodedBody);
+          response = await _client.patch(
+            uri,
+            headers: headers,
+            body: encodedBody,
+          );
           break;
         case 'DELETE':
           response = await _client.delete(uri, headers: headers);
@@ -163,7 +184,9 @@ class ApiClient {
     } on ApiException {
       rethrow;
     } catch (_) {
-      throw ApiException('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบว่า backend กำลังทำงานอยู่');
+      throw ApiException(
+        'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบว่า backend กำลังทำงานอยู่',
+      );
     }
 
     return _decodeOrThrow(response, sentToken: auth && _token != null);
@@ -179,8 +202,13 @@ class ApiClient {
     };
   }
 
-  Future<dynamic> _decodeOrThrow(http.Response response, {required bool sentToken}) async {
-    final dynamic decoded = response.body.isEmpty ? null : jsonDecode(response.body);
+  Future<dynamic> _decodeOrThrow(
+    http.Response response, {
+    required bool sentToken,
+  }) async {
+    final dynamic decoded = response.body.isEmpty
+        ? null
+        : jsonDecode(response.body);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return decoded;

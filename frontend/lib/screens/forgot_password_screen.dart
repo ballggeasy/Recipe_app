@@ -28,9 +28,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? AppTheme.error(context) : AppTheme.prim(context),
+        backgroundColor: isError
+            ? AppTheme.error(context)
+            : AppTheme.prim(context),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
       ),
     );
   }
@@ -72,9 +76,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     setState(() => _isSaving = true);
     final error = await context.read<AuthProvider>().resetPassword(
-          email: _emailController.text.trim(),
-          newPassword: _newPasswordController.text,
-        );
+      email: _emailController.text.trim(),
+      newPassword: _newPasswordController.text,
+    );
     if (!mounted) return;
     setState(() => _isSaving = false);
 
@@ -83,7 +87,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       return;
     }
 
-    _showMessage('ตั้งรหัสผ่านใหม่สำเร็จ กรุณาเข้าสู่ระบบอีกครั้ง', isError: false);
+    _showMessage(
+      'ตั้งรหัสผ่านใหม่สำเร็จ กรุณาเข้าสู่ระบบอีกครั้ง',
+      isError: false,
+    );
     Navigator.of(context).pop();
   }
 
@@ -93,14 +100,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       appBar: AppBar(title: const Text('ลืมรหัสผ่าน')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.lg),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xl,
+            vertical: AppSpacing.lg,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'ระบบนี้ทำงานแบบ local บนเครื่องเท่านั้น จึงไม่มีการส่งอีเมลยืนยันจริง '
                 'กรอกอีเมลของบัญชีเพื่อรีเซ็ตรหัสผ่านได้โดยตรง',
-                style: AppTypography.body(color: AppTheme.txtSecondary(context)),
+                style: AppTypography.body(
+                  color: AppTheme.txtSecondary(context),
+                ),
               ),
               const SizedBox(height: AppSpacing.xl),
               AppTextField(
@@ -113,7 +125,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ),
               if (!_emailVerified) ...[
                 const SizedBox(height: AppSpacing.xl),
-                AppButton.primary(label: 'ตรวจสอบอีเมล', onPressed: _checkEmail, loading: _isChecking),
+                AppButton.primary(
+                  label: 'ตรวจสอบอีเมล',
+                  onPressed: _checkEmail,
+                  loading: _isChecking,
+                ),
               ] else ...[
                 const SizedBox(height: AppSpacing.xl),
                 AppTextField(
@@ -124,7 +140,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   hint: '••••••••',
                 ),
                 const SizedBox(height: AppSpacing.xl),
-                AppButton.primary(label: 'ตั้งรหัสผ่านใหม่', onPressed: _resetPassword, loading: _isSaving),
+                AppButton.primary(
+                  label: 'ตั้งรหัสผ่านใหม่',
+                  onPressed: _resetPassword,
+                  loading: _isSaving,
+                ),
               ],
             ],
           ),

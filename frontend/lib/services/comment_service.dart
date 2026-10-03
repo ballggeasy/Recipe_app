@@ -8,7 +8,8 @@ class CommentService {
   CommentService({ApiClient? api}) : _api = api ?? ApiClient();
 
   Future<List<Comment>> fetchForRecipe(String recipeId) async {
-    final data = await _api.get('/recipes/$recipeId/comments', auth: false) as List;
+    final data =
+        await _api.get('/recipes/$recipeId/comments', auth: false) as List;
     return data.map((e) => Comment.fromApi(e as Map<String, dynamic>)).toList();
   }
 
@@ -19,15 +20,17 @@ class CommentService {
     List<String> mentions = const [],
     String? imageUrl,
   }) async {
-    final data = await _api.post(
-      '/recipes/$recipeId/comments',
-      body: {
-        'content': content,
-        'parentId': ?parentId,
-        'mentions': mentions,
-        'imageUrl': ?imageUrl,
-      },
-    ) as Map<String, dynamic>;
+    final data =
+        await _api.post(
+              '/recipes/$recipeId/comments',
+              body: {
+                'content': content,
+                'parentId': ?parentId,
+                'mentions': mentions,
+                'imageUrl': ?imageUrl,
+              },
+            )
+            as Map<String, dynamic>;
     return Comment.fromApi(data);
   }
 

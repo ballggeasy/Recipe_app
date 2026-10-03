@@ -73,7 +73,9 @@ class RecipeCard extends StatelessWidget {
                       recipe.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTypography.h3(color: AppTheme.txtPrimary(context)),
+                      style: AppTypography.h3(
+                        color: AppTheme.txtPrimary(context),
+                      ),
                     ),
                     const SizedBox(height: 6),
                     RatingDisplay(
@@ -85,21 +87,33 @@ class RecipeCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Icon(Icons.access_time_rounded, size: 13, color: AppTheme.txtSecondary(context)),
+                        Icon(
+                          Icons.access_time_rounded,
+                          size: 13,
+                          color: AppTheme.txtSecondary(context),
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '${recipe.cookTimeMinutes} นาที',
-                          style: AppTypography.caption(color: AppTheme.txtSecondary(context)),
+                          style: AppTypography.caption(
+                            color: AppTheme.txtSecondary(context),
+                          ),
                         ),
                         const SizedBox(width: 8),
-                        Icon(Icons.bar_chart_rounded, size: 13, color: AppTheme.txtSecondary(context)),
+                        Icon(
+                          Icons.bar_chart_rounded,
+                          size: 13,
+                          color: AppTheme.txtSecondary(context),
+                        ),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
                             recipe.difficulty,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: AppTypography.caption(color: AppTheme.txtSecondary(context)),
+                            style: AppTypography.caption(
+                              color: AppTheme.txtSecondary(context),
+                            ),
                           ),
                         ),
                       ],
@@ -135,12 +149,15 @@ class _FavoriteButton extends StatelessWidget {
         ),
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 180),
-          transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+          transitionBuilder: (child, anim) =>
+              ScaleTransition(scale: anim, child: child),
           child: Icon(
             isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
             key: ValueKey(isFav),
             size: 18,
-            color: isFav ? AppTheme.error(context) : AppTheme.txtSecondary(context),
+            color: isFav
+                ? AppTheme.error(context)
+                : AppTheme.txtSecondary(context),
           ),
         ),
       ),

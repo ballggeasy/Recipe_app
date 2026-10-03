@@ -25,7 +25,14 @@ void main() {
         'steps': ['ผัดหมู', 'ใส่กะเพรา'],
         'tips': 'ใช้ไฟแรง',
         'platingTips': null,
-        'nutrition': {'calories': 550, 'protein': 30, 'fat': 20.5, 'carbs': 60, 'sugar': 5, 'sodium': 900},
+        'nutrition': {
+          'calories': 550,
+          'protein': 30,
+          'fat': 20.5,
+          'carbs': 60,
+          'sugar': 5,
+          'sodium': 900,
+        },
         'dietTags': ['โปรตีนสูง'],
         'season': 'ฤดูร้อน',
         'videoUrl': null,
@@ -48,28 +55,41 @@ void main() {
       expect(recipe.nutrition!.fat, 20.5);
       expect(recipe.isOfficial, isFalse);
       expect(recipe.uploaderName, 'สมชาย');
-      expect(recipe.rating, 4.0, reason: 'int rating from JSON must become a double');
+      expect(
+        recipe.rating,
+        4.0,
+        reason: 'int rating from JSON must become a double',
+      );
       expect(recipe.isRecommended, isTrue);
       expect(recipe.createdAt, DateTime.utc(2026, 5, 1, 10));
     });
 
-    test('prefixes uploaded (relative) image paths with the API base URL, leaves full URLs alone', () {
-      final recipe = Recipe.fromApi({
-        'id': 'r3',
-        'name': 'ข้าวผัด',
-        'emoji': '🍚',
-        'category': 'อาหารจานเดียว',
-        'country': 'ไทย',
-        'cookTimeMinutes': 10,
-        'difficulty': 'ง่าย',
-        'imageUrl': '/uploads/recipes/r3-1.jpg',
-        'imageUrls': ['/uploads/recipes/r3-1.jpg', 'https://example.com/b.jpg'],
-      });
+    test(
+      'prefixes uploaded (relative) image paths with the API base URL, leaves full URLs alone',
+      () {
+        final recipe = Recipe.fromApi({
+          'id': 'r3',
+          'name': 'ข้าวผัด',
+          'emoji': '🍚',
+          'category': 'อาหารจานเดียว',
+          'country': 'ไทย',
+          'cookTimeMinutes': 10,
+          'difficulty': 'ง่าย',
+          'imageUrl': '/uploads/recipes/r3-1.jpg',
+          'imageUrls': [
+            '/uploads/recipes/r3-1.jpg',
+            'https://example.com/b.jpg',
+          ],
+        });
 
-      final base = ApiClient().baseUrl;
-      expect(recipe.imageUrl, '$base/uploads/recipes/r3-1.jpg');
-      expect(recipe.imageUrls, ['$base/uploads/recipes/r3-1.jpg', 'https://example.com/b.jpg']);
-    });
+        final base = ApiClient().baseUrl;
+        expect(recipe.imageUrl, '$base/uploads/recipes/r3-1.jpg');
+        expect(recipe.imageUrls, [
+          '$base/uploads/recipes/r3-1.jpg',
+          'https://example.com/b.jpg',
+        ]);
+      },
+    );
 
     test('falls back to defaults when optional fields are missing', () {
       final recipe = Recipe.fromApi({
@@ -98,23 +118,29 @@ void main() {
   });
 
   group('Recipe helpers', () {
-    Recipe build({String imageUrl = '', List<String>? imageUrls, bool isOfficial = true, String? uploaderName}) =>
-        Recipe(
-          id: 'r',
-          name: 'Pad Thai',
-          imageUrl: imageUrl,
-          imageUrls: imageUrls,
-          category: 'เส้น',
-          cookTimeMinutes: 20,
-          prepTimeMinutes: 15,
-          difficulty: 'ง่าย',
-          ingredients: const ['เส้นจันท์'],
-          ingredientItems: const [IngredientItem(name: 'กุ้งสด', amount: '5', unit: 'ตัว')],
-          steps: const [],
-          country: 'ไทย',
-          isOfficial: isOfficial,
-          uploaderName: uploaderName,
-        );
+    Recipe build({
+      String imageUrl = '',
+      List<String>? imageUrls,
+      bool isOfficial = true,
+      String? uploaderName,
+    }) => Recipe(
+      id: 'r',
+      name: 'Pad Thai',
+      imageUrl: imageUrl,
+      imageUrls: imageUrls,
+      category: 'เส้น',
+      cookTimeMinutes: 20,
+      prepTimeMinutes: 15,
+      difficulty: 'ง่าย',
+      ingredients: const ['เส้นจันท์'],
+      ingredientItems: const [
+        IngredientItem(name: 'กุ้งสด', amount: '5', unit: 'ตัว'),
+      ],
+      steps: const [],
+      country: 'ไทย',
+      isOfficial: isOfficial,
+      uploaderName: uploaderName,
+    );
 
     test('totalTimeMinutes adds prep and cook time', () {
       expect(build().totalTimeMinutes, 35);
@@ -128,17 +154,23 @@ void main() {
 
     test('sourceLabel shows official or the uploader name', () {
       expect(build().sourceLabel, 'สูตรทางการ');
-      expect(build(isOfficial: false, uploaderName: 'สมศรี').sourceLabel, 'โดย สมศรี');
+      expect(
+        build(isOfficial: false, uploaderName: 'สมศรี').sourceLabel,
+        'โดย สมศรี',
+      );
       expect(build(isOfficial: false).sourceLabel, 'โดย ผู้ใช้');
     });
 
-    test('matchesQuery checks the name and both ingredient lists, case-insensitively', () {
-      final recipe = build();
-      expect(recipe.matchesQuery(''), isTrue);
-      expect(recipe.matchesQuery('pad'), isTrue);
-      expect(recipe.matchesQuery('เส้นจันท์'), isTrue);
-      expect(recipe.matchesQuery('กุ้ง'), isTrue);
-      expect(recipe.matchesQuery('ปลาร้า'), isFalse);
-    });
+    test(
+      'matchesQuery checks the name and both ingredient lists, case-insensitively',
+      () {
+        final recipe = build();
+        expect(recipe.matchesQuery(''), isTrue);
+        expect(recipe.matchesQuery('pad'), isTrue);
+        expect(recipe.matchesQuery('เส้นจันท์'), isTrue);
+        expect(recipe.matchesQuery('กุ้ง'), isTrue);
+        expect(recipe.matchesQuery('ปลาร้า'), isFalse);
+      },
+    );
   });
 }

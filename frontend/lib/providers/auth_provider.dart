@@ -10,7 +10,8 @@ enum AuthStatus { unknown, loggedOut, loggedIn, guest }
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
 
-  AuthProvider({AuthService? authService}) : _authService = authService ?? AuthService() {
+  AuthProvider({AuthService? authService})
+    : _authService = authService ?? AuthService() {
     _authService.onSessionExpired = _handleSessionExpired;
   }
 
@@ -57,7 +58,11 @@ class AuthProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    final result = await _authService.register(name: name, email: email, password: password);
+    final result = await _authService.register(
+      name: name,
+      email: email,
+      password: password,
+    );
     if (result.error == null) {
       _currentUser = result.user;
       _status = AuthStatus.loggedIn;
@@ -76,7 +81,11 @@ class AuthProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    final result = await _authService.login(email: email, password: password, remember: remember);
+    final result = await _authService.login(
+      email: email,
+      password: password,
+      remember: remember,
+    );
     if (result.error == null) {
       _currentUser = result.user;
       _status = AuthStatus.loggedIn;
@@ -93,7 +102,10 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<String?> resetPassword({required String email, required String newPassword}) {
+  Future<String?> resetPassword({
+    required String email,
+    required String newPassword,
+  }) {
     return _authService.resetPassword(email: email, newPassword: newPassword);
   }
 

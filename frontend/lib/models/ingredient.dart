@@ -17,14 +17,14 @@ class IngredientItem {
   }
 
   Map<String, dynamic> toJson() => {
-        'name': name,
-        'amount': amount,
-        'unit': unit,
-      };
+    'name': name,
+    'amount': amount,
+    'unit': unit,
+  };
 
   factory IngredientItem.fromJson(Map<String, dynamic> json) => IngredientItem(
-        name: json['name'] as String,
-        amount: json['amount'] as String? ?? '',
-        unit: json['unit'] as String? ?? '',
-      );
+    name: json['name'] as String,
+    amount: json['amount'] as String? ?? '',
+    unit: json['unit'] as String? ?? '',
+  );
 }

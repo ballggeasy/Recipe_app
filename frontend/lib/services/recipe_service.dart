@@ -33,31 +33,36 @@ class RecipeService {
     List<String> dietTags = const [],
     NutritionInfo? nutrition,
   }) async {
-    final data = await _api.post(
-      '/recipes',
-      body: {
-        'name': name,
-        'emoji': emoji,
-        'category': category,
-        'country': country,
-        'cookTimeMinutes': cookTimeMinutes,
-        'prepTimeMinutes': prepTimeMinutes,
-        'difficulty': difficulty,
-        'servings': servings,
-        'ingredients': ingredients,
-        'ingredientItems': ingredientItems.map((i) => i.toJson()).toList(),
-        'steps': steps,
-        'tips': ?tips,
-        'platingTips': ?platingTips,
-        'dietTags': dietTags,
-        'nutrition': ?nutrition?.toJson(),
-      },
-    ) as Map<String, dynamic>;
+    final data =
+        await _api.post(
+              '/recipes',
+              body: {
+                'name': name,
+                'emoji': emoji,
+                'category': category,
+                'country': country,
+                'cookTimeMinutes': cookTimeMinutes,
+                'prepTimeMinutes': prepTimeMinutes,
+                'difficulty': difficulty,
+                'servings': servings,
+                'ingredients': ingredients,
+                'ingredientItems': ingredientItems
+                    .map((i) => i.toJson())
+                    .toList(),
+                'steps': steps,
+                'tips': ?tips,
+                'platingTips': ?platingTips,
+                'dietTags': dietTags,
+                'nutrition': ?nutrition?.toJson(),
+              },
+            )
+            as Map<String, dynamic>;
     return Recipe.fromApi(data);
   }
 
   Future<Recipe> update(String id, Map<String, dynamic> patch) async {
-    final data = await _api.patch('/recipes/$id', body: patch) as Map<String, dynamic>;
+    final data =
+        await _api.patch('/recipes/$id', body: patch) as Map<String, dynamic>;
     return Recipe.fromApi(data);
   }
 
@@ -65,13 +70,15 @@ class RecipeService {
 
   /// อัปโหลดรูปเมนูให้สูตรที่ตัวเองเป็นเจ้าของ — backend แทนที่รูปเดิมและคืนสูตรที่อัปเดตแล้ว
   Future<Recipe> uploadImage(String id, XFile file) async {
-    final data = await _api.uploadFile(
-      '/recipes/$id/image',
-      fieldName: 'file',
-      bytes: await file.readAsBytes(),
-      filename: file.name,
-      contentType: file.mimeType,
-    ) as Map<String, dynamic>;
+    final data =
+        await _api.uploadFile(
+              '/recipes/$id/image',
+              fieldName: 'file',
+              bytes: await file.readAsBytes(),
+              filename: file.name,
+              contentType: file.mimeType,
+            )
+            as Map<String, dynamic>;
     return Recipe.fromApi(data);
   }
 }

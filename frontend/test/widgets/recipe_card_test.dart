@@ -41,19 +41,30 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
     final api = fakeApi({});
-    provider = RecipeProvider(recipeService: RecipeService(api: api), favoriteService: FavoriteService(api: api));
+    provider = RecipeProvider(
+      recipeService: RecipeService(api: api),
+      favoriteService: FavoriteService(api: api),
+    );
     taps = 0;
   });
 
-  final recipe = Recipe.fromApi(recipeJson(name: 'ผัดกะเพรา', cookTimeMinutes: 15, difficulty: 'ง่าย'));
+  final recipe = Recipe.fromApi(
+    recipeJson(name: 'ผัดกะเพรา', cookTimeMinutes: 15, difficulty: 'ง่าย'),
+  );
 
-  testWidgets('shows the name, cook time, difficulty and emoji fallback', (tester) async {
+  testWidgets('shows the name, cook time, difficulty and emoji fallback', (
+    tester,
+  ) async {
     await pumpCard(tester, recipe);
 
     expect(find.text('ผัดกะเพรา'), findsOneWidget);
     expect(find.text('15 นาที'), findsOneWidget);
     expect(find.text('ง่าย'), findsOneWidget);
-    expect(find.text('🍛'), findsOneWidget, reason: 'recipe has no imageUrl, so the emoji is shown');
+    expect(
+      find.text('🍛'),
+      findsOneWidget,
+      reason: 'recipe has no imageUrl, so the emoji is shown',
+    );
   });
 
   testWidgets('calls onTap when the card is tapped', (tester) async {
@@ -63,7 +74,9 @@ void main() {
     expect(taps, 1);
   });
 
-  testWidgets('heart button toggles the favorite without opening the recipe', (tester) async {
+  testWidgets('heart button toggles the favorite without opening the recipe', (
+    tester,
+  ) async {
     await pumpCard(tester, recipe);
     expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
 

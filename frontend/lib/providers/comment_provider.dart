@@ -8,7 +8,8 @@ import '../services/comment_service.dart';
 class CommentProvider extends ChangeNotifier {
   final CommentService _commentService;
 
-  CommentProvider({CommentService? commentService}) : _commentService = commentService ?? CommentService();
+  CommentProvider({CommentService? commentService})
+    : _commentService = commentService ?? CommentService();
 
   final Map<String, List<Comment>> _commentsByRecipe = {};
   final Set<String> _loadingRecipeIds = {};
@@ -22,7 +23,9 @@ class CommentProvider extends ChangeNotifier {
     _loadingRecipeIds.add(recipeId);
     notifyListeners();
     try {
-      _commentsByRecipe[recipeId] = await _commentService.fetchForRecipe(recipeId);
+      _commentsByRecipe[recipeId] = await _commentService.fetchForRecipe(
+        recipeId,
+      );
     } on ApiException {
       _commentsByRecipe[recipeId] = _commentsByRecipe[recipeId] ?? [];
     }

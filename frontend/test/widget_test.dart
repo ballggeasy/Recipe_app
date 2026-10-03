@@ -10,7 +10,9 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
 
-  testWidgets('App boots and shows the login screen', (WidgetTester tester) async {
+  testWidgets('App boots and shows the login screen', (
+    WidgetTester tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
 
     await tester.pumpWidget(const RecipeApp());
@@ -21,7 +23,9 @@ void main() {
     expect(find.text('ดูสูตรอาหารโดยไม่เข้าสู่ระบบ'), findsOneWidget);
   });
 
-  testWidgets('Guest can continue into the home screen', (WidgetTester tester) async {
+  testWidgets('Guest can continue into the home screen', (
+    WidgetTester tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
 
     await tester.pumpWidget(const RecipeApp());

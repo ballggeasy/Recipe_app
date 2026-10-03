@@ -23,14 +23,14 @@ class AdvancedSearchScreen extends StatelessWidget {
   const AdvancedSearchScreen({super.key});
 
   SortOption _sortFromKey(String key) => switch (key) {
-        'name_asc' => SortOption.nameAsc,
-        'name_desc' => SortOption.nameDesc,
-        'rating_desc' => SortOption.ratingDesc,
-        'time_asc' => SortOption.timeAsc,
-        'time_desc' => SortOption.timeDesc,
-        'newest' => SortOption.newest,
-        _ => SortOption.popular,
-      };
+    'name_asc' => SortOption.nameAsc,
+    'name_desc' => SortOption.nameDesc,
+    'rating_desc' => SortOption.ratingDesc,
+    'time_asc' => SortOption.timeAsc,
+    'time_desc' => SortOption.timeDesc,
+    'newest' => SortOption.newest,
+    _ => SortOption.popular,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +48,12 @@ class AdvancedSearchScreen extends StatelessWidget {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.xxl),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.sm,
+          AppSpacing.lg,
+          AppSpacing.xxl,
+        ),
         children: [
           const SearchBarWidget(showHistory: true),
           const SizedBox(height: AppSpacing.xl),
@@ -144,7 +149,9 @@ class AdvancedSearchScreen extends StatelessWidget {
               const SizedBox(width: AppSpacing.sm),
               Text(
                 '(${recipes.length} เมนู)',
-                style: AppTypography.body(color: AppTheme.txtSecondary(context)),
+                style: AppTypography.body(
+                  color: AppTheme.txtSecondary(context),
+                ),
               ),
             ],
           ),
@@ -168,7 +175,9 @@ class AdvancedSearchScreen extends StatelessWidget {
                   recipe: recipe,
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => DetailScreen(recipe: recipe)),
+                    MaterialPageRoute(
+                      builder: (_) => DetailScreen(recipe: recipe),
+                    ),
                   ),
                 ),
               ),
@@ -192,7 +201,12 @@ class _FilterGroup extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context))),
+          Text(
+            label,
+            style: AppTypography.bodyStrong(
+              color: AppTheme.txtPrimary(context),
+            ),
+          ),
           const SizedBox(height: AppSpacing.sm),
           child,
         ],
@@ -248,7 +262,9 @@ class _SearchResultCard extends StatelessWidget {
                         recipe.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AppTypography.h3(color: AppTheme.txtPrimary(context)),
+                        style: AppTypography.h3(
+                          color: AppTheme.txtPrimary(context),
+                        ),
                       ),
                       const SizedBox(height: 2),
                       RatingDisplay(
@@ -260,16 +276,31 @@ class _SearchResultCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          Icon(Icons.access_time_rounded, size: 12, color: AppTheme.txtSecondary(context)),
+                          Icon(
+                            Icons.access_time_rounded,
+                            size: 12,
+                            color: AppTheme.txtSecondary(context),
+                          ),
                           const SizedBox(width: 3),
                           Text(
                             '${recipe.totalTimeMinutes} นาที',
-                            style: AppTypography.caption(color: AppTheme.txtSecondary(context)),
+                            style: AppTypography.caption(
+                              color: AppTheme.txtSecondary(context),
+                            ),
                           ),
                           const SizedBox(width: 8),
-                          Icon(Icons.bar_chart_rounded, size: 12, color: AppTheme.txtSecondary(context)),
+                          Icon(
+                            Icons.bar_chart_rounded,
+                            size: 12,
+                            color: AppTheme.txtSecondary(context),
+                          ),
                           const SizedBox(width: 3),
-                          Text(recipe.difficulty, style: AppTypography.caption(color: AppTheme.txtSecondary(context))),
+                          Text(
+                            recipe.difficulty,
+                            style: AppTypography.caption(
+                              color: AppTheme.txtSecondary(context),
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -283,8 +314,12 @@ class _SearchResultCard extends StatelessWidget {
                   label: isFav ? 'เอาออกจากสูตรโปรด' : 'บันทึกเป็นสูตรโปรด',
                   selected: isFav,
                   child: Icon(
-                    isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                    color: isFav ? AppTheme.error(context) : AppTheme.txtSecondary(context),
+                    isFav
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                    color: isFav
+                        ? AppTheme.error(context)
+                        : AppTheme.txtSecondary(context),
                     size: 20,
                   ),
                 ),

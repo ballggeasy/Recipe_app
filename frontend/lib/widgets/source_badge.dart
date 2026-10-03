@@ -15,8 +15,12 @@ class SourceBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isOfficial = recipe.isOfficial;
-    final bgColor = isOfficial ? AppTheme.primLight(context) : AppTheme.secondaryMuted(context);
-    final fgColor = isOfficial ? AppTheme.prim(context) : AppTheme.secondary(context);
+    final bgColor = isOfficial
+        ? AppTheme.primLight(context)
+        : AppTheme.secondaryMuted(context);
+    final fgColor = isOfficial
+        ? AppTheme.prim(context)
+        : AppTheme.secondary(context);
     final icon = isOfficial ? Icons.verified_rounded : Icons.person_rounded;
     final label = isOfficial ? 'ทางการ' : (recipe.uploaderName ?? 'ผู้ใช้');
 
@@ -39,8 +43,9 @@ class SourceBadge extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTypography.overline(color: fgColor)
-                  .copyWith(fontSize: compact ? 10.5 : 12, letterSpacing: 0.1),
+              style: AppTypography.overline(
+                color: fgColor,
+              ).copyWith(fontSize: compact ? 10.5 : 12, letterSpacing: 0.1),
             ),
           ),
         ],
