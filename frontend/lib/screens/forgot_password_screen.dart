@@ -6,6 +6,7 @@ import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
 import '../providers/auth_provider.dart';
+import '../services/api_client.dart';
 import '../widgets/common/app_button.dart';
 import '../widgets/common/app_text_field.dart';
 
@@ -42,7 +43,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
 
     setState(() => _isChecking = true);
-    final exists = await context.read<AuthProvider>().checkUserExists(email);
+    final bool exists;
+    try {
+      exists = await context.read<AuthProvider>().checkUserExists(email);
+    } on ApiException catch (e) {
+      // เช่น 403 เมื่อ backend ปิดระบบรีเซ็ตรหัสผ่านไว้ (ค่าเริ่มต้นของ production)
+      if (!mounted) return;
+      setState(() => _isChecking = false);
+      _showMessage(e.message);
+      return;
+    }
     if (!mounted) return;
     setState(() {
       _isChecking = false;
