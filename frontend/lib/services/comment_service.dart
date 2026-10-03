@@ -23,9 +23,9 @@ class CommentService {
       '/recipes/$recipeId/comments',
       body: {
         'content': content,
-        if (parentId != null) 'parentId': parentId,
+        'parentId': ?parentId,
         'mentions': mentions,
-        if (imageUrl != null) 'imageUrl': imageUrl,
+        'imageUrl': ?imageUrl,
       },
     ) as Map<String, dynamic>;
     return Comment.fromApi(data);

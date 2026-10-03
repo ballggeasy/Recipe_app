@@ -47,10 +47,10 @@ class RecipeService {
         'ingredients': ingredients,
         'ingredientItems': ingredientItems.map((i) => i.toJson()).toList(),
         'steps': steps,
-        if (tips != null) 'tips': tips,
-        if (platingTips != null) 'platingTips': platingTips,
+        'tips': ?tips,
+        'platingTips': ?platingTips,
         'dietTags': dietTags,
-        if (nutrition != null) 'nutrition': nutrition.toJson(),
+        'nutrition': ?nutrition?.toJson(),
       },
     ) as Map<String, dynamic>;
     return Recipe.fromApi(data);

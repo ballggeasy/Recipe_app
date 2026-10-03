@@ -37,7 +37,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _pickImage() async {
     final XFile? picked = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
-    if (picked == null) return;
+    if (picked == null || !mounted) return;
     try {
       await context.read<AuthProvider>().uploadAvatar(picked);
       if (!mounted) return;
@@ -65,6 +65,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
 
+    if (!mounted) return;
     if (newName != null && newName.isNotEmpty) {
       try {
         await context.read<AuthProvider>().updateProfile(name: newName);
@@ -108,7 +109,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
     if (newController.text.length < 6) {
       _showMessage('รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร', isError: true);
       return;
@@ -143,7 +144,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
     await context.read<AuthProvider>().deleteAccount();
     if (!mounted) return;
