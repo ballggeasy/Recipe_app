@@ -1,12 +1,11 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Test } from '@nestjs/testing';
 import { existsSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import { basename, join } from 'path';
 import request from 'supertest';
-import { AppModule } from '../src/app.module';
 import { uploadsRoot } from '../src/common/image-upload';
 import { recipeSeeds } from '../src/seed/seed-data';
+import { createTestApp } from './helpers/create-test-app';
 
 const newRecipe = {
   name: 'Test Krapao',
@@ -23,11 +22,7 @@ describe('Recipe API (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = moduleRef.createNestApplication();
-    // Same pipe configuration as src/main.ts
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
-    await app.init();
+    app = await createTestApp();
   });
 
   afterAll(async () => {
@@ -85,7 +80,12 @@ describe('Recipe API (e2e)', () => {
         .post('/auth/login')
         .send({ email: 'nobody-here@example.com', password: 'nope-nope' })
         .expect(401);
-      expect(unknown.body).toEqual(wrong.body);
+      // requestId/timestamp legitimately differ per request; everything the caller can learn from must not.
+      expect({ ...unknown.body, requestId: null, timestamp: null }).toEqual({
+        ...wrong.body,
+        requestId: null,
+        timestamp: null,
+      });
     });
 
     it('rejects invalid bodies and unknown fields with 400', async () => {

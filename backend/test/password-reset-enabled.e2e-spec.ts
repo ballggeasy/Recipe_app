@@ -1,8 +1,8 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
 import { rmSync } from 'fs';
 import request from 'supertest';
 import { uploadsRoot } from '../src/common/image-upload';
+import { createTestApp } from './helpers/create-test-app';
 
 // ConfigModule reads the environment when AppModule is first loaded, so the opt-in flag has to be
 // set before AppModule is imported. That is why this lives in its own file (own module registry).
@@ -11,11 +11,7 @@ describe('Password reset with ALLOW_INSECURE_PASSWORD_RESET=true (e2e)', () => {
 
   beforeAll(async () => {
     process.env.ALLOW_INSECURE_PASSWORD_RESET = 'true';
-    const { AppModule } = await import('../src/app.module');
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = moduleRef.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
-    await app.init();
+    app = await createTestApp();
   });
 
   afterAll(async () => {

@@ -40,7 +40,8 @@ export class RecipesService {
       tips: dto.tips ?? null,
       platingTips: dto.platingTips ?? null,
       videoUrl: dto.videoUrl ?? null,
-      isRecommended: dto.isRecommended ?? false,
+      // Editorial flags are not user-settable: user recipes are never official or recommended.
+      isRecommended: false,
       isOfficial: false,
       uploaderId: user.id,
       uploaderName: user.name,

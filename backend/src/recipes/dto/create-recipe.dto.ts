@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsInt, IsNumber, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
+import { IsArray, IsInt, IsNumber, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
 import { IngredientItem, NutritionInfo } from '../recipe.entity';
 
 class IngredientItemDto implements IngredientItem {
@@ -111,8 +111,4 @@ export class CreateRecipeDto {
   @IsOptional()
   @IsString()
   videoUrl?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  isRecommended?: boolean;
 }
