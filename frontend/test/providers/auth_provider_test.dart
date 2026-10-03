@@ -99,6 +99,36 @@ void main() {
     expect(auth.isLoggedIn, isTrue);
   });
 
+  group('expired session', () {
+    test('logs the user out when a later authenticated call is rejected with 401', () async {
+      final auth = buildProvider({
+        'POST /auth/login': (_) => jsonResponse({'accessToken': 'tok', 'user': _user}),
+        'POST /auth/change-password': (_) => jsonResponse({'message': 'Unauthorized'}, 401),
+      });
+      await auth.login(email: 'somchai@example.com', password: 'secret123');
+      expect(auth.isLoggedIn, isTrue);
+
+      await auth.changePassword(currentPassword: 'secret123', newPassword: 'newpass123');
+
+      expect(auth.status, AuthStatus.loggedOut);
+      expect(auth.currentUser, isNull);
+      expect((await SharedPreferences.getInstance()).getString('auth_token'), isNull);
+    });
+
+    test('stays logged in when the current password is merely wrong (400)', () async {
+      final auth = buildProvider({
+        'POST /auth/login': (_) => jsonResponse({'accessToken': 'tok', 'user': _user}),
+        'POST /auth/change-password': (_) => jsonResponse({'message': 'รหัสผ่านปัจจุบันไม่ถูกต้อง'}, 400),
+      });
+      await auth.login(email: 'somchai@example.com', password: 'secret123');
+
+      final error = await auth.changePassword(currentPassword: 'oops', newPassword: 'newpass123');
+
+      expect(error, 'รหัสผ่านปัจจุบันไม่ถูกต้อง');
+      expect(auth.isLoggedIn, isTrue);
+    });
+  });
+
   test('continueAsGuest switches to guest with no user', () {
     final auth = buildProvider({});
     auth.continueAsGuest();

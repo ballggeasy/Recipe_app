@@ -19,6 +19,9 @@ class AuthService {
 
   AuthService({ApiClient? api}) : _api = api ?? ApiClient();
 
+  /// เรียกเมื่อ backend ปฏิเสธ token ของผู้ใช้ที่ล็อกอินอยู่ (หมดอายุ/ถูกลบบัญชี) — token ถูกล้างแล้ว
+  set onSessionExpired(void Function()? callback) => _api.onUnauthorized = callback;
+
   Future<AuthResult> register({
     required String name,
     required String email,

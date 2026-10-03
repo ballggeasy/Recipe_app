@@ -10,7 +10,17 @@ enum AuthStatus { unknown, loggedOut, loggedIn, guest }
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
 
-  AuthProvider({AuthService? authService}) : _authService = authService ?? AuthService();
+  AuthProvider({AuthService? authService}) : _authService = authService ?? AuthService() {
+    _authService.onSessionExpired = _handleSessionExpired;
+  }
+
+  /// Token ถูกปฏิเสธระหว่างใช้งาน → กลับไปหน้าล็อกอินแทนที่จะค้างในสถานะล็อกอินที่ใช้ไม่ได้
+  void _handleSessionExpired() {
+    if (_status != AuthStatus.loggedIn) return;
+    _currentUser = null;
+    _status = AuthStatus.loggedOut;
+    notifyListeners();
+  }
 
   AuthStatus _status = AuthStatus.unknown;
   AppUser? _currentUser;
