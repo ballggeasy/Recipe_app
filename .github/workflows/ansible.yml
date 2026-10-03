@@ -31,3 +31,5 @@ jobs:
       - run: ansible-galaxy collection install -r requirements.yml
       - run: ansible-playbook -i inventory.ini.example playbook.yml --syntax-check
       - run: ansible-lint playbook.yml
+      # Behaviour of the deploy script (deploy, rollback, pin) against stub docker/git/curl.
+      - run: bash tests/test_recipe_deploy.sh

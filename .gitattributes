@@ -1,3 +1,6 @@
 # Shell scripts and CI files run on Linux: keep LF even when checked out on Windows.
 *.sh text eol=lf
 .github/** text eol=lf
+# Rendered onto the VM by Ansible: CRLF would break the bash shebang.
+*.j2 text eol=lf
+ansible/** text eol=lf
