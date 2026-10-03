@@ -81,6 +81,19 @@ describe('Recipe API (e2e)', () => {
       await http().post('/auth/login').send({ email: 'bob@example.com', password: 'nope-nope' }).expect(401);
     });
 
+    it('gives the same 401 body for an unknown email as for a wrong password', async () => {
+      await registerUser('known@example.com');
+      const wrong = await http()
+        .post('/auth/login')
+        .send({ email: 'known@example.com', password: 'nope-nope' })
+        .expect(401);
+      const unknown = await http()
+        .post('/auth/login')
+        .send({ email: 'nobody-here@example.com', password: 'nope-nope' })
+        .expect(401);
+      expect(unknown.body).toEqual(wrong.body);
+    });
+
     it('rejects invalid bodies and unknown fields with 400', async () => {
       await http().post('/auth/register').send({ name: 'X', email: 'not-an-email', password: 'secret123' }).expect(400);
       await http().post('/auth/register').send({ name: 'X', email: 'x@example.com', password: '123' }).expect(400);

@@ -93,16 +93,19 @@ describe('AuthService', () => {
       expect(jwtService.verify(result.accessToken).sub).toBe(result.user.id);
     });
 
-    it('throws NotFoundException for an unknown email', async () => {
-      await expect(service.login('nobody@example.com', 'secret123')).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
-    });
-
     it('throws UnauthorizedException for a wrong password', async () => {
       await expect(service.login('somchai@example.com', 'wrong-pass')).rejects.toBeInstanceOf(
         UnauthorizedException,
       );
+    });
+
+    it('answers an unknown email exactly like a wrong password so emails cannot be enumerated', async () => {
+      const unknown = await service.login('nobody@example.com', 'secret123').catch((e) => e);
+      const wrong = await service.login('somchai@example.com', 'wrong-pass').catch((e) => e);
+
+      expect(unknown).toBeInstanceOf(UnauthorizedException);
+      expect(unknown.getStatus()).toBe(wrong.getStatus());
+      expect(unknown.getResponse()).toEqual(wrong.getResponse());
     });
   });
 

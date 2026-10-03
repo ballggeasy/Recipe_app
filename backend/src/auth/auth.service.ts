@@ -17,6 +17,11 @@ export interface SafeUser {
   profileImageUrl: string | null;
 }
 
+const INVALID_CREDENTIALS_MESSAGE = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+const BCRYPT_COST = 10;
+/** Compared against when the email is unknown so login takes as long as for a real account. */
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync('not-a-real-password', BCRYPT_COST);
+
 function toSafeUser(user: User): SafeUser {
   return {
     id: user.id,
@@ -34,7 +39,7 @@ export class AuthService {
   ) {}
 
   private hashPassword(password: string): Promise<string> {
-    return bcrypt.hash(password, 10);
+    return bcrypt.hash(password, BCRYPT_COST);
   }
 
   private signToken(user: User): string {
@@ -57,13 +62,12 @@ export class AuthService {
   async login(email: string, password: string): Promise<AuthResult> {
     const normalizedEmail = email.trim().toLowerCase();
     const user = await this.usersService.findByEmail(normalizedEmail);
-    if (!user) {
-      throw new NotFoundException('ไม่พบบัญชีผู้ใช้นี้');
-    }
 
-    const passwordMatches = await bcrypt.compare(password, user.passwordHash);
-    if (!passwordMatches) {
-      throw new UnauthorizedException('รหัสผ่านไม่ถูกต้อง');
+    // Same work and same answer for "no such account" and "wrong password", so the response
+    // (status, body, timing) can't be used to find out which emails are registered.
+    const passwordMatches = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_PASSWORD_HASH);
+    if (!user || !passwordMatches) {
+      throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
     }
 
     return { accessToken: this.signToken(user), user: toSafeUser(user) };
