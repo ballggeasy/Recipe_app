@@ -1,6 +1,8 @@
 import { Controller, Get, Header } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { registry } from './metrics.registry';
 
+@SkipThrottle()
 @Controller('metrics')
 export class MetricsController {
   @Get()
