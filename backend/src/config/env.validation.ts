@@ -11,7 +11,7 @@ export function validateEnv(config: Record<string, unknown>): Record<string, unk
   const secret = typeof config.JWT_SECRET === 'string' ? config.JWT_SECRET.trim() : '';
   if (!secret) {
     throw new Error(
-      'JWT_SECRET is not set. Generate one with: node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'hex\'))"',
+      "JWT_SECRET is not set. Generate one with: node -e \"console.log(require('crypto').randomBytes(48).toString('hex'))\"",
     );
   }
 

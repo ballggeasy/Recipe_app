@@ -12,8 +12,8 @@ function createUsersServiceFake() {
   let nextId = 1;
   return {
     users,
-    findByEmail: jest.fn(async (email: string) =>
-      [...users.values()].find((u) => u.email === email.trim().toLowerCase()) ?? null,
+    findByEmail: jest.fn(
+      async (email: string) => [...users.values()].find((u) => u.email === email.trim().toLowerCase()) ?? null,
     ),
     findById: jest.fn(async (id: string) => users.get(id) ?? null),
     create: jest.fn(async (data: { email: string; passwordHash: string; name: string }) => {
@@ -76,9 +76,7 @@ describe('AuthService', () => {
 
     it('rejects an email that is already registered', async () => {
       await service.register('A', 'a@example.com', 'secret123');
-      await expect(service.register('B', 'A@example.com', 'secret456')).rejects.toBeInstanceOf(
-        ConflictException,
-      );
+      await expect(service.register('B', 'A@example.com', 'secret456')).rejects.toBeInstanceOf(ConflictException);
     });
   });
 
@@ -94,9 +92,7 @@ describe('AuthService', () => {
     });
 
     it('throws UnauthorizedException for a wrong password', async () => {
-      await expect(service.login('somchai@example.com', 'wrong-pass')).rejects.toBeInstanceOf(
-        UnauthorizedException,
-      );
+      await expect(service.login('somchai@example.com', 'wrong-pass')).rejects.toBeInstanceOf(UnauthorizedException);
     });
 
     it('answers an unknown email exactly like a wrong password so emails cannot be enumerated', async () => {
@@ -129,9 +125,7 @@ describe('AuthService', () => {
       await service.changePassword(user, 'secret123', 'newpass123');
 
       await expect(service.login('somchai@example.com', 'newpass123')).resolves.toBeDefined();
-      await expect(service.login('somchai@example.com', 'secret123')).rejects.toBeInstanceOf(
-        UnauthorizedException,
-      );
+      await expect(service.login('somchai@example.com', 'secret123')).rejects.toBeInstanceOf(UnauthorizedException);
     });
   });
 

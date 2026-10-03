@@ -17,9 +17,9 @@ describe('validateEnv', () => {
   });
 
   it('rejects known placeholder secrets in production', () => {
-    expect(() =>
-      validateEnv({ JWT_SECRET: 'change-this-secret-in-production', NODE_ENV: 'production' }),
-    ).toThrow(/placeholder/);
+    expect(() => validateEnv({ JWT_SECRET: 'change-this-secret-in-production', NODE_ENV: 'production' })).toThrow(
+      /placeholder/,
+    );
     expect(() => validateEnv({ JWT_SECRET: 'ChangeMe', NODE_ENV: 'production' })).toThrow(/placeholder/);
   });
 

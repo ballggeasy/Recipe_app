@@ -38,10 +38,7 @@ describe('Recipe API (e2e)', () => {
   const http = () => request(app.getHttpServer());
 
   async function registerUser(email: string): Promise<{ token: string; id: string }> {
-    const res = await http()
-      .post('/auth/register')
-      .send({ name: 'Tester', email, password: 'secret123' })
-      .expect(201);
+    const res = await http().post('/auth/register').send({ name: 'Tester', email, password: 'secret123' }).expect(201);
     return { token: res.body.accessToken, id: res.body.user.id };
   }
 
@@ -60,10 +57,7 @@ describe('Recipe API (e2e)', () => {
         profileImageUrl: null,
       });
 
-      const me = await http()
-        .get('/auth/me')
-        .set('Authorization', `Bearer ${login.body.accessToken}`)
-        .expect(200);
+      const me = await http().get('/auth/me').set('Authorization', `Bearer ${login.body.accessToken}`).expect(200);
       expect(me.body.id).toBe(id);
       expect(me.body).not.toHaveProperty('passwordHash');
     });
@@ -174,10 +168,7 @@ describe('Recipe API (e2e)', () => {
         .set('Authorization', `Bearer ${other.token}`)
         .send({ name: 'Hacked' })
         .expect(403);
-      await http()
-        .delete(`/recipes/${created.body.id}`)
-        .set('Authorization', `Bearer ${other.token}`)
-        .expect(403);
+      await http().delete(`/recipes/${created.body.id}`).set('Authorization', `Bearer ${other.token}`).expect(403);
     });
 
     it('requires a token to create a recipe', async () => {
@@ -186,11 +177,7 @@ describe('Recipe API (e2e)', () => {
 
     it('rejects a recipe missing required fields with 400', async () => {
       const { token } = await registerUser('lazy@example.com');
-      await http()
-        .post('/recipes')
-        .set('Authorization', `Bearer ${token}`)
-        .send({ name: 'No steps' })
-        .expect(400);
+      await http().post('/recipes').set('Authorization', `Bearer ${token}`).send({ name: 'No steps' }).expect(400);
     });
   });
 
@@ -284,7 +271,10 @@ describe('Recipe API (e2e)', () => {
     });
 
     it('requires a token', async () => {
-      await http().post('/recipes/whatever/image').attach('file', png, { filename: 'a.png', contentType: 'image/png' }).expect(401);
+      await http()
+        .post('/recipes/whatever/image')
+        .attach('file', png, { filename: 'a.png', contentType: 'image/png' })
+        .expect(401);
     });
 
     it('deletes the image file when the recipe is deleted', async () => {

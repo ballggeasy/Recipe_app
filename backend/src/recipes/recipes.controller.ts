@@ -48,7 +48,12 @@ export class RecipesController {
 
   @UseGuards(JwtAuthGuard)
   @Post(':id/image')
-  @UseInterceptors(FileInterceptor('file', imageUploadOptions('recipes', (req) => req.params.id)))
+  @UseInterceptors(
+    FileInterceptor(
+      'file',
+      imageUploadOptions('recipes', (req) => req.params.id),
+    ),
+  )
   uploadImage(@Param('id') id: string, @UploadedFile() file: Express.Multer.File, @CurrentUser() user: User) {
     if (!file) {
       throw new BadRequestException('ไม่พบไฟล์รูปภาพ');

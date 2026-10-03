@@ -16,11 +16,7 @@ export class RecipeCommentsController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  create(
-    @Param('recipeId') recipeId: string,
-    @Body() dto: CreateCommentDto,
-    @CurrentUser() user: User,
-  ) {
+  create(@Param('recipeId') recipeId: string, @Body() dto: CreateCommentDto, @CurrentUser() user: User) {
     return this.commentsService.create(recipeId, dto, user);
   }
 }
