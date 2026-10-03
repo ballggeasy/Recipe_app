@@ -77,8 +77,9 @@ class Recipe {
   bool matchesIngredientQuery(String query) {
     if (query.trim().isEmpty) return true;
     final lowerQuery = query.toLowerCase().trim();
-    if (ingredients.any((i) => i.toLowerCase().contains(lowerQuery)))
+    if (ingredients.any((i) => i.toLowerCase().contains(lowerQuery))) {
       return true;
+    }
     return ingredientItems.any(
       (i) => i.name.toLowerCase().contains(lowerQuery),
     );
