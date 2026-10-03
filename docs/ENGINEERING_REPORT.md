@@ -1,6 +1,6 @@
 # Engineering Report
 
-Branch `chore/engineering-upgrade` (27 commits on top of `main`), 2026-10-03. Nothing is pushed or deployed.
+Branch `chore/engineering-upgrade` (see `git log main..chore/engineering-upgrade`), 2026-10-03. Nothing is pushed or deployed.
 
 ## Executive Summary
 
@@ -61,7 +61,7 @@ Migrations instead of `synchronize` (baseline is `IF NOT EXISTS`; verified again
 | Backend e2e | 20 | 54 |
 | Flutter | 84 | 99 |
 
-New coverage: favorites/folders, reviews, comments, meal plan, profile, change password, avatar validation, cross-user authorization, orphan-reference rejection, rating aggregation, error shape and request ids, security headers, rate limiting, readiness, config validation, migrations and drift, JSON logger, exception filter, forged-token rejection, the disabled and enabled password-reset paths, 401 handling, retry state, base URL. Deploy script: 40 behavioural checks against stubs (and a mutation check that they catch a broken rollback).
+New coverage: favorites/folders, reviews, comments, meal plan, profile, change password, avatar validation, cross-user authorization, orphan-reference rejection, rating aggregation, error shape and request ids, security headers, rate limiting, readiness, config validation, migrations and drift, JSON logger, exception filter, forged-token rejection, the disabled and enabled password-reset paths, 401 handling, retry state, base URL. Deploy script: 38 behavioural checks against stubs (and a mutation check that they catch a broken rollback).
 
 ## CI/CD Improvements
 
