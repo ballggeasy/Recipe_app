@@ -12,8 +12,14 @@ REVISION="${2:?usage: smoke-image.sh <image> <expected-revision>}"
 NAME="smoke-$$"
 PORT=3000
 
-if timeout 60 docker run --rm --name "${NAME}-nosecret" "$IMAGE" > /dev/null 2>&1; then
+# Must exit non-zero AND say why; otherwise any unrelated crash would pass for "refuses to start".
+if output=$(timeout 60 docker run --rm --name "${NAME}-nosecret" "$IMAGE" 2>&1); then
   echo "::error::Image started without JWT_SECRET; it must fail fast"
+  exit 1
+fi
+if ! grep -q "JWT_SECRET is not set" <<< "$output"; then
+  echo "$output"
+  echo "::error::Image failed without JWT_SECRET, but not because of the missing secret"
   exit 1
 fi
 echo "OK: image refuses to start without JWT_SECRET"
