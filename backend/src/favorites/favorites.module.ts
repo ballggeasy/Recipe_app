@@ -4,9 +4,10 @@ import { Favorite } from './favorite.entity';
 import { FavoriteFolder } from './folder.entity';
 import { FavoritesService } from './favorites.service';
 import { FavoritesController } from './favorites.controller';
+import { RecipesModule } from '../recipes/recipes.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Favorite, FavoriteFolder])],
+  imports: [TypeOrmModule.forFeature([Favorite, FavoriteFolder]), RecipesModule],
   controllers: [FavoritesController],
   providers: [FavoritesService],
 })

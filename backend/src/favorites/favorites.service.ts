@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Favorite } from './favorite.entity';
 import { FavoriteFolder } from './folder.entity';
 import { CreateFolderDto } from './dto/create-folder.dto';
+import { RecipesService } from '../recipes/recipes.service';
 
 @Injectable()
 export class FavoritesService {
@@ -12,6 +13,7 @@ export class FavoritesService {
     private readonly favoritesRepository: Repository<Favorite>,
     @InjectRepository(FavoriteFolder)
     private readonly foldersRepository: Repository<FavoriteFolder>,
+    private readonly recipesService: RecipesService,
   ) {}
 
   async listFavoriteIds(userId: string): Promise<string[]> {
@@ -20,6 +22,7 @@ export class FavoritesService {
   }
 
   async addFavorite(userId: string, recipeId: string): Promise<void> {
+    await this.recipesService.assertExists(recipeId);
     const existing = await this.favoritesRepository.findOne({ where: { userId, recipeId } });
     if (existing) return;
     await this.favoritesRepository.save(this.favoritesRepository.create({ userId, recipeId }));
@@ -58,6 +61,7 @@ export class FavoritesService {
 
   async addRecipeToFolder(userId: string, folderId: string, recipeId: string): Promise<FavoriteFolder> {
     const folder = await this.getOwnedFolder(userId, folderId);
+    await this.recipesService.assertExists(recipeId);
     if (!folder.recipeIds.includes(recipeId)) {
       folder.recipeIds = [...folder.recipeIds, recipeId];
       await this.foldersRepository.save(folder);

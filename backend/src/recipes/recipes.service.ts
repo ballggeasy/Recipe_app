@@ -102,8 +102,11 @@ export class RecipesService {
     return [...new Set(urls.filter((url) => url?.startsWith(prefix)))];
   }
 
-  async applyRatingAggregate(recipeId: string, rating: number, reviewCount: number): Promise<void> {
-    await this.recipesRepository.update({ id: recipeId }, { rating, reviewCount });
+  /** Throws 404 unless the recipe exists. Used by modules that attach data (reviews, comments, favorites, ...) to a recipe. */
+  async assertExists(id: string): Promise<void> {
+    if (!(await this.recipesRepository.exist({ where: { id } }))) {
+      throw new NotFoundException('ไม่พบสูตรอาหารนี้');
+    }
   }
 
   count(): Promise<number> {
