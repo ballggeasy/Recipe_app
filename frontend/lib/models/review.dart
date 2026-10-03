@@ -28,23 +28,25 @@ class Review {
 
   int get likeCount => likedByUserIds.length;
 
-  bool likedBy(String? userId) => userId != null && likedByUserIds.contains(userId);
+  bool likedBy(String? userId) =>
+      userId != null && likedByUserIds.contains(userId);
 
   factory Review.fromApi(Map<String, dynamic> json) => Review(
-        id: json['id'] as String,
-        recipeId: json['recipeId'] as String,
-        userId: json['userId'] as String,
-        userName: json['userName'] as String,
-        rating: (json['rating'] as num).toDouble(),
-        content: json['content'] as String,
-        createdAt: DateTime.parse(json['createdAt'] as String),
-        imageUrls: (json['imageUrls'] as List?)?.cast<String>() ?? const [],
-        likedByUserIds: (json['likedByUserIds'] as List?)?.cast<String>() ?? const [],
-        replies: (json['replies'] as List? ?? [])
-            .map((r) => ReviewReply.fromApi(r as Map<String, dynamic>))
-            .toList(),
-        isReported: json['isReported'] as bool? ?? false,
-      );
+    id: json['id'] as String,
+    recipeId: json['recipeId'] as String,
+    userId: json['userId'] as String,
+    userName: json['userName'] as String,
+    rating: (json['rating'] as num).toDouble(),
+    content: json['content'] as String,
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    imageUrls: (json['imageUrls'] as List?)?.cast<String>() ?? const [],
+    likedByUserIds:
+        (json['likedByUserIds'] as List?)?.cast<String>() ?? const [],
+    replies: (json['replies'] as List? ?? [])
+        .map((r) => ReviewReply.fromApi(r as Map<String, dynamic>))
+        .toList(),
+    isReported: json['isReported'] as bool? ?? false,
+  );
 }
 
 class ReviewReply {
@@ -63,10 +65,10 @@ class ReviewReply {
   });
 
   factory ReviewReply.fromApi(Map<String, dynamic> json) => ReviewReply(
-        id: json['id'] as String,
-        userId: json['userId'] as String,
-        userName: json['userName'] as String,
-        content: json['content'] as String,
-        createdAt: DateTime.parse(json['createdAt'] as String),
-      );
+    id: json['id'] as String,
+    userId: json['userId'] as String,
+    userName: json['userName'] as String,
+    content: json['content'] as String,
+    createdAt: DateTime.parse(json['createdAt'] as String),
+  );
 }

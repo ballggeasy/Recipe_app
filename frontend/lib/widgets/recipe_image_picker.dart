@@ -36,8 +36,11 @@ class RecipeImagePicker extends StatefulWidget {
 class _RecipeImagePickerState extends State<RecipeImagePicker> {
   Uint8List? _pickedBytes;
 
-  Future<XFile?> _pickFromGallery() =>
-      ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 85);
+  Future<XFile?> _pickFromGallery() => ImagePicker().pickImage(
+    source: ImageSource.gallery,
+    maxWidth: 1600,
+    imageQuality: 85,
+  );
 
   Future<void> _pick() async {
     final file = await (widget.pickImage ?? _pickFromGallery)();
@@ -85,12 +88,12 @@ class _RecipeImagePickerState extends State<RecipeImagePicker> {
                   child: _pickedBytes != null
                       ? Image.memory(_pickedBytes!, fit: BoxFit.cover)
                       : hasCurrent
-                          ? Image.network(
-                              widget.currentImageUrl!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => const _Placeholder(),
-                            )
-                          : const _Placeholder(),
+                      ? Image.network(
+                          widget.currentImageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => const _Placeholder(),
+                        )
+                      : const _Placeholder(),
                 ),
               ),
             ),
@@ -101,10 +104,18 @@ class _RecipeImagePickerState extends State<RecipeImagePicker> {
                 child: Row(
                   children: [
                     if (_pickedBytes != null) ...[
-                      _OverlayButton(icon: Icons.close_rounded, tooltip: 'ยกเลิกรูปที่เลือก', onPressed: _clear),
+                      _OverlayButton(
+                        icon: Icons.close_rounded,
+                        tooltip: 'ยกเลิกรูปที่เลือก',
+                        onPressed: _clear,
+                      ),
                       const SizedBox(width: AppSpacing.sm),
                     ],
-                    _OverlayButton(icon: Icons.photo_library_outlined, tooltip: 'เปลี่ยนรูปเมนู', onPressed: _pick),
+                    _OverlayButton(
+                      icon: Icons.photo_library_outlined,
+                      tooltip: 'เปลี่ยนรูปเมนู',
+                      onPressed: _pick,
+                    ),
                   ],
                 ),
               ),
@@ -124,11 +135,21 @@ class _Placeholder extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.add_photo_alternate_outlined, size: 36, color: AppTheme.prim(context)),
+          Icon(
+            Icons.add_photo_alternate_outlined,
+            size: 36,
+            color: AppTheme.prim(context),
+          ),
           const SizedBox(height: AppSpacing.sm),
-          Text('แตะเพื่อเลือกรูปเมนู', style: AppTypography.bodyStrong(color: AppTheme.prim(context))),
+          Text(
+            'แตะเพื่อเลือกรูปเมนู',
+            style: AppTypography.bodyStrong(color: AppTheme.prim(context)),
+          ),
           const SizedBox(height: 2),
-          Text('JPG, PNG, WebP ไม่เกิน 5 MB', style: AppTypography.caption(color: AppTheme.txtSecondary(context))),
+          Text(
+            'JPG, PNG, WebP ไม่เกิน 5 MB',
+            style: AppTypography.caption(color: AppTheme.txtSecondary(context)),
+          ),
         ],
       ),
     );
@@ -140,7 +161,11 @@ class _OverlayButton extends StatelessWidget {
   final String tooltip;
   final VoidCallback onPressed;
 
-  const _OverlayButton({required this.icon, required this.tooltip, required this.onPressed});
+  const _OverlayButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {

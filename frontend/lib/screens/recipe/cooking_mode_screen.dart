@@ -34,7 +34,11 @@ class _CookingModeScreenState extends State<CookingModeScreen> {
     return Scaffold(
       backgroundColor: AppTheme.bg(context),
       appBar: AppBar(
-        title: Text(widget.recipe.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+        title: Text(
+          widget.recipe.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         leading: IconButton(
           tooltip: 'ออกจากโหมดทำอาหาร',
           icon: const Icon(Icons.close_rounded),
@@ -45,13 +49,20 @@ class _CookingModeScreenState extends State<CookingModeScreen> {
           ? Center(
               child: Text(
                 'สูตรนี้ยังไม่มีขั้นตอนการทำ',
-                style: AppTypography.body(color: AppTheme.txtSecondary(context)),
+                style: AppTypography.body(
+                  color: AppTheme.txtSecondary(context),
+                ),
               ),
             )
           : Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                    AppSpacing.lg,
+                    0,
+                  ),
                   child: Row(
                     children: List.generate(total, (i) {
                       return Expanded(
@@ -59,7 +70,9 @@ class _CookingModeScreenState extends State<CookingModeScreen> {
                           height: 4,
                           margin: const EdgeInsets.symmetric(horizontal: 2),
                           decoration: BoxDecoration(
-                            color: i <= _index ? AppTheme.prim(context) : AppTheme.div(context),
+                            color: i <= _index
+                                ? AppTheme.prim(context)
+                                : AppTheme.div(context),
                             borderRadius: BorderRadius.circular(AppRadius.pill),
                           ),
                         ),
@@ -68,12 +81,19 @@ class _CookingModeScreenState extends State<CookingModeScreen> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                    AppSpacing.lg,
+                    0,
+                  ),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
                       'ขั้นตอน ${_index + 1} จาก $total',
-                      style: AppTypography.caption(color: AppTheme.txtSecondary(context)),
+                      style: AppTypography.caption(
+                        color: AppTheme.txtSecondary(context),
+                      ),
                     ),
                   ),
                 ),
@@ -99,14 +119,18 @@ class _CookingModeScreenState extends State<CookingModeScreen> {
                               child: Center(
                                 child: Text(
                                   '${i + 1}',
-                                  style: AppTypography.h2(color: AppTheme.onAccent(context)),
+                                  style: AppTypography.h2(
+                                    color: AppTheme.onAccent(context),
+                                  ),
                                 ),
                               ),
                             ),
                             const SizedBox(height: AppSpacing.lg),
                             Text(
                               steps[i],
-                              style: AppTypography.display(color: AppTheme.txtPrimary(context)).copyWith(fontSize: 24, height: 1.5),
+                              style: AppTypography.display(
+                                color: AppTheme.txtPrimary(context),
+                              ).copyWith(fontSize: 24, height: 1.5),
                             ),
                           ],
                         ),
@@ -117,7 +141,12 @@ class _CookingModeScreenState extends State<CookingModeScreen> {
                 SafeArea(
                   top: false,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      0,
+                      AppSpacing.lg,
+                      AppSpacing.lg,
+                    ),
                     child: Row(
                       children: [
                         if (_index > 0)
@@ -133,8 +162,12 @@ class _CookingModeScreenState extends State<CookingModeScreen> {
                         if (_index > 0) const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: AppButton.primary(
-                            label: _index == total - 1 ? 'เสร็จสิ้น' : 'ขั้นตอนถัดไป',
-                            icon: _index == total - 1 ? Icons.check_rounded : Icons.arrow_forward_rounded,
+                            label: _index == total - 1
+                                ? 'เสร็จสิ้น'
+                                : 'ขั้นตอนถัดไป',
+                            icon: _index == total - 1
+                                ? Icons.check_rounded
+                                : Icons.arrow_forward_rounded,
                             onPressed: () {
                               if (_index == total - 1) {
                                 Navigator.pop(context);

@@ -47,20 +47,12 @@ export class FavoritesController {
   }
 
   @Post('folders/:id/recipes/:recipeId')
-  addRecipeToFolder(
-    @Param('id') id: string,
-    @Param('recipeId') recipeId: string,
-    @CurrentUser() user: User,
-  ) {
+  addRecipeToFolder(@Param('id') id: string, @Param('recipeId') recipeId: string, @CurrentUser() user: User) {
     return this.favoritesService.addRecipeToFolder(user.id, id, recipeId);
   }
 
   @Delete('folders/:id/recipes/:recipeId')
-  removeRecipeFromFolder(
-    @Param('id') id: string,
-    @Param('recipeId') recipeId: string,
-    @CurrentUser() user: User,
-  ) {
+  removeRecipeFromFolder(@Param('id') id: string, @Param('recipeId') recipeId: string, @CurrentUser() user: User) {
     return this.favoritesService.removeRecipeFromFolder(user.id, id, recipeId);
   }
 }

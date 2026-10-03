@@ -75,13 +75,19 @@ class _MealPlannerScreenState extends State<MealPlannerScreen>
           _WeeklyView(
             weekStart: _weekStart(_selectedDate),
             entries: planner.entriesForWeek(_weekStart(_selectedDate)),
-            nutrition: planner.nutritionForWeek(_weekStart(_selectedDate), recipes),
+            nutrition: planner.nutritionForWeek(
+              _weekStart(_selectedDate),
+              recipes,
+            ),
             recipes: recipes,
           ),
           _MonthlyView(
             month: _selectedDate.month,
             year: _selectedDate.year,
-            entries: planner.entriesForMonth(_selectedDate.year, _selectedDate.month),
+            entries: planner.entriesForMonth(
+              _selectedDate.year,
+              _selectedDate.month,
+            ),
             recipes: recipes,
           ),
         ],
@@ -111,7 +117,9 @@ class _MealPlannerScreenState extends State<MealPlannerScreen>
                 initialValue: selectedRecipeId,
                 decoration: const InputDecoration(labelText: 'เลือกเมนู'),
                 items: recipes
-                    .map((r) => DropdownMenuItem(value: r.id, child: Text(r.name)))
+                    .map(
+                      (r) => DropdownMenuItem(value: r.id, child: Text(r.name)),
+                    )
                     .toList(),
                 onChanged: (v) => setState(() => selectedRecipeId = v),
               ),
@@ -120,14 +128,23 @@ class _MealPlannerScreenState extends State<MealPlannerScreen>
                 initialValue: selectedMeal,
                 decoration: const InputDecoration(labelText: 'มื้อ'),
                 items: MealType.values
-                    .map((m) => DropdownMenuItem(value: m, child: Text('${m.emoji} ${m.label}')))
+                    .map(
+                      (m) => DropdownMenuItem(
+                        value: m,
+                        child: Text('${m.emoji} ${m.label}'),
+                      ),
+                    )
                     .toList(),
-                onChanged: (v) => setState(() => selectedMeal = v ?? MealType.lunch),
+                onChanged: (v) =>
+                    setState(() => selectedMeal = v ?? MealType.lunch),
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('ยกเลิก')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('ยกเลิก'),
+            ),
             TextButton(
               onPressed: () {
                 if (selectedRecipeId != null) {
@@ -168,7 +185,12 @@ class _DailyView extends StatelessWidget {
     final planner = context.read<MealPlannerProvider>();
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.base, AppSpacing.lg, 100),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.base,
+        AppSpacing.lg,
+        100,
+      ),
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -176,11 +198,14 @@ class _DailyView extends StatelessWidget {
             IconButton(
               tooltip: 'วันก่อนหน้า',
               icon: const Icon(Icons.chevron_left_rounded),
-              onPressed: () => onDateChanged(date.subtract(const Duration(days: 1))),
+              onPressed: () =>
+                  onDateChanged(date.subtract(const Duration(days: 1))),
             ),
             Text(
               '${date.day}/${date.month}/${date.year}',
-              style: AppTypography.h3(color: AppTheme.txtPrimary(context)).copyWith(fontSize: 16),
+              style: AppTypography.h3(
+                color: AppTheme.txtPrimary(context),
+              ).copyWith(fontSize: 16),
             ),
             IconButton(
               tooltip: 'วันถัดไป',
@@ -195,22 +220,27 @@ class _DailyView extends StatelessWidget {
         if (entries.isEmpty)
           const Padding(
             padding: EdgeInsets.only(top: AppSpacing.xl),
-            child: EmptyState(emoji: '🍽️', message: 'ยังไม่มีมื้ออาหารในวันนี้'),
+            child: EmptyState(
+              emoji: '🍽️',
+              message: 'ยังไม่มีมื้ออาหารในวันนี้',
+            ),
           )
         else
           ...entries.map((e) {
             final recipe = recipes.cast<Recipe?>().firstWhere(
-                  (r) => r?.id == e.recipeId,
-                  orElse: () => null,
-                );
+              (r) => r?.id == e.recipeId,
+              orElse: () => null,
+            );
             return _MealEntryTile(
               mealType: e.mealType,
               recipeName: recipe?.name ?? 'ไม่พบสูตร',
               onTap: recipe != null
                   ? () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => DetailScreen(recipe: recipe)),
-                      )
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DetailScreen(recipe: recipe),
+                      ),
+                    )
                   : null,
               onDelete: () => planner.removeEntry(e.id),
             );
@@ -235,24 +265,43 @@ class _WeeklyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final weekdayNames = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'อาทิตย์'];
+    final weekdayNames = [
+      'จันทร์',
+      'อังคาร',
+      'พุธ',
+      'พฤหัสบดี',
+      'ศุกร์',
+      'เสาร์',
+      'อาทิตย์',
+    ];
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.base, AppSpacing.lg, 100),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.base,
+        AppSpacing.lg,
+        100,
+      ),
       children: [
         Text(
           'สัปดาห์ ${weekStart.day}/${weekStart.month} - ${weekStart.add(const Duration(days: 6)).day}/${weekStart.add(const Duration(days: 6)).month}',
-          style: AppTypography.h3(color: AppTheme.txtPrimary(context)).copyWith(fontSize: 16),
+          style: AppTypography.h3(
+            color: AppTheme.txtPrimary(context),
+          ).copyWith(fontSize: 16),
         ),
         const SizedBox(height: AppSpacing.md),
         _NutritionSummary(nutrition: nutrition, title: 'สารอาหารสัปดาห์นี้'),
         const SizedBox(height: AppSpacing.lg),
         ...List.generate(7, (i) {
           final day = weekStart.add(Duration(days: i));
-          final dayEntries = entries.where((e) =>
-              e.date.year == day.year &&
-              e.date.month == day.month &&
-              e.date.day == day.day).toList();
+          final dayEntries = entries
+              .where(
+                (e) =>
+                    e.date.year == day.year &&
+                    e.date.month == day.month &&
+                    e.date.day == day.day,
+              )
+              .toList();
           return Container(
             margin: const EdgeInsets.only(bottom: AppSpacing.sm),
             decoration: BoxDecoration(
@@ -266,10 +315,20 @@ class _WeeklyView extends StatelessWidget {
               child: ListTile(
                 title: Text(
                   '${weekdayNames[i]}  ·  ${day.day}/${day.month}',
-                  style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context)),
+                  style: AppTypography.bodyStrong(
+                    color: AppTheme.txtPrimary(context),
+                  ),
                 ),
-                subtitle: Text('${dayEntries.length} มื้อ', style: AppTypography.caption(color: AppTheme.txtSecondary(context))),
-                trailing: Icon(Icons.chevron_right_rounded, color: AppTheme.txtSecondary(context)),
+                subtitle: Text(
+                  '${dayEntries.length} มื้อ',
+                  style: AppTypography.caption(
+                    color: AppTheme.txtSecondary(context),
+                  ),
+                ),
+                trailing: Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppTheme.txtSecondary(context),
+                ),
               ),
             ),
           );
@@ -294,29 +353,56 @@ class _MonthlyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final monthNames = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    final monthNames = [
+      '',
+      'ม.ค.',
+      'ก.พ.',
+      'มี.ค.',
+      'เม.ย.',
+      'พ.ค.',
+      'มิ.ย.',
+      'ก.ค.',
+      'ส.ค.',
+      'ก.ย.',
+      'ต.ค.',
+      'พ.ย.',
+      'ธ.ค.',
+    ];
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.base, AppSpacing.lg, 100),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.base,
+        AppSpacing.lg,
+        100,
+      ),
       children: [
         Text(
           '${monthNames[month]} $year',
-          style: AppTypography.h3(color: AppTheme.txtPrimary(context)).copyWith(fontSize: 16),
+          style: AppTypography.h3(
+            color: AppTheme.txtPrimary(context),
+          ).copyWith(fontSize: 16),
         ),
         const SizedBox(height: AppSpacing.sm),
-        Text('รวม ${entries.length} มื้อในเดือนนี้', style: AppTypography.body(color: AppTheme.txtSecondary(context))),
+        Text(
+          'รวม ${entries.length} มื้อในเดือนนี้',
+          style: AppTypography.body(color: AppTheme.txtSecondary(context)),
+        ),
         const SizedBox(height: AppSpacing.lg),
         if (entries.isEmpty)
           const Padding(
             padding: EdgeInsets.only(top: AppSpacing.xl),
-            child: EmptyState(emoji: '📅', message: 'ยังไม่มีมื้ออาหารในเดือนนี้'),
+            child: EmptyState(
+              emoji: '📅',
+              message: 'ยังไม่มีมื้ออาหารในเดือนนี้',
+            ),
           )
         else
           ...entries.map((e) {
             final recipe = recipes.cast<Recipe?>().firstWhere(
-                  (r) => r?.id == e.recipeId,
-                  orElse: () => null,
-                );
+              (r) => r?.id == e.recipeId,
+              orElse: () => null,
+            );
             return Container(
               margin: const EdgeInsets.only(bottom: AppSpacing.sm),
               decoration: BoxDecoration(
@@ -328,11 +414,21 @@ class _MonthlyView extends StatelessWidget {
               child: Material(
                 type: MaterialType.transparency,
                 child: ListTile(
-                  leading: Text(e.mealType.emoji, style: const TextStyle(fontSize: 20)),
-                  title: Text(recipe?.name ?? 'ไม่พบสูตร', style: AppTypography.body(color: AppTheme.txtPrimary(context))),
+                  leading: Text(
+                    e.mealType.emoji,
+                    style: const TextStyle(fontSize: 20),
+                  ),
+                  title: Text(
+                    recipe?.name ?? 'ไม่พบสูตร',
+                    style: AppTypography.body(
+                      color: AppTheme.txtPrimary(context),
+                    ),
+                  ),
                   subtitle: Text(
                     '${e.date.day}/${e.date.month} · ${e.mealType.label}',
-                    style: AppTypography.caption(color: AppTheme.txtSecondary(context)),
+                    style: AppTypography.caption(
+                      color: AppTheme.txtSecondary(context),
+                    ),
                   ),
                 ),
               ),
@@ -360,13 +456,20 @@ class _NutritionSummary extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AppTypography.bodyStrong(color: AppTheme.prim(context))),
+          Text(
+            title,
+            style: AppTypography.bodyStrong(color: AppTheme.prim(context)),
+          ),
           const SizedBox(height: AppSpacing.sm),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _NutItem('🔥', '${nutrition.calories}', 'kcal'),
-              _NutItem('💪', '${nutrition.protein.toStringAsFixed(0)}g', 'โปรตีน'),
+              _NutItem(
+                '💪',
+                '${nutrition.protein.toStringAsFixed(0)}g',
+                'โปรตีน',
+              ),
               _NutItem('🧈', '${nutrition.fat.toStringAsFixed(0)}g', 'ไขมัน'),
               _NutItem('🍞', '${nutrition.carbs.toStringAsFixed(0)}g', 'คาร์บ'),
             ],
@@ -389,8 +492,18 @@ class _NutItem extends StatelessWidget {
     return Column(
       children: [
         Text(emoji, style: const TextStyle(fontSize: 18)),
-        Text(value, style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context)).copyWith(fontSize: 14)),
-        Text(label, style: AppTypography.caption(color: AppTheme.txtSecondary(context)).copyWith(fontSize: 10)),
+        Text(
+          value,
+          style: AppTypography.bodyStrong(
+            color: AppTheme.txtPrimary(context),
+          ).copyWith(fontSize: 14),
+        ),
+        Text(
+          label,
+          style: AppTypography.caption(
+            color: AppTheme.txtSecondary(context),
+          ).copyWith(fontSize: 10),
+        ),
       ],
     );
   }
@@ -426,14 +539,30 @@ class _MealEntryTile extends StatelessWidget {
           leading: Container(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(color: AppTheme.primLight(context), borderRadius: BorderRadius.circular(AppRadius.sm)),
-            child: Center(child: Text(mealType.emoji, style: const TextStyle(fontSize: 20))),
+            decoration: BoxDecoration(
+              color: AppTheme.primLight(context),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Center(
+              child: Text(mealType.emoji, style: const TextStyle(fontSize: 20)),
+            ),
           ),
-          title: Text(recipeName, style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context))),
-          subtitle: Text(mealType.label, style: AppTypography.caption(color: AppTheme.txtSecondary(context))),
+          title: Text(
+            recipeName,
+            style: AppTypography.bodyStrong(
+              color: AppTheme.txtPrimary(context),
+            ),
+          ),
+          subtitle: Text(
+            mealType.label,
+            style: AppTypography.caption(color: AppTheme.txtSecondary(context)),
+          ),
           trailing: IconButton(
             tooltip: 'ลบออกจากแผน',
-            icon: Icon(Icons.delete_outline_rounded, color: AppTheme.txtSecondary(context)),
+            icon: Icon(
+              Icons.delete_outline_rounded,
+              color: AppTheme.txtSecondary(context),
+            ),
             onPressed: onDelete,
           ),
           onTap: onTap,

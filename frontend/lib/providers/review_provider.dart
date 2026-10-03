@@ -8,7 +8,8 @@ import '../services/review_service.dart';
 class ReviewProvider extends ChangeNotifier {
   final ReviewService _reviewService;
 
-  ReviewProvider({ReviewService? reviewService}) : _reviewService = reviewService ?? ReviewService();
+  ReviewProvider({ReviewService? reviewService})
+    : _reviewService = reviewService ?? ReviewService();
 
   final Map<String, List<Review>> _reviewsByRecipe = {};
   final Set<String> _loadingRecipeIds = {};
@@ -28,7 +29,9 @@ class ReviewProvider extends ChangeNotifier {
     _loadingRecipeIds.add(recipeId);
     notifyListeners();
     try {
-      _reviewsByRecipe[recipeId] = await _reviewService.fetchForRecipe(recipeId);
+      _reviewsByRecipe[recipeId] = await _reviewService.fetchForRecipe(
+        recipeId,
+      );
     } on ApiException {
       _reviewsByRecipe[recipeId] = _reviewsByRecipe[recipeId] ?? [];
     }

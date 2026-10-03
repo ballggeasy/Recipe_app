@@ -1,5 +1,6 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
+@Index('IDX_comments_recipe_created', ['recipeId', 'createdAt'])
 @Entity('comments')
 export class Comment {
   @PrimaryGeneratedColumn('uuid')

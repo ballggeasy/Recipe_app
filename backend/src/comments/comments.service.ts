@@ -1,9 +1,10 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Comment } from './comment.entity';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { User } from '../users/user.entity';
+import { RecipesService } from '../recipes/recipes.service';
 
 export interface CommentNode extends Comment {
   replies: CommentNode[];
@@ -14,6 +15,7 @@ export class CommentsService {
   constructor(
     @InjectRepository(Comment)
     private readonly commentsRepository: Repository<Comment>,
+    private readonly recipesService: RecipesService,
   ) {}
 
   async findForRecipe(recipeId: string): Promise<CommentNode[]> {
@@ -32,10 +34,16 @@ export class CommentsService {
   }
 
   async create(recipeId: string, dto: CreateCommentDto, user: User): Promise<Comment> {
+    await this.recipesService.assertExists(recipeId);
+
     if (dto.parentId) {
       const parent = await this.commentsRepository.findOne({ where: { id: dto.parentId } });
       if (!parent) {
         throw new NotFoundException('ไม่พบคอมเมนต์ต้นทาง');
+      }
+      // A reply must live in the same thread, otherwise it would never show under its parent.
+      if (parent.recipeId !== recipeId) {
+        throw new BadRequestException('คอมเมนต์ต้นทางไม่ได้อยู่ในสูตรนี้');
       }
     }
 

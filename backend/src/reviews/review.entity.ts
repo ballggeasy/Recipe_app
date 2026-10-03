@@ -2,12 +2,14 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
+@Index('IDX_reviews_recipe_created', ['recipeId', 'createdAt'])
 @Entity('reviews')
 export class Review {
   @PrimaryGeneratedColumn('uuid')
@@ -44,6 +46,7 @@ export class Review {
   createdAt: Date;
 }
 
+@Index('IDX_review_replies_review', ['reviewId'])
 @Entity('review_replies')
 export class ReviewReply {
   @PrimaryGeneratedColumn('uuid')

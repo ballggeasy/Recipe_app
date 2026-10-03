@@ -32,7 +32,9 @@ class CommentTile extends StatelessWidget {
                 backgroundColor: AppTheme.primLight(context),
                 child: Text(
                   comment.userName.isNotEmpty ? comment.userName[0] : '?',
-                  style: AppTypography.bodyStrong(color: AppTheme.prim(context)).copyWith(fontSize: 12),
+                  style: AppTypography.bodyStrong(
+                    color: AppTheme.prim(context),
+                  ).copyWith(fontSize: 12),
                 ),
               ),
               const SizedBox(width: 10),
@@ -44,12 +46,16 @@ class CommentTile extends StatelessWidget {
                       children: [
                         Text(
                           comment.userName,
-                          style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context)).copyWith(fontSize: 13),
+                          style: AppTypography.bodyStrong(
+                            color: AppTheme.txtPrimary(context),
+                          ).copyWith(fontSize: 13),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           _formatDate(comment.createdAt),
-                          style: AppTypography.caption(color: AppTheme.txtSecondary(context)).copyWith(fontSize: 11),
+                          style: AppTypography.caption(
+                            color: AppTheme.txtSecondary(context),
+                          ).copyWith(fontSize: 11),
                         ),
                       ],
                     ),
@@ -64,7 +70,10 @@ class CommentTile extends StatelessWidget {
                           color: AppTheme.primLight(context),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(Icons.image_rounded, color: AppTheme.prim(context)),
+                        child: Icon(
+                          Icons.image_rounded,
+                          color: AppTheme.prim(context),
+                        ),
                       ),
                     ],
                     const SizedBox(height: 6),
@@ -92,11 +101,7 @@ class CommentTile extends StatelessWidget {
           ),
           if (comment.replies.isNotEmpty)
             ...comment.replies.map(
-              (r) => CommentTile(
-                comment: r,
-                isNested: true,
-                onReply: onReply,
-              ),
+              (r) => CommentTile(comment: r, isNested: true, onReply: onReply),
             ),
         ],
       ),
@@ -107,7 +112,10 @@ class CommentTile extends StatelessWidget {
     final primary = AppTheme.txtPrimary(context);
     final accent = AppTheme.prim(context);
     if (comment.mentions.isEmpty) {
-      return Text(comment.content, style: AppTypography.body(color: primary).copyWith(fontSize: 13.5));
+      return Text(
+        comment.content,
+        style: AppTypography.body(color: primary).copyWith(fontSize: 13.5),
+      );
     }
     var text = comment.content;
     final spans = <InlineSpan>[];
@@ -116,10 +124,12 @@ class CommentTile extends StatelessWidget {
       final idx = text.indexOf(tag);
       if (idx >= 0) {
         if (idx > 0) spans.add(TextSpan(text: text.substring(0, idx)));
-        spans.add(TextSpan(
-          text: tag,
-          style: TextStyle(color: accent, fontWeight: FontWeight.w600),
-        ));
+        spans.add(
+          TextSpan(
+            text: tag,
+            style: TextStyle(color: accent, fontWeight: FontWeight.w600),
+          ),
+        );
         text = text.substring(idx + tag.length);
       }
     }
@@ -152,7 +162,12 @@ class _SmallButton extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: AppTheme.txtSecondary(context)),
           const SizedBox(width: 4),
-          Text(label, style: AppTypography.caption(color: AppTheme.txtSecondary(context)).copyWith(fontSize: 11)),
+          Text(
+            label,
+            style: AppTypography.caption(
+              color: AppTheme.txtSecondary(context),
+            ).copyWith(fontSize: 11),
+          ),
         ],
       ),
     );

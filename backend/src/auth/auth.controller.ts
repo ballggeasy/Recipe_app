@@ -14,7 +14,9 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
 import { imageUploadOptions, uploadedFileUrl } from '../common/image-upload';
+import { AUTH_RATE_LIMIT } from '../common/rate-limit';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -22,6 +24,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { PasswordResetEnabledGuard } from './password-reset-enabled.guard';
 import { CurrentUser } from './current-user.decorator';
 import { User } from '../users/user.entity';
 
@@ -29,22 +32,29 @@ import { User } from '../users/user.entity';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Throttle(AUTH_RATE_LIMIT)
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto.name, dto.email, dto.password);
   }
 
+  @Throttle(AUTH_RATE_LIMIT)
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto.email, dto.password);
   }
 
+  // Both endpoints below are off unless ALLOW_INSECURE_PASSWORD_RESET=true (see the guard).
+  @Throttle(AUTH_RATE_LIMIT)
+  @UseGuards(PasswordResetEnabledGuard)
   @Get('exists/:email')
   async exists(@Param('email') email: string) {
     const exists = await this.authService.checkUserExists(email);
     return { exists };
   }
 
+  @Throttle(AUTH_RATE_LIMIT)
+  @UseGuards(PasswordResetEnabledGuard)
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() dto: ResetPasswordDto) {
@@ -79,6 +89,7 @@ export class AuthController {
     return this.authService.updateAvatar(user, uploadedFileUrl('avatars', file.filename));
   }
 
+  @Throttle(AUTH_RATE_LIMIT)
   @UseGuards(JwtAuthGuard)
   @Post('change-password')
   @HttpCode(HttpStatus.OK)

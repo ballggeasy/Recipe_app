@@ -7,7 +7,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/fake_api.dart';
 
-const _user = {'id': 'u1', 'email': 'somchai@example.com', 'name': 'สมชาย', 'profileImageUrl': null};
+const _user = {
+  'id': 'u1',
+  'email': 'somchai@example.com',
+  'name': 'สมชาย',
+  'profileImageUrl': null,
+};
 
 void main() {
   AuthProvider buildProvider(Map<String, RouteHandler> routes) =>
@@ -36,7 +41,9 @@ void main() {
 
     test('drops an expired token and logs out', () async {
       SharedPreferences.setMockInitialValues({'auth_token': 'expired'});
-      final auth = buildProvider({'GET /auth/me': (_) => jsonResponse({'message': 'Unauthorized'}, 401)});
+      final auth = buildProvider({
+        'GET /auth/me': (_) => jsonResponse({'message': 'Unauthorized'}, 401),
+      });
 
       await auth.init();
 
@@ -50,13 +57,19 @@ void main() {
     test('logs in, stores the user and remembers the token', () async {
       final auth = buildProvider({
         'POST /auth/login': (req) {
-          expect(jsonDecode(req.body)['email'], 'somchai@example.com',
-              reason: 'email should be trimmed and lower-cased before sending');
+          expect(
+            jsonDecode(req.body)['email'],
+            'somchai@example.com',
+            reason: 'email should be trimmed and lower-cased before sending',
+          );
           return jsonResponse({'accessToken': 'tok', 'user': _user});
         },
       });
 
-      final error = await auth.login(email: '  Somchai@Example.com ', password: 'secret123');
+      final error = await auth.login(
+        email: '  Somchai@Example.com ',
+        password: 'secret123',
+      );
 
       expect(error, isNull);
       expect(auth.isLoggedIn, isTrue);
@@ -66,9 +79,16 @@ void main() {
     });
 
     test('does not persist the token when remember is off', () async {
-      final auth = buildProvider({'POST /auth/login': (_) => jsonResponse({'accessToken': 'tok', 'user': _user})});
+      final auth = buildProvider({
+        'POST /auth/login': (_) =>
+            jsonResponse({'accessToken': 'tok', 'user': _user}),
+      });
 
-      await auth.login(email: 'somchai@example.com', password: 'secret123', remember: false);
+      await auth.login(
+        email: 'somchai@example.com',
+        password: 'secret123',
+        remember: false,
+      );
 
       expect(auth.isLoggedIn, isTrue);
       final prefs = await SharedPreferences.getInstance();
@@ -77,11 +97,15 @@ void main() {
 
     test('returns the backend error and stays logged out on failure', () async {
       final auth = buildProvider({
-        'POST /auth/login': (_) => jsonResponse({'message': 'รหัสผ่านไม่ถูกต้อง'}, 401),
+        'POST /auth/login': (_) =>
+            jsonResponse({'message': 'รหัสผ่านไม่ถูกต้อง'}, 401),
       });
       await auth.init();
 
-      final error = await auth.login(email: 'somchai@example.com', password: 'wrong');
+      final error = await auth.login(
+        email: 'somchai@example.com',
+        password: 'wrong',
+      );
 
       expect(error, 'รหัสผ่านไม่ถูกต้อง');
       expect(auth.status, AuthStatus.loggedOut);
@@ -91,12 +115,68 @@ void main() {
   });
 
   test('register logs the new user in', () async {
-    final auth = buildProvider({'POST /auth/register': (_) => jsonResponse({'accessToken': 'tok', 'user': _user}, 201)});
+    final auth = buildProvider({
+      'POST /auth/register': (_) =>
+          jsonResponse({'accessToken': 'tok', 'user': _user}, 201),
+    });
 
-    final error = await auth.register(name: 'สมชาย', email: 'somchai@example.com', password: 'secret123');
+    final error = await auth.register(
+      name: 'สมชาย',
+      email: 'somchai@example.com',
+      password: 'secret123',
+    );
 
     expect(error, isNull);
     expect(auth.isLoggedIn, isTrue);
+  });
+
+  group('expired session', () {
+    test(
+      'logs the user out when a later authenticated call is rejected with 401',
+      () async {
+        final auth = buildProvider({
+          'POST /auth/login': (_) =>
+              jsonResponse({'accessToken': 'tok', 'user': _user}),
+          'POST /auth/change-password': (_) =>
+              jsonResponse({'message': 'Unauthorized'}, 401),
+        });
+        await auth.login(email: 'somchai@example.com', password: 'secret123');
+        expect(auth.isLoggedIn, isTrue);
+
+        await auth.changePassword(
+          currentPassword: 'secret123',
+          newPassword: 'newpass123',
+        );
+
+        expect(auth.status, AuthStatus.loggedOut);
+        expect(auth.currentUser, isNull);
+        expect(
+          (await SharedPreferences.getInstance()).getString('auth_token'),
+          isNull,
+        );
+      },
+    );
+
+    test(
+      'stays logged in when the current password is merely wrong (400)',
+      () async {
+        final auth = buildProvider({
+          'POST /auth/login': (_) =>
+              jsonResponse({'accessToken': 'tok', 'user': _user}),
+          'POST /auth/change-password': (_) =>
+              jsonResponse({'message': 'รหัสผ่านปัจจุบันไม่ถูกต้อง'}, 400),
+        });
+        await auth.login(email: 'somchai@example.com', password: 'secret123');
+
+        final error = await auth.changePassword(
+          currentPassword: 'oops',
+          newPassword: 'newpass123',
+        );
+
+        expect(error, 'รหัสผ่านปัจจุบันไม่ถูกต้อง');
+        expect(auth.isLoggedIn, isTrue);
+      },
+    );
   });
 
   test('continueAsGuest switches to guest with no user', () {
@@ -108,7 +188,10 @@ void main() {
   });
 
   test('logout clears the user and the stored token', () async {
-    final auth = buildProvider({'POST /auth/login': (_) => jsonResponse({'accessToken': 'tok', 'user': _user})});
+    final auth = buildProvider({
+      'POST /auth/login': (_) =>
+          jsonResponse({'accessToken': 'tok', 'user': _user}),
+    });
     await auth.login(email: 'somchai@example.com', password: 'secret123');
 
     await auth.logout();

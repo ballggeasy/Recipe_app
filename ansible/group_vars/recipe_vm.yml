@@ -7,7 +7,9 @@ app_env_file: "{{ app_dir }}/.env"
 deploy_user: recipe-deploy
 deploy_repo_url: https://github.com/ballggeasy/Recipe_app.git
 deploy_repo_dir: "{{ app_dir }}/repo"
-backend_image: ghcr.io/ballggeasy/recipe-backend:latest
+# Image repository on GHCR. The deploy script pulls :latest to learn the newest revision, then runs
+# the immutable tag :sha-<revision> so a rollback can start exactly the revision that was running.
+backend_image_repo: ghcr.io/ballggeasy/recipe-backend
 # Fallback poll, for a webhook call that never arrived (VM offline, tunnel down).
 deploy_interval: 1h
 

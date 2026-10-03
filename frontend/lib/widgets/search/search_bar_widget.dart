@@ -42,35 +42,48 @@ class SearchBarWidget extends StatelessWidget {
               provider.updateSearchQuery(selection);
               provider.addToSearchHistory(selection);
             },
-            fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-              return TextField(
-                controller: controller,
-                focusNode: focusNode,
-                onChanged: provider.updateSearchQuery,
-                onSubmitted: (value) {
-                  provider.addToSearchHistory(value);
-                  onSubmitted?.call();
+            fieldViewBuilder:
+                (context, controller, focusNode, onFieldSubmitted) {
+                  return TextField(
+                    controller: controller,
+                    focusNode: focusNode,
+                    onChanged: provider.updateSearchQuery,
+                    onSubmitted: (value) {
+                      provider.addToSearchHistory(value);
+                      onSubmitted?.call();
+                    },
+                    style: AppTypography.body(
+                      color: AppTheme.txtPrimary(context),
+                    ),
+                    decoration: InputDecoration(
+                      hintText: hint,
+                      hintStyle: AppTypography.body(
+                        color: AppTheme.txtSecondary(context),
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search_rounded,
+                        color: AppTheme.txtSecondary(context),
+                        size: 22,
+                      ),
+                      suffixIcon: provider.searchQuery.isNotEmpty
+                          ? IconButton(
+                              tooltip: 'ล้างคำค้นหา',
+                              icon: Icon(
+                                Icons.close_rounded,
+                                size: 18,
+                                color: AppTheme.txtSecondary(context),
+                              ),
+                              onPressed: () {
+                                controller.clear();
+                                provider.clearSearch();
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  );
                 },
-                style: AppTypography.body(color: AppTheme.txtPrimary(context)),
-                decoration: InputDecoration(
-                  hintText: hint,
-                  hintStyle: AppTypography.body(color: AppTheme.txtSecondary(context)),
-                  prefixIcon: Icon(Icons.search_rounded, color: AppTheme.txtSecondary(context), size: 22),
-                  suffixIcon: provider.searchQuery.isNotEmpty
-                      ? IconButton(
-                          tooltip: 'ล้างคำค้นหา',
-                          icon: Icon(Icons.close_rounded, size: 18, color: AppTheme.txtSecondary(context)),
-                          onPressed: () {
-                            controller.clear();
-                            provider.clearSearch();
-                          },
-                        )
-                      : null,
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-              );
-            },
           ),
         ),
         if (showHistory && provider.searchHistory.isNotEmpty) ...[
@@ -81,15 +94,29 @@ class SearchBarWidget extends StatelessWidget {
             children: [
               ...provider.searchHistory.map(
                 (h) => ActionChip(
-                  label: Text(h, style: AppTypography.caption(color: AppTheme.txtPrimary(context))),
-                  avatar: Icon(Icons.history_rounded, size: 16, color: AppTheme.txtSecondary(context)),
+                  label: Text(
+                    h,
+                    style: AppTypography.caption(
+                      color: AppTheme.txtPrimary(context),
+                    ),
+                  ),
+                  avatar: Icon(
+                    Icons.history_rounded,
+                    size: 16,
+                    color: AppTheme.txtSecondary(context),
+                  ),
                   backgroundColor: AppTheme.surfMuted(context),
                   side: BorderSide.none,
                   onPressed: () => provider.updateSearchQuery(h),
                 ),
               ),
               ActionChip(
-                label: Text('ล้างประวัติ', style: AppTypography.caption(color: AppTheme.txtSecondary(context))),
+                label: Text(
+                  'ล้างประวัติ',
+                  style: AppTypography.caption(
+                    color: AppTheme.txtSecondary(context),
+                  ),
+                ),
                 backgroundColor: AppTheme.surfMuted(context),
                 side: BorderSide.none,
                 onPressed: provider.clearSearchHistory,

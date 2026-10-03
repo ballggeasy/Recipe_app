@@ -67,13 +67,19 @@ class _AppTextFieldState extends State<AppTextField> {
         fillColor: AppTheme.surf(context),
         alignLabelWithHint: widget.maxLines > 1,
         prefixIcon: widget.prefixIcon != null
-            ? Icon(widget.prefixIcon, size: 20, color: AppTheme.txtSecondary(context))
+            ? Icon(
+                widget.prefixIcon,
+                size: 20,
+                color: AppTheme.txtSecondary(context),
+              )
             : null,
         suffixIcon: widget.obscureText
             ? IconButton(
                 tooltip: _obscure ? 'แสดงรหัสผ่าน' : 'ซ่อนรหัสผ่าน',
                 icon: Icon(
-                  _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  _obscure
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
                   size: 20,
                   color: AppTheme.txtSecondary(context),
                 ),
@@ -92,7 +98,10 @@ class _AppTextFieldState extends State<AppTextField> {
           borderRadius: BorderRadius.circular(AppRadius.lg),
           borderSide: BorderSide(color: AppTheme.prim(context), width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.base, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.base,
+          vertical: 16,
+        ),
       ),
     );
 
@@ -101,7 +110,10 @@ class _AppTextFieldState extends State<AppTextField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(widget.label!, style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context))),
+        Text(
+          widget.label!,
+          style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context)),
+        ),
         const SizedBox(height: AppSpacing.sm),
         field,
       ],

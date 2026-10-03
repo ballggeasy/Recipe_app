@@ -5,6 +5,7 @@ import { Review, ReviewReply } from './review.entity';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { CreateReplyDto } from './dto/create-reply.dto';
 import { User } from '../users/user.entity';
+import { Recipe } from '../recipes/recipe.entity';
 import { RecipesService } from '../recipes/recipes.service';
 
 @Injectable()
@@ -33,25 +34,37 @@ export class ReviewsService {
   }
 
   async create(recipeId: string, dto: CreateReviewDto, user: User): Promise<Review> {
-    const review = await this.reviewsRepository.save(
-      this.reviewsRepository.create({
-        recipeId,
-        userId: user.id,
-        userName: user.name,
-        rating: dto.rating,
-        content: dto.content,
-        imageUrls: dto.imageUrls ?? [],
-      }),
-    );
-    await this.refreshRecipeAggregate(recipeId);
-    return review;
-  }
+    await this.recipesService.assertExists(recipeId);
 
-  private async refreshRecipeAggregate(recipeId: string): Promise<void> {
-    const reviews = await this.findForRecipe(recipeId);
-    const reviewCount = reviews.length;
-    const rating = reviewCount === 0 ? 0 : reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount;
-    await this.recipesService.applyRatingAggregate(recipeId, rating, reviewCount);
+    // Insert and recompute the recipe's rating together, so the stored average always matches the reviews.
+    return this.reviewsRepository.manager.transaction(async (manager) => {
+      const reviews = manager.getRepository(Review);
+      const review = await reviews.save(
+        reviews.create({
+          recipeId,
+          userId: user.id,
+          userName: user.name,
+          rating: dto.rating,
+          content: dto.content,
+          imageUrls: dto.imageUrls ?? [],
+        }),
+      );
+
+      // AVG/COUNT in SQL instead of loading every review of the recipe into memory.
+      const aggregate = await reviews
+        .createQueryBuilder('review')
+        .select('AVG(review.rating)', 'average')
+        .addSelect('COUNT(*)', 'count')
+        .where('review.recipeId = :recipeId', { recipeId })
+        .getRawOne<{ average: number | null; count: number }>();
+      await manager.update(
+        Recipe,
+        { id: recipeId },
+        { rating: Number(aggregate?.average ?? 0), reviewCount: Number(aggregate?.count ?? 0) },
+      );
+
+      return review;
+    });
   }
 
   async toggleLike(id: string, userId: string): Promise<Review> {

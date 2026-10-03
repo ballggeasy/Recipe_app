@@ -38,7 +38,9 @@ class EmptyState extends StatelessWidget {
                 color: AppTheme.primLight(context),
                 borderRadius: BorderRadius.circular(AppRadius.xxl),
               ),
-              child: Center(child: Text(emoji, style: const TextStyle(fontSize: 38))),
+              child: Center(
+                child: Text(emoji, style: const TextStyle(fontSize: 38)),
+              ),
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
@@ -50,13 +52,19 @@ class EmptyState extends StatelessWidget {
               const SizedBox(height: AppSpacing.sm),
               Text(
                 description!,
-                style: AppTypography.body(color: AppTheme.txtSecondary(context)),
+                style: AppTypography.body(
+                  color: AppTheme.txtSecondary(context),
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
             if (actionLabel != null && onAction != null) ...[
               const SizedBox(height: AppSpacing.lg),
-              AppButton.ghost(label: actionLabel!, onPressed: onAction, fullWidth: false),
+              AppButton.ghost(
+                label: actionLabel!,
+                onPressed: onAction,
+                fullWidth: false,
+              ),
             ],
           ],
         ),

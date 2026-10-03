@@ -1,4 +1,10 @@
-import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { removeUploadedFile } from '../common/image-upload';
@@ -17,6 +23,11 @@ export interface SafeUser {
   profileImageUrl: string | null;
 }
 
+const INVALID_CREDENTIALS_MESSAGE = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+const BCRYPT_COST = 10;
+/** Compared against when the email is unknown so login takes as long as for a real account. */
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync('not-a-real-password', BCRYPT_COST);
+
 function toSafeUser(user: User): SafeUser {
   return {
     id: user.id,
@@ -34,7 +45,7 @@ export class AuthService {
   ) {}
 
   private hashPassword(password: string): Promise<string> {
-    return bcrypt.hash(password, 10);
+    return bcrypt.hash(password, BCRYPT_COST);
   }
 
   private signToken(user: User): string {
@@ -57,13 +68,12 @@ export class AuthService {
   async login(email: string, password: string): Promise<AuthResult> {
     const normalizedEmail = email.trim().toLowerCase();
     const user = await this.usersService.findByEmail(normalizedEmail);
-    if (!user) {
-      throw new NotFoundException('ไม่พบบัญชีผู้ใช้นี้');
-    }
 
-    const passwordMatches = await bcrypt.compare(password, user.passwordHash);
-    if (!passwordMatches) {
-      throw new UnauthorizedException('รหัสผ่านไม่ถูกต้อง');
+    // Same work and same answer for "no such account" and "wrong password", so the response
+    // (status, body, timing) can't be used to find out which emails are registered.
+    const passwordMatches = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_PASSWORD_HASH);
+    if (!user || !passwordMatches) {
+      throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
     }
 
     return { accessToken: this.signToken(user), user: toSafeUser(user) };
@@ -86,7 +96,8 @@ export class AuthService {
   async changePassword(user: User, currentPassword: string, newPassword: string): Promise<void> {
     const passwordMatches = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!passwordMatches) {
-      throw new UnauthorizedException('รหัสผ่านปัจจุบันไม่ถูกต้อง');
+      // 400, not 401: a wrong form field must not look like an expired session (the app logs out on 401).
+      throw new BadRequestException('รหัสผ่านปัจจุบันไม่ถูกต้อง');
     }
     user.passwordHash = await this.hashPassword(newPassword);
     await this.usersService.save(user);

@@ -29,13 +29,17 @@ class RatingDisplay extends StatelessWidget {
         const SizedBox(width: 3),
         Text(
           rating.toStringAsFixed(1),
-          style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context)).copyWith(fontSize: fontSize),
+          style: AppTypography.bodyStrong(
+            color: AppTheme.txtPrimary(context),
+          ).copyWith(fontSize: fontSize),
         ),
         if (showCount) ...[
           const SizedBox(width: 4),
           Text(
             '· $reviewCount รีวิว',
-            style: AppTypography.caption(color: AppTheme.txtSecondary(context)).copyWith(fontSize: fontSize),
+            style: AppTypography.caption(
+              color: AppTheme.txtSecondary(context),
+            ).copyWith(fontSize: fontSize),
           ),
         ],
       ],

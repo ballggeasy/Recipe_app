@@ -14,7 +14,11 @@ double _contrast(Color a, Color b) {
 
 void _expectReadable(String name, Color text, Color background) {
   final ratio = _contrast(text, background);
-  expect(ratio, greaterThanOrEqualTo(4.5), reason: '$name: ${ratio.toStringAsFixed(2)}:1 is below WCAG AA 4.5:1');
+  expect(
+    ratio,
+    greaterThanOrEqualTo(4.5),
+    reason: '$name: ${ratio.toStringAsFixed(2)}:1 is below WCAG AA 4.5:1',
+  );
 }
 
 void main() {
@@ -36,15 +40,35 @@ void main() {
     }
 
     test('text on accent fills is readable', () {
-      _expectReadable('onAccent on primary', AppColors.onAccent, AppColors.primary);
-      _expectReadable('onAccent on secondary', AppColors.onAccent, AppColors.secondary);
+      _expectReadable(
+        'onAccent on primary',
+        AppColors.onAccent,
+        AppColors.primary,
+      );
+      _expectReadable(
+        'onAccent on secondary',
+        AppColors.onAccent,
+        AppColors.secondary,
+      );
       _expectReadable('onAccent on error', AppColors.onAccent, AppColors.error);
     });
 
     test('text on muted tints is readable', () {
-      _expectReadable('primary on primaryMuted', AppColors.primary, AppColors.primaryMuted);
-      _expectReadable('secondary on secondaryMuted', AppColors.secondary, AppColors.secondaryMuted);
-      _expectReadable('error on errorMuted', AppColors.error, AppColors.errorMuted);
+      _expectReadable(
+        'primary on primaryMuted',
+        AppColors.primary,
+        AppColors.primaryMuted,
+      );
+      _expectReadable(
+        'secondary on secondaryMuted',
+        AppColors.secondary,
+        AppColors.secondaryMuted,
+      );
+      _expectReadable(
+        'error on errorMuted',
+        AppColors.error,
+        AppColors.errorMuted,
+      );
     });
   });
 
@@ -66,15 +90,39 @@ void main() {
     }
 
     test('text on accent fills is readable', () {
-      _expectReadable('onAccent on primary', AppColors.onAccentDark, AppColors.primaryDark);
-      _expectReadable('onAccent on secondary', AppColors.onAccentDark, AppColors.secondaryDark);
-      _expectReadable('onAccent on error', AppColors.onAccentDark, AppColors.errorDark);
+      _expectReadable(
+        'onAccent on primary',
+        AppColors.onAccentDark,
+        AppColors.primaryDark,
+      );
+      _expectReadable(
+        'onAccent on secondary',
+        AppColors.onAccentDark,
+        AppColors.secondaryDark,
+      );
+      _expectReadable(
+        'onAccent on error',
+        AppColors.onAccentDark,
+        AppColors.errorDark,
+      );
     });
 
     test('text on muted tints is readable', () {
-      _expectReadable('primary on primaryMuted', AppColors.primaryDark, AppColors.primaryMutedDark);
-      _expectReadable('secondary on secondaryMuted', AppColors.secondaryDark, AppColors.secondaryMutedDark);
-      _expectReadable('error on errorMuted', AppColors.errorDark, AppColors.errorMutedDark);
+      _expectReadable(
+        'primary on primaryMuted',
+        AppColors.primaryDark,
+        AppColors.primaryMutedDark,
+      );
+      _expectReadable(
+        'secondary on secondaryMuted',
+        AppColors.secondaryDark,
+        AppColors.secondaryMutedDark,
+      );
+      _expectReadable(
+        'error on errorMuted',
+        AppColors.errorDark,
+        AppColors.errorMutedDark,
+      );
     });
   });
 }

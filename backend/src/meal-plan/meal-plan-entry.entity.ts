@@ -1,7 +1,8 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
+@Index('IDX_meal_plan_user_date', ['userId', 'date'])
 @Entity('meal_plan_entries')
 export class MealPlanEntry {
   @PrimaryGeneratedColumn('uuid')

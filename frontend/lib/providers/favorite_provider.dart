@@ -10,7 +10,8 @@ import '../services/favorite_service.dart';
 class FavoriteProvider extends ChangeNotifier {
   final FavoriteService _favoriteService;
 
-  FavoriteProvider({FavoriteService? favoriteService}) : _favoriteService = favoriteService ?? FavoriteService();
+  FavoriteProvider({FavoriteService? favoriteService})
+    : _favoriteService = favoriteService ?? FavoriteService();
 
   List<FavoriteFolder> _folders = [];
   bool _isLoading = false;
@@ -76,7 +77,10 @@ class FavoriteProvider extends ChangeNotifier {
 
   Future<void> addRecipeToFolder(String folderId, String recipeId) async {
     try {
-      final updated = await _favoriteService.addRecipeToFolder(folderId, recipeId);
+      final updated = await _favoriteService.addRecipeToFolder(
+        folderId,
+        recipeId,
+      );
       final index = _folders.indexWhere((f) => f.id == folderId);
       if (index != -1) {
         _folders[index] = updated;
@@ -89,7 +93,10 @@ class FavoriteProvider extends ChangeNotifier {
 
   Future<void> removeRecipeFromFolder(String folderId, String recipeId) async {
     try {
-      final updated = await _favoriteService.removeRecipeFromFolder(folderId, recipeId);
+      final updated = await _favoriteService.removeRecipeFromFolder(
+        folderId,
+        recipeId,
+      );
       final index = _folders.indexWhere((f) => f.id == folderId);
       if (index != -1) {
         _folders[index] = updated;

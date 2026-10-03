@@ -26,6 +26,14 @@ export class RecipesService {
     return recipe;
   }
 
+  /** Public detail view: counts the view (atomic increment, so concurrent readers don't lose counts). */
+  async findOneAndCountView(id: string): Promise<Recipe> {
+    const recipe = await this.findOne(id);
+    await this.recipesRepository.increment({ id }, 'viewCount', 1);
+    recipe.viewCount += 1;
+    return recipe;
+  }
+
   create(dto: CreateRecipeDto, user: User): Promise<Recipe> {
     const recipe = this.recipesRepository.create({
       ...dto,
@@ -40,7 +48,8 @@ export class RecipesService {
       tips: dto.tips ?? null,
       platingTips: dto.platingTips ?? null,
       videoUrl: dto.videoUrl ?? null,
-      isRecommended: dto.isRecommended ?? false,
+      // Editorial flags are not user-settable: user recipes are never official or recommended.
+      isRecommended: false,
       isOfficial: false,
       uploaderId: user.id,
       uploaderName: user.name,
@@ -101,8 +110,11 @@ export class RecipesService {
     return [...new Set(urls.filter((url) => url?.startsWith(prefix)))];
   }
 
-  async applyRatingAggregate(recipeId: string, rating: number, reviewCount: number): Promise<void> {
-    await this.recipesRepository.update({ id: recipeId }, { rating, reviewCount });
+  /** Throws 404 unless the recipe exists. Used by modules that attach data (reviews, comments, favorites, ...) to a recipe. */
+  async assertExists(id: string): Promise<void> {
+    if (!(await this.recipesRepository.exist({ where: { id } }))) {
+      throw new NotFoundException('ไม่พบสูตรอาหารนี้');
+    }
   }
 
   count(): Promise<number> {

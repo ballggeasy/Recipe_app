@@ -10,7 +10,8 @@ import '../services/meal_plan_service.dart';
 class MealPlannerProvider extends ChangeNotifier {
   final MealPlanService _mealPlanService;
 
-  MealPlannerProvider({MealPlanService? mealPlanService}) : _mealPlanService = mealPlanService ?? MealPlanService();
+  MealPlannerProvider({MealPlanService? mealPlanService})
+    : _mealPlanService = mealPlanService ?? MealPlanService();
 
   List<MealPlanEntry> _entries = [];
   bool _isLoading = false;
@@ -19,22 +20,31 @@ class MealPlannerProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   List<MealPlanEntry> entriesForDate(DateTime date) {
-    return _entries.where((e) =>
-        e.date.year == date.year &&
-        e.date.month == date.month &&
-        e.date.day == date.day).toList();
+    return _entries
+        .where(
+          (e) =>
+              e.date.year == date.year &&
+              e.date.month == date.month &&
+              e.date.day == date.day,
+        )
+        .toList();
   }
 
   List<MealPlanEntry> entriesForWeek(DateTime weekStart) {
     final end = weekStart.add(const Duration(days: 7));
-    return _entries.where((e) =>
-        e.date.isAfter(weekStart.subtract(const Duration(days: 1))) &&
-        e.date.isBefore(end)).toList();
+    return _entries
+        .where(
+          (e) =>
+              e.date.isAfter(weekStart.subtract(const Duration(days: 1))) &&
+              e.date.isBefore(end),
+        )
+        .toList();
   }
 
   List<MealPlanEntry> entriesForMonth(int year, int month) {
-    return _entries.where((e) =>
-        e.date.year == year && e.date.month == month).toList();
+    return _entries
+        .where((e) => e.date.year == year && e.date.month == month)
+        .toList();
   }
 
   /// เรียกทุกครั้งที่สถานะล็อกอินเปลี่ยน
@@ -101,9 +111,9 @@ class MealPlannerProvider extends ChangeNotifier {
     var total = const NutritionInfo();
     for (final entry in dayEntries) {
       final recipe = recipes.cast<Recipe?>().firstWhere(
-            (r) => r?.id == entry.recipeId,
-            orElse: () => null,
-          );
+        (r) => r?.id == entry.recipeId,
+        orElse: () => null,
+      );
       if (recipe?.nutrition != null) {
         final n = recipe!.nutrition!.forServings(entry.servings);
         total = NutritionInfo(
@@ -124,9 +134,9 @@ class MealPlannerProvider extends ChangeNotifier {
     var total = const NutritionInfo();
     for (final entry in weekEntries) {
       final recipe = recipes.cast<Recipe?>().firstWhere(
-            (r) => r?.id == entry.recipeId,
-            orElse: () => null,
-          );
+        (r) => r?.id == entry.recipeId,
+        orElse: () => null,
+      );
       if (recipe?.nutrition != null) {
         final n = recipe!.nutrition!.forServings(entry.servings);
         total = NutritionInfo(

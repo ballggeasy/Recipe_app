@@ -18,19 +18,38 @@ class ApiException implements Exception {
 class ApiClient {
   static final ApiClient _instance = ApiClient._internal(http.Client());
   factory ApiClient() => _instance;
-  ApiClient._internal(this._client);
+  ApiClient._internal(this._client) : _baseUrlOverride = null;
 
   /// instance แยกจาก singleton ที่ส่ง request ผ่าน [client] ที่กำหนด (เช่น MockClient) — ใช้ใน test เท่านั้น
+  /// [baseUrl] ใช้จำลอง `--dart-define=API_BASE_URL=...`
   @visibleForTesting
-  ApiClient.forTesting(http.Client client) : _client = client;
+  ApiClient.forTesting(http.Client client, {String? baseUrl})
+    : _client = client,
+      _baseUrlOverride = baseUrl;
 
   final http.Client _client;
+  final String? _baseUrlOverride;
+
+  /// ตั้งตอน build/run: `flutter run --dart-define=API_BASE_URL=https://api.example.com`
+  /// (ใช้ชี้ไป backend จริงหรือมือถือจริงโดยไม่ต้องแก้โค้ด)
+  static const _configuredBaseUrl = String.fromEnvironment('API_BASE_URL');
 
   static const _tokenKey = 'auth_token';
   String? _token;
 
-  /// Android emulator เข้าถึง host machine ผ่าน 10.0.2.2 เสมอ, แพลตฟอร์มอื่นใช้ localhost
+  /// เรียกเมื่อ backend ตอบ 401 กับ request ที่แนบ token (session หมดอายุ/ถูกเพิกถอน) หลังล้าง token แล้ว
+  /// — ผู้ฟัง (AuthProvider) ใช้พาผู้ใช้กลับไปหน้าล็อกอิน
+  void Function()? onUnauthorized;
+
+  /// ลำดับความสำคัญ: `API_BASE_URL` ที่กำหนดตอน build > ค่าเริ่มต้นตามแพลตฟอร์ม
+  /// (Android emulator เข้าถึง host machine ผ่าน 10.0.2.2 เสมอ, แพลตฟอร์มอื่นใช้ localhost)
   String get baseUrl {
+    final configured = _baseUrlOverride ?? _configuredBaseUrl;
+    if (configured.isNotEmpty) {
+      return configured.endsWith('/')
+          ? configured.substring(0, configured.length - 1)
+          : configured;
+    }
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       return 'http://10.0.2.2:3000';
     }
@@ -39,7 +58,8 @@ class ApiClient {
 
   /// ไฟล์ที่ backend เก็บเอง (เช่นรูปที่อัปโหลด) ส่งมาเป็น path แบบ relative เช่น `/uploads/recipes/x.jpg`
   /// ต้องต่อ [baseUrl] ก่อนนำไปแสดง ส่วน URL เต็ม (เช่นรูปจาก wikimedia) ใช้ได้เลย
-  String resolveUrl(String path) => path.startsWith('/') ? '$baseUrl$path' : path;
+  String resolveUrl(String path) =>
+      path.startsWith('/') ? '$baseUrl$path' : path;
 
   bool get hasToken => _token != null;
 
@@ -71,15 +91,23 @@ class ApiClient {
     return headers;
   }
 
-  Future<dynamic> get(String path, {bool auth = true}) => _send('GET', path, auth: auth);
+  Future<dynamic> get(String path, {bool auth = true}) =>
+      _send('GET', path, auth: auth);
 
-  Future<dynamic> post(String path, {Map<String, dynamic>? body, bool auth = true}) =>
-      _send('POST', path, body: body, auth: auth);
+  Future<dynamic> post(
+    String path, {
+    Map<String, dynamic>? body,
+    bool auth = true,
+  }) => _send('POST', path, body: body, auth: auth);
 
-  Future<dynamic> patch(String path, {Map<String, dynamic>? body, bool auth = true}) =>
-      _send('PATCH', path, body: body, auth: auth);
+  Future<dynamic> patch(
+    String path, {
+    Map<String, dynamic>? body,
+    bool auth = true,
+  }) => _send('PATCH', path, body: body, auth: auth);
 
-  Future<dynamic> delete(String path, {bool auth = true}) => _send('DELETE', path, auth: auth);
+  Future<dynamic> delete(String path, {bool auth = true}) =>
+      _send('DELETE', path, auth: auth);
 
   /// อัปโหลดไฟล์แบบ multipart/form-data (เช่นรูปโปรไฟล์) พร้อม JWT ของ session ปัจจุบัน
   Future<dynamic> uploadFile(
@@ -109,10 +137,12 @@ class ApiClient {
       final streamed = await _client.send(request);
       response = await http.Response.fromStream(streamed);
     } catch (_) {
-      throw ApiException('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบว่า backend กำลังทำงานอยู่');
+      throw ApiException(
+        'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบว่า backend กำลังทำงานอยู่',
+      );
     }
 
-    return _decodeOrThrow(response);
+    return _decodeOrThrow(response, sentToken: _token != null);
   }
 
   Future<dynamic> _send(
@@ -132,10 +162,18 @@ class ApiClient {
           response = await _client.get(uri, headers: headers);
           break;
         case 'POST':
-          response = await _client.post(uri, headers: headers, body: encodedBody);
+          response = await _client.post(
+            uri,
+            headers: headers,
+            body: encodedBody,
+          );
           break;
         case 'PATCH':
-          response = await _client.patch(uri, headers: headers, body: encodedBody);
+          response = await _client.patch(
+            uri,
+            headers: headers,
+            body: encodedBody,
+          );
           break;
         case 'DELETE':
           response = await _client.delete(uri, headers: headers);
@@ -146,10 +184,12 @@ class ApiClient {
     } on ApiException {
       rethrow;
     } catch (_) {
-      throw ApiException('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบว่า backend กำลังทำงานอยู่');
+      throw ApiException(
+        'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาตรวจสอบว่า backend กำลังทำงานอยู่',
+      );
     }
 
-    return _decodeOrThrow(response);
+    return _decodeOrThrow(response, sentToken: auth && _token != null);
   }
 
   static String _guessImageType(String filename) {
@@ -162,11 +202,22 @@ class ApiClient {
     };
   }
 
-  dynamic _decodeOrThrow(http.Response response) {
-    final dynamic decoded = response.body.isEmpty ? null : jsonDecode(response.body);
+  Future<dynamic> _decodeOrThrow(
+    http.Response response, {
+    required bool sentToken,
+  }) async {
+    final dynamic decoded = response.body.isEmpty
+        ? null
+        : jsonDecode(response.body);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return decoded;
+    }
+
+    // 401 ทั้งที่แนบ token = session ใช้ไม่ได้แล้ว (login ที่รหัสผิดไม่แนบ token จึงไม่เข้าเงื่อนไขนี้)
+    if (response.statusCode == 401 && sentToken) {
+      await clearToken();
+      onUnauthorized?.call();
     }
 
     String message = 'เกิดข้อผิดพลาด (${response.statusCode})';

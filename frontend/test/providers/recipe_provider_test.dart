@@ -14,7 +14,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../helpers/fake_api.dart';
 
 final _catalog = [
-  recipeJson(id: 'krapao', name: 'ผัดกะเพรา', rating: 4.5, cookTimeMinutes: 10, prepTimeMinutes: 5),
+  recipeJson(
+    id: 'krapao',
+    name: 'ผัดกะเพรา',
+    rating: 4.5,
+    cookTimeMinutes: 10,
+    prepTimeMinutes: 5,
+  ),
   recipeJson(
     id: 'tomyum',
     name: 'ต้มยำกุ้ง',
@@ -40,8 +46,14 @@ void main() {
   late List<http.Request> log;
 
   RecipeProvider buildProvider({Map<String, RouteHandler> extra = const {}}) {
-    final api = fakeApi({'GET /recipes': (_) => jsonResponse(_catalog), ...extra}, log: log);
-    return RecipeProvider(recipeService: RecipeService(api: api), favoriteService: FavoriteService(api: api));
+    final api = fakeApi({
+      'GET /recipes': (_) => jsonResponse(_catalog),
+      ...extra,
+    }, log: log);
+    return RecipeProvider(
+      recipeService: RecipeService(api: api),
+      favoriteService: FavoriteService(api: api),
+    );
   }
 
   setUp(() {
@@ -49,20 +61,22 @@ void main() {
     log = [];
   });
 
-  Future<({String? error, String? imageError})> addFriedRice(RecipeProvider provider, {XFile? image}) =>
-      provider.addRecipe(
-        name: 'ข้าวผัด',
-        emoji: '🍚',
-        category: 'อาหารจานเดียว',
-        country: 'ไทย',
-        prepTime: 5,
-        cookTime: 10,
-        difficulty: 'ง่าย',
-        servings: 1,
-        steps: const ['ผัด'],
-        items: const [IngredientItem(name: 'ข้าว', amount: '1', unit: 'จาน')],
-        image: image,
-      );
+  Future<({String? error, String? imageError})> addFriedRice(
+    RecipeProvider provider, {
+    XFile? image,
+  }) => provider.addRecipe(
+    name: 'ข้าวผัด',
+    emoji: '🍚',
+    category: 'อาหารจานเดียว',
+    country: 'ไทย',
+    prepTime: 5,
+    cookTime: 10,
+    difficulty: 'ง่าย',
+    servings: 1,
+    steps: const ['ผัด'],
+    items: const [IngredientItem(name: 'ข้าว', amount: '1', unit: 'จาน')],
+    image: image,
+  );
 
   group('init', () {
     test('loads the catalog and builds category/country lists', () async {
@@ -78,12 +92,76 @@ void main() {
       expect(provider.getById('missing'), isNull);
     });
 
-    test('ends with an empty list when the backend is down', () async {
-      final provider = buildProvider(extra: {'GET /recipes': (_) => jsonResponse({'message': 'down'}, 503)});
+    test(
+      'ends with an empty list and the error message when the backend is down',
+      () async {
+        final provider = buildProvider(
+          extra: {
+            'GET /recipes': (_) => jsonResponse({'message': 'down'}, 503),
+          },
+        );
+        await provider.init();
+
+        expect(provider.allRecipes, isEmpty);
+        expect(provider.isLoading, isFalse);
+        expect(provider.loadError, 'down');
+      },
+    );
+
+    test('has no error after a successful load', () async {
+      final provider = buildProvider();
       await provider.init();
 
-      expect(provider.allRecipes, isEmpty);
-      expect(provider.isLoading, isFalse);
+      expect(provider.loadError, isNull);
+    });
+  });
+
+  group('loadRecipes (retry)', () {
+    test('recovers once the backend is back and clears the error', () async {
+      var backendUp = false;
+      final provider = buildProvider(
+        extra: {
+          'GET /recipes': (_) => backendUp
+              ? jsonResponse(_catalog)
+              : jsonResponse({'message': 'down'}, 503),
+        },
+      );
+      await provider.init();
+      expect(provider.loadError, 'down');
+
+      backendUp = true;
+      await provider.loadRecipes();
+
+      expect(provider.loadError, isNull);
+      expect(provider.allRecipes, hasLength(3));
+    });
+
+    test('keeps the recipes already shown when a refresh fails', () async {
+      var backendUp = true;
+      final provider = buildProvider(
+        extra: {
+          'GET /recipes': (_) => backendUp
+              ? jsonResponse(_catalog)
+              : jsonResponse({'message': 'down'}, 503),
+        },
+      );
+      await provider.init();
+
+      backendUp = false;
+      await provider.loadRecipes();
+
+      expect(provider.allRecipes, hasLength(3));
+      expect(provider.loadError, 'down');
+    });
+
+    test('reports loading while a request is in flight', () async {
+      final provider = buildProvider();
+      final states = <bool>[];
+      provider.addListener(() => states.add(provider.isLoading));
+
+      await provider.loadRecipes();
+
+      expect(states, [true, false]);
     });
   });
 
@@ -166,32 +244,49 @@ void main() {
       expect(log.where((r) => r.url.path.startsWith('/favorites')), isEmpty);
     });
 
-    test('logged-in users load favorites and sync toggles to the backend', () async {
-      final provider = buildProvider(extra: {
-        'GET /favorites': (_) => jsonResponse(['tomyum']),
-        'POST /favorites/krapao': (_) => jsonResponse({}, 201),
-      });
-      await provider.init();
-      await provider.onAuthChanged(true);
-      expect(provider.isFavorite('tomyum'), isTrue);
+    test(
+      'logged-in users load favorites and sync toggles to the backend',
+      () async {
+        final provider = buildProvider(
+          extra: {
+            'GET /favorites': (_) => jsonResponse(['tomyum']),
+            'POST /favorites/krapao': (_) => jsonResponse({}, 201),
+          },
+        );
+        await provider.init();
+        await provider.onAuthChanged(true);
+        expect(provider.isFavorite('tomyum'), isTrue);
 
-      provider.toggleFavorite('krapao');
-      await pumpEventQueue();
+        provider.toggleFavorite('krapao');
+        await pumpEventQueue();
 
-      expect(provider.isFavorite('krapao'), isTrue);
-      expect(log.any((r) => r.method == 'POST' && r.url.path == '/favorites/krapao'), isTrue);
-    });
+        expect(provider.isFavorite('krapao'), isTrue);
+        expect(
+          log.any(
+            (r) => r.method == 'POST' && r.url.path == '/favorites/krapao',
+          ),
+          isTrue,
+        );
+      },
+    );
 
     test('rolls the toggle back when the backend rejects it', () async {
-      final provider = buildProvider(extra: {
-        'GET /favorites': (_) => jsonResponse([]),
-        'POST /favorites/krapao': (_) => jsonResponse({'message': 'fail'}, 500),
-      });
+      final provider = buildProvider(
+        extra: {
+          'GET /favorites': (_) => jsonResponse([]),
+          'POST /favorites/krapao': (_) =>
+              jsonResponse({'message': 'fail'}, 500),
+        },
+      );
       await provider.init();
       await provider.onAuthChanged(true);
 
       provider.toggleFavorite('krapao');
-      expect(provider.isFavorite('krapao'), isTrue, reason: 'optimistic update');
+      expect(
+        provider.isFavorite('krapao'),
+        isTrue,
+        reason: 'optimistic update',
+      );
       await pumpEventQueue();
 
       expect(provider.isFavorite('krapao'), isFalse);
@@ -199,31 +294,42 @@ void main() {
   });
 
   group('search history', () {
-    test('keeps the newest query first, without duplicates, capped and persisted', () async {
-      final provider = buildProvider();
-      await provider.init();
+    test(
+      'keeps the newest query first, without duplicates, capped and persisted',
+      () async {
+        final provider = buildProvider();
+        await provider.init();
 
-      for (var i = 0; i < AppConstants.maxSearchHistory + 2; i++) {
-        provider.addToSearchHistory('q$i');
-      }
-      provider.addToSearchHistory('q5');
-      provider.addToSearchHistory('   ');
+        for (var i = 0; i < AppConstants.maxSearchHistory + 2; i++) {
+          provider.addToSearchHistory('q$i');
+        }
+        provider.addToSearchHistory('q5');
+        provider.addToSearchHistory('   ');
 
-      expect(provider.searchHistory.first, 'q5');
-      expect(provider.searchHistory, hasLength(AppConstants.maxSearchHistory));
-      expect(provider.searchHistory.where((q) => q == 'q5'), hasLength(1));
+        expect(provider.searchHistory.first, 'q5');
+        expect(
+          provider.searchHistory,
+          hasLength(AppConstants.maxSearchHistory),
+        );
+        expect(provider.searchHistory.where((q) => q == 'q5'), hasLength(1));
 
-      await pumpEventQueue();
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getStringList('search_history')!.first, 'q5');
-    });
+        await pumpEventQueue();
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getStringList('search_history')!.first, 'q5');
+      },
+    );
   });
 
   group('recipe CRUD', () {
     test('addRecipe puts the created recipe first', () async {
-      final provider = buildProvider(extra: {
-        'POST /recipes': (_) => jsonResponse(recipeJson(id: 'new', name: 'ข้าวผัด', isOfficial: false), 201),
-      });
+      final provider = buildProvider(
+        extra: {
+          'POST /recipes': (_) => jsonResponse(
+            recipeJson(id: 'new', name: 'ข้าวผัด', isOfficial: false),
+            201,
+          ),
+        },
+      );
       await provider.init();
 
       final result = await addFriedRice(provider);
@@ -233,70 +339,138 @@ void main() {
       expect(provider.allRecipes.first.id, 'new');
     });
 
-    test('addRecipe uploads the picked image as multipart and stores the resolved URL', () async {
-      final provider = buildProvider(extra: {
-        'POST /recipes': (_) => jsonResponse(recipeJson(id: 'new', name: 'ข้าวผัด', isOfficial: false), 201),
-        'POST /recipes/new/image': (_) => jsonResponse(
-              {...recipeJson(id: 'new', name: 'ข้าวผัด'), 'imageUrl': '/uploads/recipes/new-1.png'},
+    test(
+      'addRecipe uploads the picked image as multipart and stores the resolved URL',
+      () async {
+        final provider = buildProvider(
+          extra: {
+            'POST /recipes': (_) => jsonResponse(
+              recipeJson(id: 'new', name: 'ข้าวผัด', isOfficial: false),
               201,
             ),
-      });
-      await provider.init();
+            'POST /recipes/new/image': (_) => jsonResponse({
+              ...recipeJson(id: 'new', name: 'ข้าวผัด'),
+              'imageUrl': '/uploads/recipes/new-1.png',
+            }, 201),
+          },
+        );
+        await provider.init();
 
-      final result = await addFriedRice(provider, image: XFile.fromData(Uint8List.fromList([1, 2, 3]), name: 'dish.png', path: 'dish.png'));
+        final result = await addFriedRice(
+          provider,
+          image: XFile.fromData(
+            Uint8List.fromList([1, 2, 3]),
+            name: 'dish.png',
+            path: 'dish.png',
+          ),
+        );
 
-      expect(result, (error: null, imageError: null));
-      final upload = log.singleWhere((r) => r.url.path == '/recipes/new/image');
-      expect(upload.headers['content-type'], startsWith('multipart/form-data'));
-      expect(upload.body, contains('filename="dish.png"'));
-      expect(upload.body, contains('content-type: image/png'),
-          reason: 'web pickers often omit mimeType, so it is guessed from the file name');
-      expect(provider.allRecipes.first.imageUrl, '${ApiClient().baseUrl}/uploads/recipes/new-1.png');
-    });
+        expect(result, (error: null, imageError: null));
+        final upload = log.singleWhere(
+          (r) => r.url.path == '/recipes/new/image',
+        );
+        expect(
+          upload.headers['content-type'],
+          startsWith('multipart/form-data'),
+        );
+        expect(upload.body, contains('filename="dish.png"'));
+        expect(
+          upload.body,
+          contains('content-type: image/png'),
+          reason:
+              'web pickers often omit mimeType, so it is guessed from the file name',
+        );
+        expect(
+          provider.allRecipes.first.imageUrl,
+          '${ApiClient().baseUrl}/uploads/recipes/new-1.png',
+        );
+      },
+    );
 
-    test('addRecipe keeps the recipe when only the image upload fails', () async {
-      final provider = buildProvider(extra: {
-        'POST /recipes': (_) => jsonResponse(recipeJson(id: 'new', name: 'ข้าวผัด', isOfficial: false), 201),
-        'POST /recipes/new/image': (_) => jsonResponse({'message': 'ไฟล์ต้องเป็นรูปภาพ'}, 400),
-      });
-      await provider.init();
+    test(
+      'addRecipe keeps the recipe when only the image upload fails',
+      () async {
+        final provider = buildProvider(
+          extra: {
+            'POST /recipes': (_) => jsonResponse(
+              recipeJson(id: 'new', name: 'ข้าวผัด', isOfficial: false),
+              201,
+            ),
+            'POST /recipes/new/image': (_) =>
+                jsonResponse({'message': 'ไฟล์ต้องเป็นรูปภาพ'}, 400),
+          },
+        );
+        await provider.init();
 
-      final result = await addFriedRice(provider, image: XFile.fromData(Uint8List.fromList([1]), name: 'dish.jpg', path: 'dish.jpg'));
+        final result = await addFriedRice(
+          provider,
+          image: XFile.fromData(
+            Uint8List.fromList([1]),
+            name: 'dish.jpg',
+            path: 'dish.jpg',
+          ),
+        );
 
-      expect(result.error, isNull, reason: 'the recipe itself was saved');
-      expect(result.imageError, 'ไฟล์ต้องเป็นรูปภาพ');
-      expect(provider.getById('new'), isNotNull);
-    });
+        expect(result.error, isNull, reason: 'the recipe itself was saved');
+        expect(result.imageError, 'ไฟล์ต้องเป็นรูปภาพ');
+        expect(provider.getById('new'), isNotNull);
+      },
+    );
 
     test('updateRecipeImage swaps in the updated recipe', () async {
-      final provider = buildProvider(extra: {
-        'POST /recipes/krapao/image': (_) =>
-            jsonResponse({...recipeJson(id: 'krapao'), 'imageUrl': '/uploads/recipes/krapao-2.jpg'}, 201),
-      });
+      final provider = buildProvider(
+        extra: {
+          'POST /recipes/krapao/image': (_) => jsonResponse({
+            ...recipeJson(id: 'krapao'),
+            'imageUrl': '/uploads/recipes/krapao-2.jpg',
+          }, 201),
+        },
+      );
       await provider.init();
 
-      final error = await provider.updateRecipeImage('krapao', XFile.fromData(Uint8List.fromList([1]), name: 'a.jpg', path: 'a.jpg'));
+      final error = await provider.updateRecipeImage(
+        'krapao',
+        XFile.fromData(Uint8List.fromList([1]), name: 'a.jpg', path: 'a.jpg'),
+      );
 
       expect(error, isNull);
-      expect(provider.getById('krapao')!.imageUrl, endsWith('/uploads/recipes/krapao-2.jpg'));
+      expect(
+        provider.getById('krapao')!.imageUrl,
+        endsWith('/uploads/recipes/krapao-2.jpg'),
+      );
     });
 
     test('addRecipe returns the backend error and changes nothing', () async {
-      final provider = buildProvider(extra: {
-        'POST /recipes': (_) => jsonResponse({'message': 'Unauthorized'}, 401),
-      });
+      final provider = buildProvider(
+        extra: {
+          'POST /recipes': (_) =>
+              jsonResponse({'message': 'Unauthorized'}, 401),
+        },
+      );
       await provider.init();
 
-      final result = await addFriedRice(provider, image: XFile.fromData(Uint8List.fromList([1]), name: 'a.jpg', path: 'a.jpg'));
+      final result = await addFriedRice(
+        provider,
+        image: XFile.fromData(
+          Uint8List.fromList([1]),
+          name: 'a.jpg',
+          path: 'a.jpg',
+        ),
+      );
 
       expect(result.error, 'Unauthorized');
-      expect(log.where((r) => r.url.path.endsWith('/image')), isEmpty,
-          reason: 'no image upload when the recipe was not created');
+      expect(
+        log.where((r) => r.url.path.endsWith('/image')),
+        isEmpty,
+        reason: 'no image upload when the recipe was not created',
+      );
       expect(provider.allRecipes, hasLength(3));
     });
 
     test('deleteRecipe removes the recipe and its favorite', () async {
-      final provider = buildProvider(extra: {'DELETE /recipes/krapao': (_) => jsonResponse(null)});
+      final provider = buildProvider(
+        extra: {'DELETE /recipes/krapao': (_) => jsonResponse(null)},
+      );
       await provider.init();
       provider.toggleFavorite('krapao');
 
@@ -308,13 +482,18 @@ void main() {
     });
 
     test('updateRecipe replaces the recipe with the server copy', () async {
-      final provider = buildProvider(extra: {
-        'PATCH /recipes/krapao': (_) => jsonResponse(recipeJson(id: 'krapao', name: 'กะเพราไก่')),
-      });
+      final provider = buildProvider(
+        extra: {
+          'PATCH /recipes/krapao': (_) =>
+              jsonResponse(recipeJson(id: 'krapao', name: 'กะเพราไก่')),
+        },
+      );
       await provider.init();
 
       final original = provider.getById('krapao')!;
-      final error = await provider.updateRecipe(original.copyWith(name: 'กะเพราไก่'));
+      final error = await provider.updateRecipe(
+        original.copyWith(name: 'กะเพราไก่'),
+      );
 
       expect(error, isNull);
       expect(provider.getById('krapao')!.name, 'กะเพราไก่');

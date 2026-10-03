@@ -41,7 +41,10 @@ class FavoritesScreen extends StatelessWidget {
         body: TabBarView(
           children: [
             _AllFavoritesTab(favorites: favorites),
-            _FoldersTab(favProvider: favProvider, recipeProvider: recipeProvider),
+            _FoldersTab(
+              favProvider: favProvider,
+              recipeProvider: recipeProvider,
+            ),
           ],
         ),
       ),
@@ -109,7 +112,10 @@ class _FoldersTab extends StatelessWidget {
           const EmptyState(emoji: '📁', message: 'ยังไม่มีโฟลเดอร์')
         else
           ...favProvider.folders.map((folder) {
-            final recipes = favProvider.recipesInFolder(folder.id, recipeProvider);
+            final recipes = favProvider.recipesInFolder(
+              folder.id,
+              recipeProvider,
+            );
             return Container(
               margin: const EdgeInsets.only(bottom: AppSpacing.md),
               decoration: BoxDecoration(
@@ -122,64 +128,121 @@ class _FoldersTab extends StatelessWidget {
               child: Material(
                 type: MaterialType.transparency,
                 child: Theme(
-                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                  data: Theme.of(
+                    context,
+                  ).copyWith(dividerColor: Colors.transparent),
                   child: ExpansionTile(
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppTheme.primLight(context),
-                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primLight(context),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                      child: Center(
+                        child: Text(
+                          folder.emoji,
+                          style: const TextStyle(fontSize: 20),
+                        ),
+                      ),
                     ),
-                    child: Center(child: Text(folder.emoji, style: const TextStyle(fontSize: 20))),
-                  ),
-                  title: Text(folder.name, style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context))),
-                  subtitle: Text('${recipes.length} เมนู', style: AppTypography.caption(color: AppTheme.txtSecondary(context))),
-                  children: recipes.isEmpty
-                      ? [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(AppSpacing.base, 0, AppSpacing.base, AppSpacing.base),
-                            child: Text(
-                              'ยังไม่มีสูตรในโฟลเดอร์นี้',
-                              style: AppTypography.body(color: AppTheme.txtSecondary(context)),
-                            ),
-                          ),
-                        ]
-                      : recipes.map((recipe) {
-                          return ListTile(
-                            title: Text(recipe.name, style: AppTypography.body(color: AppTheme.txtPrimary(context))),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  tooltip: 'คัดลอกลิงก์สูตร',
-                                  icon: Icon(Icons.share_outlined, size: 20, color: AppTheme.txtSecondary(context)),
-                                  onPressed: () {
-                                    final link = favProvider.shareRecipe(recipe);
-                                    Clipboard.setData(ClipboardData(text: link));
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('คัดลอกลิงก์แล้ว: $link')),
-                                    );
-                                  },
+                    title: Text(
+                      folder.name,
+                      style: AppTypography.bodyStrong(
+                        color: AppTheme.txtPrimary(context),
+                      ),
+                    ),
+                    subtitle: Text(
+                      '${recipes.length} เมนู',
+                      style: AppTypography.caption(
+                        color: AppTheme.txtSecondary(context),
+                      ),
+                    ),
+                    children: recipes.isEmpty
+                        ? [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                AppSpacing.base,
+                                0,
+                                AppSpacing.base,
+                                AppSpacing.base,
+                              ),
+                              child: Text(
+                                'ยังไม่มีสูตรในโฟลเดอร์นี้',
+                                style: AppTypography.body(
+                                  color: AppTheme.txtSecondary(context),
                                 ),
-                                IconButton(
-                                  tooltip: 'ดาวน์โหลดสูตร',
-                                  icon: Icon(Icons.download_outlined, size: 20, color: AppTheme.txtSecondary(context)),
-                                  onPressed: () {
-                                    final file = favProvider.downloadRecipe(recipe);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('ดาวน์โหลด (mock): $file')),
-                                    );
-                                  },
+                              ),
+                            ),
+                          ]
+                        : recipes.map((recipe) {
+                            return ListTile(
+                              title: Text(
+                                recipe.name,
+                                style: AppTypography.body(
+                                  color: AppTheme.txtPrimary(context),
                                 ),
-                              ],
-                            ),
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => DetailScreen(recipe: recipe)),
-                            ),
-                          );
-                        }).toList(),
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    tooltip: 'คัดลอกลิงก์สูตร',
+                                    icon: Icon(
+                                      Icons.share_outlined,
+                                      size: 20,
+                                      color: AppTheme.txtSecondary(context),
+                                    ),
+                                    onPressed: () {
+                                      final link = favProvider.shareRecipe(
+                                        recipe,
+                                      );
+                                      Clipboard.setData(
+                                        ClipboardData(text: link),
+                                      );
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'คัดลอกลิงก์แล้ว: $link',
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  IconButton(
+                                    tooltip: 'ดาวน์โหลดสูตร',
+                                    icon: Icon(
+                                      Icons.download_outlined,
+                                      size: 20,
+                                      color: AppTheme.txtSecondary(context),
+                                    ),
+                                    onPressed: () {
+                                      final file = favProvider.downloadRecipe(
+                                        recipe,
+                                      );
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'ดาวน์โหลด (mock): $file',
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => DetailScreen(recipe: recipe),
+                                ),
+                              ),
+                            );
+                          }).toList(),
                   ),
                 ),
               ),
@@ -197,11 +260,16 @@ class _FoldersTab extends StatelessWidget {
         title: const Text('สร้างโฟลเดอร์'),
         content: AppTextField(controller: controller, hint: 'ชื่อโฟลเดอร์'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('ยกเลิก')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('ยกเลิก'),
+          ),
           TextButton(
             onPressed: () {
               if (controller.text.trim().isNotEmpty) {
-                context.read<FavoriteProvider>().createFolder(controller.text.trim());
+                context.read<FavoriteProvider>().createFolder(
+                  controller.text.trim(),
+                );
               }
               Navigator.pop(ctx);
             },

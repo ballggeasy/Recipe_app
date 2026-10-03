@@ -23,16 +23,16 @@ class Comment {
   });
 
   factory Comment.fromApi(Map<String, dynamic> json) => Comment(
-        id: json['id'] as String,
-        recipeId: json['recipeId'] as String,
-        userId: json['userId'] as String,
-        userName: json['userName'] as String,
-        content: json['content'] as String,
-        createdAt: DateTime.parse(json['createdAt'] as String),
-        imageUrl: json['imageUrl'] as String?,
-        mentions: (json['mentions'] as List?)?.cast<String>() ?? const [],
-        replies: (json['replies'] as List? ?? [])
-            .map((r) => Comment.fromApi(r as Map<String, dynamic>))
-            .toList(),
-      );
+    id: json['id'] as String,
+    recipeId: json['recipeId'] as String,
+    userId: json['userId'] as String,
+    userName: json['userName'] as String,
+    content: json['content'] as String,
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    imageUrl: json['imageUrl'] as String?,
+    mentions: (json['mentions'] as List?)?.cast<String>() ?? const [],
+    replies: (json['replies'] as List? ?? [])
+        .map((r) => Comment.fromApi(r as Map<String, dynamic>))
+        .toList(),
+  );
 }

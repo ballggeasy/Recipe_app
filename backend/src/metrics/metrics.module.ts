@@ -7,9 +7,6 @@ import { MetricsMiddleware } from './metrics.middleware';
 })
 export class MetricsModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(MetricsMiddleware)
-      .exclude({ path: 'metrics', method: RequestMethod.GET })
-      .forRoutes('*');
+    consumer.apply(MetricsMiddleware).exclude({ path: 'metrics', method: RequestMethod.GET }).forRoutes('*');
   }
 }

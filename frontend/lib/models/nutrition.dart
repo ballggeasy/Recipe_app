@@ -30,20 +30,20 @@ class NutritionInfo {
   }
 
   Map<String, dynamic> toJson() => {
-        'calories': calories,
-        'protein': protein,
-        'fat': fat,
-        'carbs': carbs,
-        'sugar': sugar,
-        'sodium': sodium,
-      };
+    'calories': calories,
+    'protein': protein,
+    'fat': fat,
+    'carbs': carbs,
+    'sugar': sugar,
+    'sodium': sodium,
+  };
 
   factory NutritionInfo.fromJson(Map<String, dynamic> json) => NutritionInfo(
-        calories: json['calories'] as int? ?? 0,
-        protein: (json['protein'] as num?)?.toDouble() ?? 0,
-        fat: (json['fat'] as num?)?.toDouble() ?? 0,
-        carbs: (json['carbs'] as num?)?.toDouble() ?? 0,
-        sugar: (json['sugar'] as num?)?.toDouble() ?? 0,
-        sodium: (json['sodium'] as num?)?.toDouble() ?? 0,
-      );
+    calories: json['calories'] as int? ?? 0,
+    protein: (json['protein'] as num?)?.toDouble() ?? 0,
+    fat: (json['fat'] as num?)?.toDouble() ?? 0,
+    carbs: (json['carbs'] as num?)?.toDouble() ?? 0,
+    sugar: (json['sugar'] as num?)?.toDouble() ?? 0,
+    sodium: (json['sodium'] as num?)?.toDouble() ?? 0,
+  );
 }

@@ -28,16 +28,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? AppTheme.error(context) : AppTheme.prim(context),
+        backgroundColor: isError
+            ? AppTheme.error(context)
+            : AppTheme.prim(context),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
       ),
     );
   }
 
   Future<void> _pickImage() async {
-    final XFile? picked = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
-    if (picked == null) return;
+    final XFile? picked = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+    if (picked == null || !mounted) return;
     try {
       await context.read<AuthProvider>().uploadAvatar(picked);
       if (!mounted) return;
@@ -56,15 +63,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: const Text('แก้ไขชื่อ'),
         content: AppTextField(controller: controller),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('ยกเลิก')),
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('ยกเลิก'),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(dialogContext, controller.text.trim()),
             child: const Text('บันทึก'),
           ),
         ],
       ),
     );
 
+    if (!mounted) return;
     if (newName != null && newName.isNotEmpty) {
       try {
         await context.read<AuthProvider>().updateProfile(name: newName);
@@ -102,22 +114,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('ยกเลิก')),
-          TextButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('บันทึก')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('ยกเลิก'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('บันทึก'),
+          ),
         ],
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
     if (newController.text.length < 6) {
       _showMessage('รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร', isError: true);
       return;
     }
 
     final error = await context.read<AuthProvider>().changePassword(
-          currentPassword: currentController.text,
-          newPassword: newController.text,
-        );
+      currentPassword: currentController.text,
+      newPassword: newController.text,
+    );
 
     if (!mounted) return;
     if (error != null) {
@@ -132,18 +150,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('ลบบัญชี'),
-        content: const Text('การลบบัญชีไม่สามารถย้อนกลับได้ และข้อมูลทั้งหมดจะถูกลบทิ้ง คุณแน่ใจหรือไม่?'),
+        content: const Text(
+          'การลบบัญชีไม่สามารถย้อนกลับได้ และข้อมูลทั้งหมดจะถูกลบทิ้ง คุณแน่ใจหรือไม่?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('ยกเลิก')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('ยกเลิก'),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text('ลบบัญชี', style: TextStyle(color: AppTheme.error(dialogContext))),
+            child: Text(
+              'ลบบัญชี',
+              style: TextStyle(color: AppTheme.error(dialogContext)),
+            ),
           ),
         ],
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true || !mounted) return;
 
     await context.read<AuthProvider>().deleteAccount();
     if (!mounted) return;
@@ -184,12 +210,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     color: AppTheme.primLight(context),
                     borderRadius: BorderRadius.circular(AppRadius.xxl),
                   ),
-                  child: Icon(Icons.person_rounded, size: 40, color: AppTheme.prim(context)),
+                  child: Icon(
+                    Icons.person_rounded,
+                    size: 40,
+                    color: AppTheme.prim(context),
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 Text(
                   'คุณกำลังใช้งานแบบผู้เยี่ยมชม',
-                  style: AppTypography.body(color: AppTheme.txtSecondary(context)),
+                  style: AppTypography.body(
+                    color: AppTheme.txtSecondary(context),
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppSpacing.xl),
@@ -232,7 +264,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('บัญชี', style: AppTypography.overline(color: AppTheme.txtSecondary(context))),
+                  Text(
+                    'บัญชี',
+                    style: AppTypography.overline(
+                      color: AppTheme.txtSecondary(context),
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.sm),
                   _SectionCard(
                     children: [
@@ -250,23 +287,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  Text('การแสดงผล', style: AppTypography.overline(color: AppTheme.txtSecondary(context))),
+                  Text(
+                    'การแสดงผล',
+                    style: AppTypography.overline(
+                      color: AppTheme.txtSecondary(context),
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.sm),
                   _SectionCard(
                     children: [
                       SwitchListTile(
                         secondary: Icon(
-                          themeProvider.isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                          themeProvider.isDarkMode
+                              ? Icons.dark_mode_rounded
+                              : Icons.light_mode_rounded,
                           color: AppTheme.txtSecondary(context),
                         ),
-                        title: Text('โหมดมืด', style: AppTypography.body(color: AppTheme.txtPrimary(context))),
+                        title: Text(
+                          'โหมดมืด',
+                          style: AppTypography.body(
+                            color: AppTheme.txtPrimary(context),
+                          ),
+                        ),
                         value: themeProvider.isDarkMode,
                         onChanged: (value) => themeProvider.toggleTheme(value),
                       ),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  Text('อื่น ๆ', style: AppTypography.overline(color: AppTheme.txtSecondary(context))),
+                  Text(
+                    'อื่น ๆ',
+                    style: AppTypography.overline(
+                      color: AppTheme.txtSecondary(context),
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.sm),
                   _SectionCard(
                     children: [
@@ -321,7 +375,12 @@ class _ProfileHeader extends StatelessWidget {
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.lg),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.xl,
+            AppSpacing.lg,
+            AppSpacing.lg,
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -333,9 +392,15 @@ class _ProfileHeader extends StatelessWidget {
                     CircleAvatar(
                       radius: 44,
                       backgroundColor: Colors.white.withValues(alpha: 0.2),
-                      backgroundImage: imagePath != null ? NetworkImage(imagePath!) : null,
+                      backgroundImage: imagePath != null
+                          ? NetworkImage(imagePath!)
+                          : null,
                       child: imagePath == null
-                          ? Icon(Icons.person_rounded, size: 44, color: AppTheme.onAccent(context))
+                          ? Icon(
+                              Icons.person_rounded,
+                              size: 44,
+                              color: AppTheme.onAccent(context),
+                            )
                           : null,
                     ),
                     Positioned(
@@ -346,9 +411,16 @@ class _ProfileHeader extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           shape: BoxShape.circle,
-                          border: Border.all(color: AppTheme.prim(context), width: 2),
+                          border: Border.all(
+                            color: AppTheme.prim(context),
+                            width: 2,
+                          ),
                         ),
-                        child: Icon(Icons.camera_alt_rounded, size: 15, color: AppTheme.prim(context)),
+                        child: Icon(
+                          Icons.camera_alt_rounded,
+                          size: 15,
+                          color: AppTheme.prim(context),
+                        ),
                       ),
                     ),
                   ],
@@ -364,7 +436,9 @@ class _ProfileHeader extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 email,
-                style: AppTypography.caption(color: AppTheme.onAccent(context).withValues(alpha: 0.85)),
+                style: AppTypography.caption(
+                  color: AppTheme.onAccent(context).withValues(alpha: 0.85),
+                ),
               ),
             ],
           ),
@@ -412,12 +486,20 @@ class _ProfileTile extends StatelessWidget {
     return Column(
       children: [
         ListTile(
-          leading: Icon(icon, color: labelColor ?? AppTheme.txtSecondary(context)),
+          leading: Icon(
+            icon,
+            color: labelColor ?? AppTheme.txtSecondary(context),
+          ),
           title: Text(
             label,
-            style: AppTypography.body(color: labelColor ?? AppTheme.txtPrimary(context)),
+            style: AppTypography.body(
+              color: labelColor ?? AppTheme.txtPrimary(context),
+            ),
           ),
-          trailing: Icon(Icons.chevron_right_rounded, color: AppTheme.txtSecondary(context)),
+          trailing: Icon(
+            Icons.chevron_right_rounded,
+            color: AppTheme.txtSecondary(context),
+          ),
           onTap: onTap,
         ),
         if (showDivider) Divider(height: 1, color: AppTheme.div(context)),

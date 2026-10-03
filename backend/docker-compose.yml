@@ -43,7 +43,8 @@ services:
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_ANALYTICS_REPORTING_ENABLED: "false"
     ports:
-      - "${GRAFANA_PORT:-3001}:3000"
+      # Set GRAFANA_BIND=127.0.0.1 to reach Grafana only through an SSH tunnel.
+      - "${GRAFANA_BIND:-0.0.0.0}:${GRAFANA_PORT:-3001}:3000"
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro

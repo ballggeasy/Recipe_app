@@ -88,6 +88,8 @@ export class SeedService implements OnApplicationBootstrap {
       }
     }
 
-    this.logger.log(`Seeded ${recipeSeeds.length} recipes, ${reviewSeeds.length} reviews, ${commentSeeds.length} comments.`);
+    this.logger.log(
+      `Seeded ${recipeSeeds.length} recipes, ${reviewSeeds.length} reviews, ${commentSeeds.length} comments.`,
+    );
   }
 }

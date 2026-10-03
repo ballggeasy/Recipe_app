@@ -4,19 +4,22 @@ import { Repository } from 'typeorm';
 import { MealPlanEntry } from './meal-plan-entry.entity';
 import { CreateEntryDto } from './dto/create-entry.dto';
 import { User } from '../users/user.entity';
+import { RecipesService } from '../recipes/recipes.service';
 
 @Injectable()
 export class MealPlanService {
   constructor(
     @InjectRepository(MealPlanEntry)
     private readonly entriesRepository: Repository<MealPlanEntry>,
+    private readonly recipesService: RecipesService,
   ) {}
 
   findAllForUser(userId: string): Promise<MealPlanEntry[]> {
     return this.entriesRepository.find({ where: { userId }, order: { date: 'ASC' } });
   }
 
-  create(dto: CreateEntryDto, user: User): Promise<MealPlanEntry> {
+  async create(dto: CreateEntryDto, user: User): Promise<MealPlanEntry> {
+    await this.recipesService.assertExists(dto.recipeId);
     const entry = this.entriesRepository.create({
       userId: user.id,
       recipeId: dto.recipeId,

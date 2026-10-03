@@ -14,10 +14,7 @@ class AppUser {
     this.profileImagePath,
   });
 
-  AppUser copyWith({
-    String? name,
-    String? profileImagePath,
-  }) {
+  AppUser copyWith({String? name, String? profileImagePath}) {
     return AppUser(
       id: id,
       email: email,
@@ -35,7 +32,9 @@ class AppUser {
       id: json['id'] as String,
       email: json['email'] as String,
       name: json['name'] as String,
-      profileImagePath: rawPath == null ? null : ApiClient().resolveUrl(rawPath),
+      profileImagePath: rawPath == null
+          ? null
+          : ApiClient().resolveUrl(rawPath),
     );
   }
 }

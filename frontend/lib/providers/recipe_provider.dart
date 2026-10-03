@@ -19,14 +19,17 @@ class RecipeProvider extends ChangeNotifier {
   final RecipeService _recipeService;
   final FavoriteService _favoriteService;
 
-  RecipeProvider({RecipeService? recipeService, FavoriteService? favoriteService})
-      : _recipeService = recipeService ?? RecipeService(),
-        _favoriteService = favoriteService ?? FavoriteService();
+  RecipeProvider({
+    RecipeService? recipeService,
+    FavoriteService? favoriteService,
+  }) : _recipeService = recipeService ?? RecipeService(),
+       _favoriteService = favoriteService ?? FavoriteService();
 
   List<Recipe> _allRecipes = [];
   Set<String> _favoriteIds = {};
   bool _isLoading = false;
   bool _canSyncFavorites = false;
+  String? _loadError;
 
   String _searchQuery = '';
   String _selectedCategory = 'ทั้งหมด';
@@ -41,6 +44,9 @@ class RecipeProvider extends ChangeNotifier {
 
   List<Recipe> get allRecipes => _allRecipes;
   bool get isLoading => _isLoading;
+
+  /// ข้อความ error ของการโหลดสูตรครั้งล่าสุด — null ถ้าโหลดสำเร็จ
+  String? get loadError => _loadError;
   String get searchQuery => _searchQuery;
   String get selectedCategory => _selectedCategory;
   String get selectedCountry => _selectedCountry;
@@ -73,7 +79,8 @@ class RecipeProvider extends ChangeNotifier {
   List<Recipe> get filteredRecipes {
     var list = _allRecipes.where((recipe) {
       final matchesCategory =
-          _selectedCategory == 'ทั้งหมด' || recipe.category == _selectedCategory;
+          _selectedCategory == 'ทั้งหมด' ||
+          recipe.category == _selectedCategory;
       final matchesCountry =
           _selectedCountry == 'ทั้งหมด' || recipe.country == _selectedCountry;
       final matchesSource = switch (_selectedSource) {
@@ -86,7 +93,8 @@ class RecipeProvider extends ChangeNotifier {
           _selectedDietTag == null || recipe.matchesDietTag(_selectedDietTag!);
       final matchesTime =
           _maxCookTime == null || recipe.totalTimeMinutes <= _maxCookTime!;
-      final matchesDiff = _selectedDifficulty == null ||
+      final matchesDiff =
+          _selectedDifficulty == null ||
           recipe.difficulty == _selectedDifficulty;
       return matchesCategory &&
           matchesCountry &&
@@ -106,10 +114,12 @@ class RecipeProvider extends ChangeNotifier {
       case RecipeListMode.all:
         return list;
       case RecipeListMode.latest:
-        final sorted = [...list]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        final sorted = [...list]
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
         return sorted.take(10).toList();
       case RecipeListMode.popular:
-        final sorted = [...list]..sort((a, b) => b.viewCount.compareTo(a.viewCount));
+        final sorted = [...list]
+          ..sort((a, b) => b.viewCount.compareTo(a.viewCount));
         return sorted.take(10).toList();
       case RecipeListMode.recommended:
         return list.where((r) => r.isRecommended).toList();
@@ -161,24 +171,32 @@ class RecipeProvider extends ChangeNotifier {
     final ingredients = _allRecipes
         .expand((r) => r.ingredients)
         .where((i) => i.toLowerCase().contains(q))
-        .map((i) => i.split(' ').skip(1).join(' ').isEmpty
-            ? i
-            : i.split(' ').skip(1).join(' '));
+        .map(
+          (i) => i.split(' ').skip(1).join(' ').isEmpty
+              ? i
+              : i.split(' ').skip(1).join(' '),
+        );
     return {...names, ...ingredients}.take(8).toList();
   }
 
   /// เรียกตอนเปิดแอป — โหลดรายการสูตรจาก backend + ประวัติค้นหาจากเครื่อง
   Future<void> init() async {
-    _isLoading = true;
-    notifyListeners();
-
     final prefs = await SharedPreferences.getInstance();
     _searchHistory = prefs.getStringList(_searchHistoryKey) ?? [];
+    await loadRecipes();
+  }
+
+  /// โหลดรายการสูตรจาก backend — ถ้าล้มเหลวจะเก็บข้อความไว้ใน [loadError] (และคงรายการเดิมไว้)
+  /// ให้หน้าจอแสดงปุ่ม "ลองอีกครั้ง" ที่เรียกเมธอดนี้ซ้ำได้
+  Future<void> loadRecipes() async {
+    _isLoading = true;
+    _loadError = null;
+    notifyListeners();
 
     try {
       _allRecipes = await _recipeService.fetchAll();
-    } on ApiException {
-      _allRecipes = [];
+    } on ApiException catch (e) {
+      _loadError = e.message;
     }
 
     _isLoading = false;
@@ -238,7 +256,9 @@ class RecipeProvider extends ChangeNotifier {
     _searchHistory.remove(trimmed);
     _searchHistory.insert(0, trimmed);
     if (_searchHistory.length > AppConstants.maxSearchHistory) {
-      _searchHistory = _searchHistory.take(AppConstants.maxSearchHistory).toList();
+      _searchHistory = _searchHistory
+          .take(AppConstants.maxSearchHistory)
+          .toList();
     }
     notifyListeners();
     _persistSearchHistory();
@@ -388,7 +408,9 @@ class RecipeProvider extends ChangeNotifier {
         'difficulty': recipe.difficulty,
         'servings': recipe.servings,
         'ingredients': recipe.ingredients,
-        'ingredientItems': recipe.ingredientItems.map((i) => i.toJson()).toList(),
+        'ingredientItems': recipe.ingredientItems
+            .map((i) => i.toJson())
+            .toList(),
         'steps': recipe.steps,
         'tips': recipe.tips,
         'platingTips': recipe.platingTips,

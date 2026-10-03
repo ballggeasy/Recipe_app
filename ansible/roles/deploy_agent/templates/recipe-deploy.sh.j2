@@ -1,57 +1,158 @@
 #!/usr/bin/env bash
 # {{ ansible_managed }}
 #
-# Pull-based deploy, run as {{ deploy_user }} by recipe-deploy.path (CI called the
-# webhook) or recipe-deploy.timer (fallback):
-#   1. pull the image CI published from main (only built after tests pass)
+# Pull-based deploy with automatic rollback, run as {{ deploy_user }} by recipe-deploy.path
+# (CI called the webhook) or recipe-deploy.timer (fallback):
+#   1. pull the image CI published from main (only built after tests pass) and read its revision
 #   2. check out the commit that image was built from (compose + monitoring config)
-#   3. docker compose up, reload Prometheus, smoke test
-# A revision is recorded as deployed only after the smoke test passes, so a failed
-# deploy is retried on the next tick.
+#   3. docker compose up with the immutable image tag sha-<revision>, wait until /health/ready
+#   4. healthy -> record it; unhealthy -> redeploy the previous revision and remember the bad one
+#
+#   recipe-deploy                    deploy the newest image (what the timer and webhook run)
+#   recipe-deploy --revision <sha>   deploy exactly this revision and PIN it: automatic deploys
+#                                    stop until `recipe-deploy --unpin` (use for a manual rollback)
+#   recipe-deploy --unpin            resume automatic deploys
+#
+# State lives next to the env file in {{ app_dir }}: .deployed-revision, .previous-revision,
+# .failed-revision (skipped until a newer image appears, so a bad build is not retried every
+# hour) and .pinned-revision.
 set -euo pipefail
 
-IMAGE="{{ backend_image }}"
+REPO_IMAGE="{{ backend_image_repo }}"
+LATEST="$REPO_IMAGE:latest"
 REPO_DIR="{{ deploy_repo_dir }}"
 ENV_FILE="{{ app_env_file }}"
-STATE_FILE="{{ app_dir }}/.deployed-revision"
+APP_DIR="{{ app_dir }}"
+STATE_FILE="$APP_DIR/.deployed-revision"
+PREVIOUS_FILE="$APP_DIR/.previous-revision"
+FAILED_FILE="$APP_DIR/.failed-revision"
+PIN_FILE="$APP_DIR/.pinned-revision"
 PROJECT=recipe-backend
 
-export BACKEND_IMAGE="$IMAGE" BACKEND_ENV_FILE="$ENV_FILE"
+read_state() { cat "$1" 2> /dev/null || true; }
+
 compose() {
   docker compose -p "$PROJECT" --env-file "$ENV_FILE" -f "$REPO_DIR/backend/docker-compose.yml" "$@"
 }
 
-docker pull --quiet "$IMAGE" > /dev/null
+# Ready = the app answers /health/ready (database reachable). Images built before that endpoint
+# existed answer 404 there; for those the liveness endpoint /health is the best signal available.
+is_ready() {
+  local port base code
+  port=$(grep -E '^HOST_PORT=' "$ENV_FILE" | cut -d= -f2 || true)
+  base="http://localhost:${port:-3000}"
+  for _ in $(seq 1 30); do
 {% raw %}
-REVISION=$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$IMAGE")
+    code=$(curl -s -o /dev/null -w '%{http_code}' "$base/health/ready" || true)
 {% endraw %}
-if [[ -z "$REVISION" ]]; then
-  echo "Image $IMAGE has no org.opencontainers.image.revision label" >&2
-  exit 1
+    if [[ "$code" == "200" ]]; then return 0; fi
+    if [[ "$code" == "404" ]] && curl -fsS "$base/health" > /dev/null; then return 0; fi
+    sleep 2
+  done
+  return 1
+}
+
+# Start exactly this revision. Returns 0 when it became ready.
+deploy_revision() {
+  local revision="$1"
+  export BACKEND_IMAGE="$REPO_IMAGE:sha-$revision" BACKEND_ENV_FILE="$ENV_FILE"
+  docker pull --quiet "$BACKEND_IMAGE" > /dev/null
+  git -C "$REPO_DIR" fetch --quiet origin
+  git -C "$REPO_DIR" checkout --quiet --force --detach "$revision"
+  compose up -d --no-build --remove-orphans --quiet-pull
+  compose kill -s SIGHUP prometheus > /dev/null || true
+  is_ready
+}
+
+# Keep only the running and the previous image on disk (the previous one is the rollback target).
+cleanup_images() {
+  local keep_current="$REPO_IMAGE:sha-$1" keep_previous="$REPO_IMAGE:sha-$2"
+  docker image prune -f > /dev/null
+{% raw %}
+  docker images --format '{{ .Repository }}:{{ .Tag }}' "$REPO_IMAGE" | while read -r image; do
+{% endraw %}
+    case "$image" in
+      "$REPO_IMAGE":sha-*)
+        if [[ "$image" != "$keep_current" && "$image" != "$keep_previous" ]]; then
+          docker rmi "$image" > /dev/null 2>&1 || true
+        fi
+        ;;
+    esac
+  done
+}
+
+target=""
+manual=0
+case "${1:-}" in
+  "") ;;
+  --revision)
+    target="${2:?usage: recipe-deploy --revision <commit-sha>}"
+    manual=1
+    echo "$target" > "$PIN_FILE"
+    ;;
+  --unpin)
+    rm -f "$PIN_FILE"
+    echo "Unpinned: automatic deploys resume with the next run."
+    exit 0
+    ;;
+  *)
+    echo "usage: recipe-deploy [--revision <commit-sha> | --unpin]" >&2
+    exit 2
+    ;;
+esac
+
+if [[ -z "$target" ]]; then
+  if [[ -s "$PIN_FILE" ]]; then
+    echo "Pinned to $(cat "$PIN_FILE"); run 'recipe-deploy --unpin' to resume automatic deploys."
+    exit 0
+  fi
+
+  docker pull --quiet "$LATEST" > /dev/null
+{% raw %}
+  target=$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$LATEST")
+{% endraw %}
+  if [[ -z "$target" ]]; then
+    echo "Image $LATEST has no org.opencontainers.image.revision label" >&2
+    exit 1
+  fi
+  if [[ "$(read_state "$FAILED_FILE")" == "$target" ]]; then
+    echo "Skipping $target: it failed its readiness check earlier; waiting for a newer image."
+    exit 0
+  fi
 fi
 
-if [[ "$(cat "$STATE_FILE" 2> /dev/null || true)" == "$REVISION" ]]; then
+current="$(read_state "$STATE_FILE")"
+if [[ "$current" == "$target" ]]; then
+  echo "$target is already deployed."
   exit 0
 fi
 
-echo "Deploying $REVISION"
-git -C "$REPO_DIR" fetch --quiet origin
-git -C "$REPO_DIR" checkout --quiet --force --detach "$REVISION"
+echo "Deploying $target (running: ${current:-nothing})"
+if deploy_revision "$target"; then
+  if [[ -n "$current" ]]; then echo "$current" > "$PREVIOUS_FILE"; fi
+  echo "$target" > "$STATE_FILE"
+  rm -f "$FAILED_FILE"
+  cleanup_images "$target" "$current"
+  echo "Deployed $target"
+  exit 0
+fi
 
-compose up -d --no-build --remove-orphans --quiet-pull
-compose kill -s SIGHUP prometheus > /dev/null
-
-port=$(grep -E '^HOST_PORT=' "$ENV_FILE" | cut -d= -f2 || true)
-for _ in $(seq 1 30); do
-  if curl -fsS "http://localhost:${port:-3000}/recipes" > /dev/null; then
-    echo "$REVISION" > "$STATE_FILE"
-    docker image prune -f > /dev/null
-    echo "Deployed $REVISION"
-    exit 0
+compose logs --tail=100 backend >&2 || true
+echo "Deploy of $target did not become ready." >&2
+if [[ "$manual" == "1" ]]; then
+  # Stay pinned, but to the revision that was running, not to the one that just failed.
+  if [[ -n "$current" ]]; then echo "$current" > "$PIN_FILE"; else rm -f "$PIN_FILE"; fi
+else
+  echo "$target" > "$FAILED_FILE"
+fi
+if [[ -n "$current" ]]; then
+  echo "Rolling back to $current" >&2
+  if deploy_revision "$current"; then
+    echo "Rolled back to $current; $target stays marked as failed." >&2
+  else
+    echo "ROLLBACK TO $current ALSO FAILED: manual intervention needed (journalctl -u recipe-deploy)." >&2
   fi
-  sleep 2
-done
-
-compose logs --tail=100 backend >&2
-echo "Deploy of $REVISION failed the smoke test; will retry" >&2
+else
+  echo "There is no previous revision to roll back to." >&2
+fi
 exit 1

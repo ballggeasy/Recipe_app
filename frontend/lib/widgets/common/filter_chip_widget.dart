@@ -24,8 +24,12 @@ class FilterChipWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selectedBg = filled ? AppTheme.prim(context) : AppTheme.primLight(context);
-    final selectedFg = filled ? AppTheme.onAccent(context) : AppTheme.prim(context);
+    final selectedBg = filled
+        ? AppTheme.prim(context)
+        : AppTheme.primLight(context);
+    final selectedFg = filled
+        ? AppTheme.onAccent(context)
+        : AppTheme.prim(context);
 
     // ชิปที่มองเห็นสูงราว 36 แต่ TapTarget ขยายพื้นที่กดเป็น 48 และบอก screen reader ว่าเลือกอยู่หรือไม่
     return TapTarget(
@@ -50,13 +54,21 @@ class FilterChipWidget extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (icon != null) ...[
-                  Icon(icon, size: 15, color: isSelected ? selectedFg : AppTheme.txtSecondary(context)),
+                  Icon(
+                    icon,
+                    size: 15,
+                    color: isSelected
+                        ? selectedFg
+                        : AppTheme.txtSecondary(context),
+                  ),
                   const SizedBox(width: 6),
                 ],
                 Text(
                   label,
                   style: AppTypography.caption(
-                    color: isSelected ? selectedFg : AppTheme.txtPrimary(context),
+                    color: isSelected
+                        ? selectedFg
+                        : AppTheme.txtPrimary(context),
                   ).copyWith(fontWeight: FontWeight.w600),
                 ),
               ],

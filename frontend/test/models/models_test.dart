@@ -10,16 +10,26 @@ import 'package:recipe_app/services/api_client.dart';
 
 void main() {
   group('NutritionInfo', () {
-    test('fromJson defaults missing values to zero and accepts ints for doubles', () {
-      final n = NutritionInfo.fromJson({'calories': 300, 'protein': 20});
-      expect(n.calories, 300);
-      expect(n.protein, 20.0);
-      expect(n.fat, 0);
-      expect(n.sodium, 0);
-    });
+    test(
+      'fromJson defaults missing values to zero and accepts ints for doubles',
+      () {
+        final n = NutritionInfo.fromJson({'calories': 300, 'protein': 20});
+        expect(n.calories, 300);
+        expect(n.protein, 20.0);
+        expect(n.fat, 0);
+        expect(n.sodium, 0);
+      },
+    );
 
     test('forServings scales every value and leaves 1 serving unchanged', () {
-      const n = NutritionInfo(calories: 101, protein: 10, fat: 5, carbs: 30, sugar: 2, sodium: 400);
+      const n = NutritionInfo(
+        calories: 101,
+        protein: 10,
+        fat: 5,
+        carbs: 30,
+        sugar: 2,
+        sodium: 400,
+      );
       expect(identical(n.forServings(1), n), isTrue);
 
       final doubled = n.forServings(2);
@@ -29,7 +39,14 @@ void main() {
     });
 
     test('toJson round-trips through fromJson', () {
-      const n = NutritionInfo(calories: 1, protein: 2, fat: 3, carbs: 4, sugar: 5, sodium: 6);
+      const n = NutritionInfo(
+        calories: 1,
+        protein: 2,
+        fat: 3,
+        carbs: 4,
+        sugar: 5,
+        sodium: 6,
+      );
       final back = NutritionInfo.fromJson(n.toJson());
       expect(back.toJson(), n.toJson());
     });
@@ -37,9 +54,18 @@ void main() {
 
   group('IngredientItem', () {
     test('display skips empty amount and unit', () {
-      expect(const IngredientItem(name: 'เกลือ', amount: '', unit: '').display, 'เกลือ');
-      expect(const IngredientItem(name: 'ไข่', amount: '2', unit: '').display, '2 ไข่');
-      expect(const IngredientItem(name: 'น้ำ', amount: '1', unit: 'ถ้วย').display, '1 ถ้วย น้ำ');
+      expect(
+        const IngredientItem(name: 'เกลือ', amount: '', unit: '').display,
+        'เกลือ',
+      );
+      expect(
+        const IngredientItem(name: 'ไข่', amount: '2', unit: '').display,
+        '2 ไข่',
+      );
+      expect(
+        const IngredientItem(name: 'น้ำ', amount: '1', unit: 'ถ้วย').display,
+        '1 ถ้วย น้ำ',
+      );
     });
 
     test('fromJson defaults amount and unit to empty strings', () {
@@ -61,7 +87,13 @@ void main() {
         'createdAt': '2026-03-01T00:00:00.000Z',
         'likedByUserIds': ['u2', 'u3'],
         'replies': [
-          {'id': 'rp1', 'userId': 'u2', 'userName': 'สมศรี', 'content': 'จริง', 'createdAt': '2026-03-02T00:00:00.000Z'},
+          {
+            'id': 'rp1',
+            'userId': 'u2',
+            'userName': 'สมศรี',
+            'content': 'จริง',
+            'createdAt': '2026-03-02T00:00:00.000Z',
+          },
         ],
       });
 
@@ -87,7 +119,14 @@ void main() {
         'createdAt': '2026-03-01T00:00:00.000Z',
         'mentions': ['B'],
         'replies': [
-          {'id': 'c2', 'recipeId': 'r1', 'userId': 'u2', 'userName': 'B', 'content': 'หวัดดี', 'createdAt': '2026-03-01T01:00:00.000Z'},
+          {
+            'id': 'c2',
+            'recipeId': 'r1',
+            'userId': 'u2',
+            'userName': 'B',
+            'content': 'หวัดดี',
+            'createdAt': '2026-03-01T01:00:00.000Z',
+          },
         ],
       });
 
@@ -115,7 +154,11 @@ void main() {
 
   group('FavoriteFolder.fromApi', () {
     test('defaults the emoji and recipe list', () {
-      final folder = FavoriteFolder.fromApi({'id': 'f1', 'name': 'ของหวาน', 'createdAt': '2026-01-01T00:00:00.000Z'});
+      final folder = FavoriteFolder.fromApi({
+        'id': 'f1',
+        'name': 'ของหวาน',
+        'createdAt': '2026-01-01T00:00:00.000Z',
+      });
       expect(folder.emoji, '📁');
       expect(folder.recipeIds, isEmpty);
     });
@@ -129,12 +172,25 @@ void main() {
         'name': 'A',
         'profileImageUrl': '/uploads/avatars/u1.jpg',
       });
-      expect(user.profileImagePath, '${ApiClient().baseUrl}/uploads/avatars/u1.jpg');
+      expect(
+        user.profileImagePath,
+        '${ApiClient().baseUrl}/uploads/avatars/u1.jpg',
+      );
     });
 
     test('keeps absolute URLs and null as they are', () {
-      final withUrl = AppUser.fromApi({'id': 'u1', 'email': 'a@x.com', 'name': 'A', 'profileImageUrl': 'https://cdn/x.jpg'});
-      final withoutUrl = AppUser.fromApi({'id': 'u1', 'email': 'a@x.com', 'name': 'A', 'profileImageUrl': null});
+      final withUrl = AppUser.fromApi({
+        'id': 'u1',
+        'email': 'a@x.com',
+        'name': 'A',
+        'profileImageUrl': 'https://cdn/x.jpg',
+      });
+      final withoutUrl = AppUser.fromApi({
+        'id': 'u1',
+        'email': 'a@x.com',
+        'name': 'A',
+        'profileImageUrl': null,
+      });
       expect(withUrl.profileImagePath, 'https://cdn/x.jpg');
       expect(withoutUrl.profileImagePath, isNull);
     });

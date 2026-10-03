@@ -99,9 +99,7 @@ describe('RecipesService', () => {
     });
 
     it('forbids anyone else from changing it', async () => {
-      await expect(service.update('recipe-1', { name: 'Hacked' }, stranger)).rejects.toBeInstanceOf(
-        ForbiddenException,
-      );
+      await expect(service.update('recipe-1', { name: 'Hacked' }, stranger)).rejects.toBeInstanceOf(ForbiddenException);
       expect(repo.save).not.toHaveBeenCalled();
     });
   });
@@ -175,7 +173,12 @@ describe('RecipesService', () => {
     });
 
     it('rejects non-owners and deletes the file they just uploaded', async () => {
-      repo.findOne.mockResolvedValue({ id: 'recipe-1', uploaderId: owner.id, imageUrl: '', imageUrls: [] } as unknown as Recipe);
+      repo.findOne.mockResolvedValue({
+        id: 'recipe-1',
+        uploaderId: owner.id,
+        imageUrl: '',
+        imageUrls: [],
+      } as unknown as Recipe);
 
       await expect(service.setImage('recipe-1', newUrl, stranger)).rejects.toBeInstanceOf(ForbiddenException);
 

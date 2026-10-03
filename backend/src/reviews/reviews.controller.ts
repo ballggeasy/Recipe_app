@@ -17,11 +17,7 @@ export class RecipeReviewsController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  create(
-    @Param('recipeId') recipeId: string,
-    @Body() dto: CreateReviewDto,
-    @CurrentUser() user: User,
-  ) {
+  create(@Param('recipeId') recipeId: string, @Body() dto: CreateReviewDto, @CurrentUser() user: User) {
     return this.reviewsService.create(recipeId, dto, user);
   }
 }

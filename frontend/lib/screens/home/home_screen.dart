@@ -15,6 +15,7 @@ import '../../widgets/recipe_image.dart';
 import '../../widgets/rating_display.dart';
 import '../../widgets/common/filter_chip_widget.dart';
 import '../../widgets/common/empty_state.dart';
+import '../../widgets/common/loading_state.dart';
 import '../../widgets/common/section_header.dart';
 import '../../widgets/common/tap_target.dart';
 import '../../widgets/search/search_bar_widget.dart';
@@ -27,7 +28,9 @@ class HomeScreen extends StatelessWidget {
 
   Recipe? _featuredRecipe(RecipeProvider provider) {
     if (provider.allRecipes.isEmpty) return null;
-    final recommended = provider.allRecipes.where((r) => r.isRecommended).toList();
+    final recommended = provider.allRecipes
+        .where((r) => r.isRecommended)
+        .toList();
     final pool = recommended.isNotEmpty ? recommended : provider.allRecipes;
     final sorted = [...pool]..sort((a, b) => b.rating.compareTo(a.rating));
     return sorted.first;
@@ -45,8 +48,12 @@ class HomeScreen extends StatelessWidget {
     final provider = context.watch<RecipeProvider>();
     final auth = context.watch<AuthProvider>();
     final recipes = provider.filteredRecipes;
-    final featured = provider.searchQuery.isEmpty ? _featuredRecipe(provider) : null;
-    final resultsTitle = provider.searchQuery.isNotEmpty || provider.selectedCategory != 'ทั้งหมด'
+    final featured = provider.searchQuery.isEmpty
+        ? _featuredRecipe(provider)
+        : null;
+    final resultsTitle =
+        provider.searchQuery.isNotEmpty ||
+            provider.selectedCategory != 'ทั้งหมด'
         ? 'ผลการค้นหา'
         : 'เมนูแนะนำสำหรับคุณ';
 
@@ -59,7 +66,10 @@ class HomeScreen extends StatelessWidget {
         ),
         backgroundColor: AppTheme.prim(context),
         icon: Icon(Icons.add_rounded, color: AppTheme.onAccent(context)),
-        label: Text('เพิ่มสูตร', style: TextStyle(color: AppTheme.onAccent(context))),
+        label: Text(
+          'เพิ่มสูตร',
+          style: TextStyle(color: AppTheme.onAccent(context)),
+        ),
       ),
       body: SafeArea(
         bottom: false,
@@ -68,7 +78,11 @@ class HomeScreen extends StatelessWidget {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                  AppSpacing.lg,
+                  0,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -78,15 +92,18 @@ class HomeScreen extends StatelessWidget {
                         children: [
                           Text(
                             '${_greeting()} 👋',
-                            style: AppTypography.caption(color: AppTheme.txtSecondary(context)),
+                            style: AppTypography.caption(
+                              color: AppTheme.txtSecondary(context),
+                            ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             auth.currentUser != null
                                 ? 'วันนี้ ${auth.currentUser!.name} จะทำอะไรดี?'
                                 : 'วันนี้กินอะไรดี?',
-                            style: AppTypography.display(color: AppTheme.txtPrimary(context))
-                                .copyWith(fontSize: 22),
+                            style: AppTypography.display(
+                              color: AppTheme.txtPrimary(context),
+                            ).copyWith(fontSize: 22),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -98,7 +115,9 @@ class HomeScreen extends StatelessWidget {
                       label: 'โปรไฟล์',
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const ProfileScreen(),
+                        ),
                       ),
                       child: Container(
                         width: 46,
@@ -106,10 +125,16 @@ class HomeScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: AppTheme.primLight(context),
-                          border: Border.all(color: AppTheme.surf(context), width: 2),
+                          border: Border.all(
+                            color: AppTheme.surf(context),
+                            width: 2,
+                          ),
                           boxShadow: AppShadows.softFor(context),
                         ),
-                        child: Icon(Icons.person_rounded, color: AppTheme.prim(context)),
+                        child: Icon(
+                          Icons.person_rounded,
+                          color: AppTheme.prim(context),
+                        ),
                       ),
                     ),
                   ],
@@ -118,7 +143,12 @@ class HomeScreen extends StatelessWidget {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  0,
+                ),
                 child: Row(
                   children: [
                     const Expanded(child: SearchBarWidget()),
@@ -135,9 +165,12 @@ class HomeScreen extends StatelessWidget {
                   height: kMinInteractiveDimension,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                    ),
                     itemCount: provider.categories.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.sm),
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(width: AppSpacing.sm),
                     itemBuilder: (context, index) {
                       final category = provider.categories[index];
                       return FilterChipWidget(
@@ -159,26 +192,60 @@ class HomeScreen extends StatelessWidget {
             if (featured != null)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, 0),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.xl,
+                    AppSpacing.lg,
+                    0,
+                  ),
                   child: _FeaturedRecipeCard(
                     recipe: featured,
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => DetailScreen(recipe: featured)),
+                      MaterialPageRoute(
+                        builder: (_) => DetailScreen(recipe: featured),
+                      ),
                     ),
                   ),
                 ),
               ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xl, AppSpacing.lg, AppSpacing.md),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.xl,
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                ),
                 child: SectionHeader(
                   title: resultsTitle,
-                  actionLabel: recipes.isNotEmpty ? '${recipes.length} เมนู' : null,
+                  actionLabel: recipes.isNotEmpty
+                      ? '${recipes.length} เมนู'
+                      : null,
                 ),
               ),
             ),
-            if (recipes.isEmpty)
+            if (recipes.isEmpty &&
+                provider.allRecipes.isEmpty &&
+                provider.isLoading)
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: LoadingState(message: 'กำลังโหลดเมนู...'),
+              )
+            else if (recipes.isEmpty &&
+                provider.allRecipes.isEmpty &&
+                provider.loadError != null)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: EmptyState(
+                  emoji: '📡',
+                  message: 'โหลดเมนูไม่สำเร็จ',
+                  description: provider.loadError,
+                  actionLabel: 'ลองอีกครั้ง',
+                  onAction: provider.loadRecipes,
+                ),
+              )
+            else if (recipes.isEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: EmptyState(
@@ -191,7 +258,12 @@ class HomeScreen extends StatelessWidget {
               )
             else
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, 100),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  0,
+                  AppSpacing.lg,
+                  100,
+                ),
                 sliver: SliverGrid(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
@@ -199,19 +271,18 @@ class HomeScreen extends StatelessWidget {
                     mainAxisSpacing: AppSpacing.md,
                     childAspectRatio: 0.72,
                   ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final recipe = recipes[index];
-                      return RecipeCard(
-                        recipe: recipe,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => DetailScreen(recipe: recipe)),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final recipe = recipes[index];
+                    return RecipeCard(
+                      recipe: recipe,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => DetailScreen(recipe: recipe),
                         ),
-                      );
-                    },
-                    childCount: recipes.length,
-                  ),
+                      ),
+                    );
+                  }, childCount: recipes.length),
                 ),
               ),
           ],
@@ -237,7 +308,8 @@ class _FilterButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<RecipeProvider>();
-    final isActive = provider.selectedSource != SourceFilter.all ||
+    final isActive =
+        provider.selectedSource != SourceFilter.all ||
         provider.selectedDietTag != null ||
         provider.selectedCountry != 'ทั้งหมด' ||
         provider.sortOption != SortOption.ratingDesc;
@@ -255,11 +327,15 @@ class _FilterButton extends StatelessWidget {
             height: 48,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(color: isActive ? Colors.transparent : AppTheme.div(context)),
+              border: Border.all(
+                color: isActive ? Colors.transparent : AppTheme.div(context),
+              ),
             ),
             child: Icon(
               Icons.tune_rounded,
-              color: isActive ? AppTheme.onAccent(context) : AppTheme.txtSecondary(context),
+              color: isActive
+                  ? AppTheme.onAccent(context)
+                  : AppTheme.txtSecondary(context),
               size: 22,
             ),
           ),
@@ -296,9 +372,8 @@ class _QuickPicksRow extends StatelessWidget {
             label: '$emoji $label',
             isSelected: isSelected,
             filled: false,
-            onTap: () => provider.updateListMode(
-              isSelected ? RecipeListMode.all : mode,
-            ),
+            onTap: () =>
+                provider.updateListMode(isSelected ? RecipeListMode.all : mode),
           );
         },
       ),
@@ -335,7 +410,10 @@ class _FeaturedRecipeCard extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black.withValues(alpha: 0.72)],
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.72),
+                  ],
                   stops: const [0.35, 1],
                 ),
               ),
@@ -344,7 +422,10 @@ class _FeaturedRecipeCard extends StatelessWidget {
               top: 14,
               left: 14,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.92),
                   borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -369,7 +450,9 @@ class _FeaturedRecipeCard extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                    isFav
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
                     color: Colors.white,
                     size: 20,
                   ),
@@ -397,7 +480,10 @@ class _FeaturedRecipeCard extends StatelessWidget {
                         label: '${recipe.totalTimeMinutes} นาที',
                       ),
                       const SizedBox(width: 8),
-                      _Pill(icon: Icons.bar_chart_rounded, label: recipe.difficulty),
+                      _Pill(
+                        icon: Icons.bar_chart_rounded,
+                        label: recipe.difficulty,
+                      ),
                       const SizedBox(width: 8),
                       RatingDisplay(
                         rating: recipe.rating,
@@ -436,7 +522,14 @@ class _Pill extends StatelessWidget {
         children: [
           Icon(icon, size: 12, color: Colors.white),
           const SizedBox(width: 4),
-          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
         ],
       ),
     );
@@ -454,23 +547,23 @@ class _FilterSheet extends StatelessWidget {
   ];
 
   SortOption _sortFromKey(String key) => switch (key) {
-        'name_asc' => SortOption.nameAsc,
-        'name_desc' => SortOption.nameDesc,
-        'rating_desc' => SortOption.ratingDesc,
-        'time_asc' => SortOption.timeAsc,
-        'time_desc' => SortOption.timeDesc,
-        'newest' => SortOption.newest,
-        _ => SortOption.popular,
-      };
+    'name_asc' => SortOption.nameAsc,
+    'name_desc' => SortOption.nameDesc,
+    'rating_desc' => SortOption.ratingDesc,
+    'time_asc' => SortOption.timeAsc,
+    'time_desc' => SortOption.timeDesc,
+    'newest' => SortOption.newest,
+    _ => SortOption.popular,
+  };
 
   String _countryFlag(String country) => switch (country) {
-        'ไทย' => '🇹🇭',
-        'อิตาลี' => '🇮🇹',
-        'ญี่ปุ่น' => '🇯🇵',
-        'จีน' => '🇨🇳',
-        'เกาหลี' => '🇰🇷',
-        _ => '🌏',
-      };
+    'ไทย' => '🇹🇭',
+    'อิตาลี' => '🇮🇹',
+    'ญี่ปุ่น' => '🇯🇵',
+    'จีน' => '🇨🇳',
+    'เกาหลี' => '🇰🇷',
+    _ => '🌏',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -485,7 +578,9 @@ class _FilterSheet extends StatelessWidget {
         return Container(
           decoration: BoxDecoration(
             color: AppTheme.surf(context),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.xxl),
+            ),
           ),
           child: Column(
             children: [
@@ -499,10 +594,22 @@ class _FilterSheet extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.base, AppSpacing.lg, 0),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.base,
+                  AppSpacing.lg,
+                  0,
+                ),
                 child: Row(
                   children: [
-                    Expanded(child: Text('ตัวกรอง', style: AppTypography.h2(color: AppTheme.txtPrimary(context)))),
+                    Expanded(
+                      child: Text(
+                        'ตัวกรอง',
+                        style: AppTypography.h2(
+                          color: AppTheme.txtPrimary(context),
+                        ),
+                      ),
+                    ),
                     TextButton(
                       onPressed: provider.clearFilters,
                       child: const Text('ล้างทั้งหมด'),
@@ -513,9 +620,19 @@ class _FilterSheet extends StatelessWidget {
               Expanded(
                 child: ListView(
                   controller: scrollController,
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.base, AppSpacing.lg, AppSpacing.xxl),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.base,
+                    AppSpacing.lg,
+                    AppSpacing.xxl,
+                  ),
                   children: [
-                    Text('แหล่งที่มา', style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context))),
+                    Text(
+                      'แหล่งที่มา',
+                      style: AppTypography.bodyStrong(
+                        color: AppTheme.txtPrimary(context),
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.sm),
                     Wrap(
                       spacing: AppSpacing.sm,
@@ -531,7 +648,12 @@ class _FilterSheet extends StatelessWidget {
                       }).toList(),
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    Text('แท็กโภชนาการ', style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context))),
+                    Text(
+                      'แท็กโภชนาการ',
+                      style: AppTypography.bodyStrong(
+                        color: AppTheme.txtPrimary(context),
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.sm),
                     Wrap(
                       spacing: AppSpacing.sm,
@@ -543,21 +665,30 @@ class _FilterSheet extends StatelessWidget {
                           isSelected: isSelected,
                           filled: false,
                           onTap: () => provider.updateListMode(
-                            isSelected ? RecipeListMode.all : RecipeListMode.diet,
+                            isSelected
+                                ? RecipeListMode.all
+                                : RecipeListMode.diet,
                             dietTag: isSelected ? null : tag,
                           ),
                         );
                       }).toList(),
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    Text('ประเทศ', style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context))),
+                    Text(
+                      'ประเทศ',
+                      style: AppTypography.bodyStrong(
+                        color: AppTheme.txtPrimary(context),
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.sm),
                     Wrap(
                       spacing: AppSpacing.sm,
                       runSpacing: AppSpacing.sm,
                       children: provider.countries.map((c) {
                         return FilterChipWidget(
-                          label: c == 'ทั้งหมด' ? '🌏 ทั้งหมด' : '${_countryFlag(c)} $c',
+                          label: c == 'ทั้งหมด'
+                              ? '🌏 ทั้งหมด'
+                              : '${_countryFlag(c)} $c',
                           isSelected: provider.selectedCountry == c,
                           filled: false,
                           onTap: () => provider.updateSelectedCountry(c),
@@ -565,7 +696,12 @@ class _FilterSheet extends StatelessWidget {
                       }).toList(),
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    Text('เรียงตาม', style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context))),
+                    Text(
+                      'เรียงตาม',
+                      style: AppTypography.bodyStrong(
+                        color: AppTheme.txtPrimary(context),
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.sm),
                     Wrap(
                       spacing: AppSpacing.sm,
@@ -586,7 +722,12 @@ class _FilterSheet extends StatelessWidget {
               SafeArea(
                 top: false,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                  ),
                   child: SizedBox(
                     width: double.infinity,
                     height: 52,

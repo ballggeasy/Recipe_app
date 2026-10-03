@@ -86,7 +86,8 @@ export const recipeSeeds: RecipeSeed[] = [
     legacyId: '2',
     name: 'ต้มยำกุ้ง',
     emoji: '🍤',
-    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Tom_yum_kung_mae_nam.jpg/1280px-Tom_yum_kung_mae_nam.jpg',
+    imageUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Tom_yum_kung_mae_nam.jpg/1280px-Tom_yum_kung_mae_nam.jpg',
     category: 'ต้ม/แกง',
     country: 'ไทย',
     cookTimeMinutes: 25,
@@ -178,7 +179,8 @@ export const recipeSeeds: RecipeSeed[] = [
     legacyId: '4',
     name: 'สปาเก็ตตี้คาโบนาร่า',
     emoji: '🍝',
-    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Fresh_made_pasta_Carbonara.jpg/1280px-Fresh_made_pasta_Carbonara.jpg',
+    imageUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Fresh_made_pasta_Carbonara.jpg/1280px-Fresh_made_pasta_Carbonara.jpg',
     category: 'พาสต้า',
     country: 'อิตาลี',
     cookTimeMinutes: 20,
@@ -220,7 +222,8 @@ export const recipeSeeds: RecipeSeed[] = [
     legacyId: '5',
     name: 'พิซซ่ามาร์เกอริต้า สูตรเตาฟืนบ้าน',
     emoji: '🍕',
-    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Eq_it-na_pizza-margherita_sep2005_sml.jpg/1280px-Eq_it-na_pizza-margherita_sep2005_sml.jpg',
+    imageUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Eq_it-na_pizza-margherita_sep2005_sml.jpg/1280px-Eq_it-na_pizza-margherita_sep2005_sml.jpg',
     category: 'เบเกอรี่/ขนมปัง',
     country: 'อิตาลี',
     cookTimeMinutes: 40,
@@ -262,7 +265,8 @@ export const recipeSeeds: RecipeSeed[] = [
     legacyId: '6',
     name: 'ทีรามิสุ',
     emoji: '🍰',
-    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Tiramisu_with_all_the_layers.jpg/1280px-Tiramisu_with_all_the_layers.jpg',
+    imageUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Tiramisu_with_all_the_layers.jpg/1280px-Tiramisu_with_all_the_layers.jpg',
     category: 'ของหวาน',
     country: 'อิตาลี',
     cookTimeMinutes: 30,
@@ -304,7 +308,8 @@ export const recipeSeeds: RecipeSeed[] = [
     legacyId: '7',
     name: 'ราเมนซีอิ๊วดำ',
     emoji: '🍜',
-    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Shoyu_ramen%2C_at_Kasukabe_Station_%282014.05.05%29.jpg/1280px-Shoyu_ramen%2C_at_Kasukabe_Station_%282014.05.05%29.jpg',
+    imageUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Shoyu_ramen%2C_at_Kasukabe_Station_%282014.05.05%29.jpg/1280px-Shoyu_ramen%2C_at_Kasukabe_Station_%282014.05.05%29.jpg',
     category: 'เส้น/ซุป',
     country: 'ญี่ปุ่น',
     cookTimeMinutes: 45,
@@ -346,7 +351,8 @@ export const recipeSeeds: RecipeSeed[] = [
     legacyId: '8',
     name: 'ข้าวหน้าปลาแซลมอน สไตล์บ้านฉัน',
     emoji: '🍣',
-    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Salmon_and_shrimp_don_by_jetalone_in_Akihabara.jpg/1280px-Salmon_and_shrimp_don_by_jetalone_in_Akihabara.jpg',
+    imageUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Salmon_and_shrimp_don_by_jetalone_in_Akihabara.jpg/1280px-Salmon_and_shrimp_don_by_jetalone_in_Akihabara.jpg',
     category: 'อาหารจานเดียว',
     country: 'ญี่ปุ่น',
     cookTimeMinutes: 15,
@@ -387,7 +393,8 @@ export const recipeSeeds: RecipeSeed[] = [
     legacyId: '9',
     name: 'ทาโคยากิ',
     emoji: '🐙',
-    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Takoyaki_in_Osaka.jpg/1280px-Takoyaki_in_Osaka.jpg',
+    imageUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Takoyaki_in_Osaka.jpg/1280px-Takoyaki_in_Osaka.jpg',
     category: 'สแน็ค',
     country: 'ญี่ปุ่น',
     cookTimeMinutes: 30,
@@ -428,7 +435,8 @@ export const recipeSeeds: RecipeSeed[] = [
     legacyId: '10',
     name: 'ข้าวผัดไข่เค็มจีน',
     emoji: '🍳',
-    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Salted_egg_fried_rice.jpg/1280px-Salted_egg_fried_rice.jpg',
+    imageUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Salted_egg_fried_rice.jpg/1280px-Salted_egg_fried_rice.jpg',
     category: 'อาหารจานเดียว',
     country: 'จีน',
     cookTimeMinutes: 20,
@@ -471,7 +479,8 @@ export const recipeSeeds: RecipeSeed[] = [
     legacyId: '11',
     name: 'หมูผัดเปรี้ยวหวาน',
     emoji: '🍖',
-    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Sweet_and_sour_pork.jpg/1280px-Sweet_and_sour_pork.jpg',
+    imageUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Sweet_and_sour_pork.jpg/1280px-Sweet_and_sour_pork.jpg',
     category: 'อาหารจานเดียว',
     country: 'จีน',
     cookTimeMinutes: 25,
@@ -683,7 +692,8 @@ export const recipeSeeds: RecipeSeed[] = [
     legacyId: '16',
     name: 'ไก่ทอดเกาหลีซอสยังนยอม',
     emoji: '🍗',
-    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Korean.fried.chicken.jpg/1280px-Korean.fried.chicken.jpg',
+    imageUrl:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Korean.fried.chicken.jpg/1280px-Korean.fried.chicken.jpg',
     category: 'อาหารจานเดียว',
     country: 'เกาหลี',
     cookTimeMinutes: 40,

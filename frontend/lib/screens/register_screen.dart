@@ -38,9 +38,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? AppTheme.error(context) : AppTheme.prim(context),
+        backgroundColor: isError
+            ? AppTheme.error(context)
+            : AppTheme.prim(context),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
       ),
     );
   }
@@ -69,7 +73,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     final auth = context.read<AuthProvider>();
-    final error = await auth.register(name: name, email: email, password: password);
+    final error = await auth.register(
+      name: name,
+      email: email,
+      password: password,
+    );
 
     if (!mounted) return;
     if (error != null) {
@@ -84,7 +92,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _comingSoon(String provider) {
-    _showMessage('สมัครสมาชิกด้วย $provider ยังไม่รองรับในขณะนี้', isError: false);
+    _showMessage(
+      'สมัครสมาชิกด้วย $provider ยังไม่รองรับในขณะนี้',
+      isError: false,
+    );
   }
 
   @override
@@ -124,7 +135,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 420),
                         child: SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xl),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.xl,
+                            vertical: AppSpacing.xl,
+                          ),
                           child: form,
                         ),
                       ),
@@ -144,7 +158,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     subtitle: 'เริ่มต้นบันทึกและแบ่งปันสูตรอาหารที่คุณรัก',
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xl),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xl,
+                      vertical: AppSpacing.xl,
+                    ),
                     child: form,
                   ),
                 ],
@@ -181,14 +198,25 @@ class _RegisterForm extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('สมัครสมาชิก', style: AppTypography.display(color: AppTheme.txtPrimary(context)).copyWith(fontSize: 24)),
+        Text(
+          'สมัครสมาชิก',
+          style: AppTypography.display(
+            color: AppTheme.txtPrimary(context),
+          ).copyWith(fontSize: 24),
+        ),
         const SizedBox(height: 6),
         Row(
           children: [
-            Text('มีบัญชีอยู่แล้ว? ', style: AppTypography.body(color: AppTheme.txtSecondary(context))),
+            Text(
+              'มีบัญชีอยู่แล้ว? ',
+              style: AppTypography.body(color: AppTheme.txtSecondary(context)),
+            ),
             TapTarget(
               onTap: () => Navigator.pop(context),
-              child: Text('เข้าสู่ระบบ', style: AppTypography.bodyStrong(color: AppTheme.prim(context))),
+              child: Text(
+                'เข้าสู่ระบบ',
+                style: AppTypography.bodyStrong(color: AppTheme.prim(context)),
+              ),
             ),
           ],
         ),
@@ -224,14 +252,23 @@ class _RegisterForm extends StatelessWidget {
           prefixIcon: Icons.lock_outline_rounded,
         ),
         const SizedBox(height: AppSpacing.xl),
-        AppButton.primary(label: 'สมัครสมาชิก', onPressed: onSubmit, loading: isLoading),
+        AppButton.primary(
+          label: 'สมัครสมาชิก',
+          onPressed: onSubmit,
+          loading: isLoading,
+        ),
         const SizedBox(height: AppSpacing.lg),
         Row(
           children: [
             Expanded(child: Divider(color: AppTheme.div(context))),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: Text('หรือ', style: AppTypography.caption(color: AppTheme.txtSecondary(context))),
+              child: Text(
+                'หรือ',
+                style: AppTypography.caption(
+                  color: AppTheme.txtSecondary(context),
+                ),
+              ),
             ),
             Expanded(child: Divider(color: AppTheme.div(context))),
           ],
@@ -246,7 +283,11 @@ class _RegisterForm extends StatelessWidget {
         SocialLoginButton(
           label: 'ดำเนินการต่อด้วย GitHub',
           onTap: () => onSocial('GitHub'),
-          badge: Icon(Icons.code_rounded, size: 18, color: AppTheme.txtPrimary(context)),
+          badge: Icon(
+            Icons.code_rounded,
+            size: 18,
+            color: AppTheme.txtPrimary(context),
+          ),
         ),
         const SizedBox(height: AppSpacing.md),
       ],

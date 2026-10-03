@@ -38,9 +38,13 @@ class _LoginScreenState extends State<LoginScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? AppTheme.error(context) : AppTheme.prim(context),
+        backgroundColor: isError
+            ? AppTheme.error(context)
+            : AppTheme.prim(context),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
       ),
     );
   }
@@ -64,20 +68,23 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const MainScreen()),
-    );
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => const MainScreen()));
   }
 
   void _loginAsGuest() {
     context.read<AuthProvider>().continueAsGuest();
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const MainScreen()),
-    );
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => const MainScreen()));
   }
 
   void _comingSoon(String provider) {
-    _showMessage('เข้าสู่ระบบด้วย $provider ยังไม่รองรับในขณะนี้', isError: false);
+    _showMessage(
+      'เข้าสู่ระบบด้วย $provider ยังไม่รองรับในขณะนี้',
+      isError: false,
+    );
   }
 
   @override
@@ -111,7 +118,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 420),
                         child: SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xl),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.xl,
+                            vertical: AppSpacing.xl,
+                          ),
                           child: form,
                         ),
                       ),
@@ -127,7 +137,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   const LoginBrandPanel(wide: false),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.xl),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xl,
+                      vertical: AppSpacing.xl,
+                    ),
                     child: form,
                   ),
                 ],
@@ -210,7 +223,11 @@ class _LoginBrandPanelState extends State<LoginBrandPanel> {
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        borderRadius: widget.wide ? null : const BorderRadius.vertical(bottom: Radius.circular(AppRadius.xxl)),
+        borderRadius: widget.wide
+            ? null
+            : const BorderRadius.vertical(
+                bottom: Radius.circular(AppRadius.xxl),
+              ),
       ),
       child: Stack(
         fit: StackFit.expand,
@@ -219,7 +236,11 @@ class _LoginBrandPanelState extends State<LoginBrandPanel> {
             controller: _controller,
             itemBuilder: (context, index) {
               final path = _images[index % _images.length];
-              return Image.asset(path, fit: BoxFit.cover, excludeFromSemantics: true);
+              return Image.asset(
+                path,
+                fit: BoxFit.cover,
+                excludeFromSemantics: true,
+              );
             },
           ),
           DecoratedBox(
@@ -245,25 +266,36 @@ class _LoginBrandPanelState extends State<LoginBrandPanel> {
                     color: Colors.white.withValues(alpha: 0.16),
                     borderRadius: BorderRadius.circular(AppRadius.xl),
                   ),
-                  child: const Center(child: Text('🍳', style: TextStyle(fontSize: 36))),
+                  child: const Center(
+                    child: Text('🍳', style: TextStyle(fontSize: 36)),
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.base),
                 Text(
                   widget.title,
                   style: AppTypography.display(color: Colors.white).copyWith(
                     fontSize: 26,
-                    shadows: const [Shadow(color: Colors.black38, blurRadius: 10)],
+                    shadows: const [
+                      Shadow(color: Colors.black38, blurRadius: 10),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 6),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xl,
+                  ),
                   child: Text(
                     widget.subtitle,
                     textAlign: TextAlign.center,
-                    style: AppTypography.body(color: Colors.white.withValues(alpha: 0.9)).copyWith(
-                      shadows: const [Shadow(color: Colors.black38, blurRadius: 8)],
-                    ),
+                    style:
+                        AppTypography.body(
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ).copyWith(
+                          shadows: const [
+                            Shadow(color: Colors.black38, blurRadius: 8),
+                          ],
+                        ),
                   ),
                 ),
               ],
@@ -301,14 +333,28 @@ class _LoginForm extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('ยินดีต้อนรับกลับ', style: AppTypography.display(color: AppTheme.txtPrimary(context)).copyWith(fontSize: 24)),
+        Text(
+          'ยินดีต้อนรับกลับ',
+          style: AppTypography.display(
+            color: AppTheme.txtPrimary(context),
+          ).copyWith(fontSize: 24),
+        ),
         const SizedBox(height: 6),
         Row(
           children: [
-            Text('ยังไม่มีบัญชี? ', style: AppTypography.body(color: AppTheme.txtSecondary(context))),
+            Text(
+              'ยังไม่มีบัญชี? ',
+              style: AppTypography.body(color: AppTheme.txtSecondary(context)),
+            ),
             TapTarget(
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
-              child: Text('สมัครสมาชิก', style: AppTypography.bodyStrong(color: AppTheme.prim(context))),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const RegisterScreen()),
+              ),
+              child: Text(
+                'สมัครสมาชิก',
+                style: AppTypography.bodyStrong(color: AppTheme.prim(context)),
+              ),
             ),
           ],
         ),
@@ -337,7 +383,9 @@ class _LoginForm extends StatelessWidget {
                 onTap: () => onRememberChanged(!rememberMe),
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: kMinInteractiveDimension),
+                  constraints: const BoxConstraints(
+                    minHeight: kMinInteractiveDimension,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -348,12 +396,20 @@ class _LoginForm extends StatelessWidget {
                           value: rememberMe,
                           onChanged: (v) => onRememberChanged(v ?? true),
                           activeColor: AppTheme.prim(context),
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4),
+                          ),
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
-                      Text('จดจำฉันไว้', style: AppTypography.body(color: AppTheme.txtSecondary(context))),
+                      Text(
+                        'จดจำฉันไว้',
+                        style: AppTypography.body(
+                          color: AppTheme.txtSecondary(context),
+                        ),
+                      ),
                       const SizedBox(width: AppSpacing.xs),
                     ],
                   ),
@@ -362,21 +418,35 @@ class _LoginForm extends StatelessWidget {
             ),
             const Spacer(),
             TextButton(
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPasswordScreen())),
-              style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 4)),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+              ),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+              ),
               child: const Text('ลืมรหัสผ่าน?'),
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.lg),
-        AppButton.primary(label: 'เข้าสู่ระบบ', onPressed: onSubmit, loading: isLoading),
+        AppButton.primary(
+          label: 'เข้าสู่ระบบ',
+          onPressed: onSubmit,
+          loading: isLoading,
+        ),
         const SizedBox(height: AppSpacing.lg),
         Row(
           children: [
             Expanded(child: Divider(color: AppTheme.div(context))),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: Text('หรือ', style: AppTypography.caption(color: AppTheme.txtSecondary(context))),
+              child: Text(
+                'หรือ',
+                style: AppTypography.caption(
+                  color: AppTheme.txtSecondary(context),
+                ),
+              ),
             ),
             Expanded(child: Divider(color: AppTheme.div(context))),
           ],
@@ -391,10 +461,17 @@ class _LoginForm extends StatelessWidget {
         SocialLoginButton(
           label: 'ดำเนินการต่อด้วย GitHub',
           onTap: () => onSocial('GitHub'),
-          badge: Icon(Icons.code_rounded, size: 18, color: AppTheme.txtPrimary(context)),
+          badge: Icon(
+            Icons.code_rounded,
+            size: 18,
+            color: AppTheme.txtPrimary(context),
+          ),
         ),
         const SizedBox(height: AppSpacing.xl),
-        AppButton.outline(label: 'ดูสูตรอาหารโดยไม่เข้าสู่ระบบ', onPressed: onGuest),
+        AppButton.outline(
+          label: 'ดูสูตรอาหารโดยไม่เข้าสู่ระบบ',
+          onPressed: onGuest,
+        ),
         const SizedBox(height: AppSpacing.md),
       ],
     );
@@ -407,7 +484,12 @@ class SocialLoginButton extends StatelessWidget {
   final Widget badge;
   final VoidCallback onTap;
 
-  const SocialLoginButton({super.key, required this.label, required this.badge, required this.onTap});
+  const SocialLoginButton({
+    super.key,
+    required this.label,
+    required this.badge,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -428,7 +510,12 @@ class SocialLoginButton extends StatelessWidget {
             children: [
               badge,
               const SizedBox(width: AppSpacing.sm),
-              Text(label, style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context)).copyWith(fontSize: 14)),
+              Text(
+                label,
+                style: AppTypography.bodyStrong(
+                  color: AppTheme.txtPrimary(context),
+                ).copyWith(fontSize: 14),
+              ),
             ],
           ),
         ),
@@ -446,10 +533,18 @@ class GoogleBadge extends StatelessWidget {
       width: 18,
       height: 18,
       alignment: Alignment.center,
-      decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF4285F4)),
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        color: Color(0xFF4285F4),
+      ),
       child: const Text(
         'G',
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white, height: 1),
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+          color: Colors.white,
+          height: 1,
+        ),
       ),
     );
   }

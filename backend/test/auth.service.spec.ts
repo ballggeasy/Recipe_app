@@ -1,4 +1,4 @@
-import { ConflictException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import * as bcrypt from 'bcryptjs';
@@ -12,8 +12,8 @@ function createUsersServiceFake() {
   let nextId = 1;
   return {
     users,
-    findByEmail: jest.fn(async (email: string) =>
-      [...users.values()].find((u) => u.email === email.trim().toLowerCase()) ?? null,
+    findByEmail: jest.fn(
+      async (email: string) => [...users.values()].find((u) => u.email === email.trim().toLowerCase()) ?? null,
     ),
     findById: jest.fn(async (id: string) => users.get(id) ?? null),
     create: jest.fn(async (data: { email: string; passwordHash: string; name: string }) => {
@@ -76,9 +76,7 @@ describe('AuthService', () => {
 
     it('rejects an email that is already registered', async () => {
       await service.register('A', 'a@example.com', 'secret123');
-      await expect(service.register('B', 'A@example.com', 'secret456')).rejects.toBeInstanceOf(
-        ConflictException,
-      );
+      await expect(service.register('B', 'A@example.com', 'secret456')).rejects.toBeInstanceOf(ConflictException);
     });
   });
 
@@ -93,16 +91,17 @@ describe('AuthService', () => {
       expect(jwtService.verify(result.accessToken).sub).toBe(result.user.id);
     });
 
-    it('throws NotFoundException for an unknown email', async () => {
-      await expect(service.login('nobody@example.com', 'secret123')).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
+    it('throws UnauthorizedException for a wrong password', async () => {
+      await expect(service.login('somchai@example.com', 'wrong-pass')).rejects.toBeInstanceOf(UnauthorizedException);
     });
 
-    it('throws UnauthorizedException for a wrong password', async () => {
-      await expect(service.login('somchai@example.com', 'wrong-pass')).rejects.toBeInstanceOf(
-        UnauthorizedException,
-      );
+    it('answers an unknown email exactly like a wrong password so emails cannot be enumerated', async () => {
+      const unknown = await service.login('nobody@example.com', 'secret123').catch((e) => e);
+      const wrong = await service.login('somchai@example.com', 'wrong-pass').catch((e) => e);
+
+      expect(unknown).toBeInstanceOf(UnauthorizedException);
+      expect(unknown.getStatus()).toBe(wrong.getStatus());
+      expect(unknown.getResponse()).toEqual(wrong.getResponse());
     });
   });
 
@@ -117,7 +116,7 @@ describe('AuthService', () => {
     it('rejects a wrong current password and keeps the old one', async () => {
       const oldHash = user.passwordHash;
       await expect(service.changePassword(user, 'wrong-pass', 'newpass123')).rejects.toBeInstanceOf(
-        UnauthorizedException,
+        BadRequestException,
       );
       expect(usersService.users.get(user.id)!.passwordHash).toBe(oldHash);
     });
@@ -126,9 +125,7 @@ describe('AuthService', () => {
       await service.changePassword(user, 'secret123', 'newpass123');
 
       await expect(service.login('somchai@example.com', 'newpass123')).resolves.toBeDefined();
-      await expect(service.login('somchai@example.com', 'secret123')).rejects.toBeInstanceOf(
-        UnauthorizedException,
-      );
+      await expect(service.login('somchai@example.com', 'secret123')).rejects.toBeInstanceOf(UnauthorizedException);
     });
   });
 

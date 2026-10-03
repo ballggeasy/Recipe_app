@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -29,11 +30,16 @@ void main() {
 
     test('encodes the body as JSON', () async {
       final log = <http.Request>[];
-      final api = fakeApi({'POST /auth/login': (_) => jsonResponse({})}, log: log);
+      final api = fakeApi({
+        'POST /auth/login': (_) => jsonResponse({}),
+      }, log: log);
 
       await api.post('/auth/login', body: {'email': 'a@b.com'}, auth: false);
 
-      expect(log.single.headers['Content-Type'], startsWith('application/json'));
+      expect(
+        log.single.headers['Content-Type'],
+        startsWith('application/json'),
+      );
       expect(jsonDecode(log.single.body), {'email': 'a@b.com'});
     });
 
@@ -55,12 +61,18 @@ void main() {
     }
 
     test('uses the backend message when it is a string', () async {
-      final e = await errorFrom(jsonResponse({'message': 'รหัสผ่านไม่ถูกต้อง'}, 401));
+      final e = await errorFrom(
+        jsonResponse({'message': 'รหัสผ่านไม่ถูกต้อง'}, 401),
+      );
       expect(e.message, 'รหัสผ่านไม่ถูกต้อง');
     });
 
     test('joins validation messages when the backend sends a list', () async {
-      final e = await errorFrom(jsonResponse({'message': ['email must be an email', 'password too short']}, 400));
+      final e = await errorFrom(
+        jsonResponse({
+          'message': ['email must be an email', 'password too short'],
+        }, 400),
+      );
       expect(e.message, 'email must be an email, password too short');
     });
 
@@ -70,22 +82,139 @@ void main() {
     });
 
     test('turns network failures into a friendly connection error', () async {
-      final api = ApiClient.forTesting(MockClient((_) => throw http.ClientException('offline')));
+      final api = ApiClient.forTesting(
+        MockClient((_) => throw http.ClientException('offline')),
+      );
       await expectLater(
         api.get('/recipes'),
-        throwsA(isA<ApiException>().having((e) => e.message, 'message', contains('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'))),
+        throwsA(
+          isA<ApiException>().having(
+            (e) => e.message,
+            'message',
+            contains('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้'),
+          ),
+        ),
       );
     });
   });
 
-  group('ApiClient token storage', () {
-    test('persists the token by default and restores it with loadToken', () async {
-      await fakeApi({}).setToken('saved');
+  group('ApiClient expired session', () {
+    test(
+      'clears the token and notifies when an authenticated call gets 401',
+      () async {
+        final api = fakeApi({
+          'GET /auth/me': (_) => jsonResponse({'message': 'Unauthorized'}, 401),
+        });
+        await api.setToken('stale');
+        var notified = 0;
+        api.onUnauthorized = () => notified++;
 
-      final fresh = fakeApi({});
-      expect(await fresh.loadToken(), isTrue);
-      expect(fresh.hasToken, isTrue);
+        await expectLater(api.get('/auth/me'), throwsA(isA<ApiException>()));
+
+        expect(notified, 1);
+        expect(api.hasToken, isFalse);
+        expect(
+          (await SharedPreferences.getInstance()).getString('auth_token'),
+          isNull,
+        );
+      },
+    );
+
+    test(
+      'does not treat a wrong login password (no token sent) as an expired session',
+      () async {
+        final api = fakeApi({
+          'POST /auth/login': (_) =>
+              jsonResponse({'message': 'อีเมลหรือรหัสผ่านไม่ถูกต้อง'}, 401),
+        });
+        var notified = 0;
+        api.onUnauthorized = () => notified++;
+
+        await expectLater(
+          api.post('/auth/login', auth: false, body: {}),
+          throwsA(isA<ApiException>()),
+        );
+
+        expect(notified, 0);
+      },
+    );
+
+    test(
+      'ignores other error statuses such as a bad current password (400)',
+      () async {
+        final api = fakeApi({
+          'POST /auth/change-password': (_) =>
+              jsonResponse({'message': 'รหัสผ่านปัจจุบันไม่ถูกต้อง'}, 400),
+        });
+        await api.setToken('valid');
+        var notified = 0;
+        api.onUnauthorized = () => notified++;
+
+        await expectLater(
+          api.post('/auth/change-password', body: {}),
+          throwsA(isA<ApiException>()),
+        );
+
+        expect(notified, 0);
+        expect(api.hasToken, isTrue);
+      },
+    );
+  });
+
+  group('ApiClient base URL', () {
+    test('uses the platform default when API_BASE_URL is not set', () {
+      final api = ApiClient.forTesting(
+        MockClient((_) async => jsonResponse(null)),
+      );
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+      expect(api.baseUrl, 'http://localhost:3000');
+
+      // The Android emulator reaches the host machine through 10.0.2.2.
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      expect(api.baseUrl, 'http://10.0.2.2:3000');
     });
+
+    test(
+      'uses the configured base URL for requests and relative upload paths, without a trailing slash',
+      () async {
+        final log = <http.Request>[];
+        final api = ApiClient.forTesting(
+          MockClient((request) async {
+            log.add(request);
+            return jsonResponse([]);
+          }),
+          baseUrl: 'https://api.example.com/',
+        );
+
+        await api.get('/recipes', auth: false);
+
+        expect(api.baseUrl, 'https://api.example.com');
+        expect(log.single.url.toString(), 'https://api.example.com/recipes');
+        expect(
+          api.resolveUrl('/uploads/recipes/x.jpg'),
+          'https://api.example.com/uploads/recipes/x.jpg',
+        );
+        expect(
+          api.resolveUrl('https://upload.wikimedia.org/x.jpg'),
+          'https://upload.wikimedia.org/x.jpg',
+        );
+      },
+    );
+  });
+
+  group('ApiClient token storage', () {
+    test(
+      'persists the token by default and restores it with loadToken',
+      () async {
+        await fakeApi({}).setToken('saved');
+
+        final fresh = fakeApi({});
+        expect(await fresh.loadToken(), isTrue);
+        expect(fresh.hasToken, isTrue);
+      },
+    );
 
     test('does not persist the token when persist is false', () async {
       await fakeApi({}).setToken('session-only', persist: false);

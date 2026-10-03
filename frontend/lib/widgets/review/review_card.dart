@@ -41,7 +41,9 @@ class ReviewCard extends StatelessWidget {
                 backgroundColor: AppTheme.primLight(context),
                 child: Text(
                   review.userName.isNotEmpty ? review.userName[0] : '?',
-                  style: AppTypography.bodyStrong(color: AppTheme.prim(context)).copyWith(fontSize: 13),
+                  style: AppTypography.bodyStrong(
+                    color: AppTheme.prim(context),
+                  ).copyWith(fontSize: 13),
                 ),
               ),
               const SizedBox(width: 10),
@@ -51,7 +53,9 @@ class ReviewCard extends StatelessWidget {
                   children: [
                     Text(
                       review.userName,
-                      style: AppTypography.bodyStrong(color: AppTheme.txtPrimary(context)).copyWith(fontSize: 13.5),
+                      style: AppTypography.bodyStrong(
+                        color: AppTheme.txtPrimary(context),
+                      ).copyWith(fontSize: 13.5),
                     ),
                     RatingDisplay(
                       rating: review.rating,
@@ -65,12 +69,17 @@ class ReviewCard extends StatelessWidget {
               ),
               Text(
                 _formatDate(review.createdAt),
-                style: AppTypography.caption(color: AppTheme.txtSecondary(context)).copyWith(fontSize: 11),
+                style: AppTypography.caption(
+                  color: AppTheme.txtSecondary(context),
+                ).copyWith(fontSize: 11),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          Text(review.content, style: AppTypography.body(color: AppTheme.txtPrimary(context))),
+          Text(
+            review.content,
+            style: AppTypography.body(color: AppTheme.txtPrimary(context)),
+          ),
           if (review.imageUrls.isNotEmpty) ...[
             const SizedBox(height: 10),
             Container(
@@ -87,7 +96,9 @@ class ReviewCard extends StatelessWidget {
           Row(
             children: [
               _ActionButton(
-                icon: isLiked ? Icons.thumb_up_rounded : Icons.thumb_up_outlined,
+                icon: isLiked
+                    ? Icons.thumb_up_rounded
+                    : Icons.thumb_up_outlined,
                 label: '${review.likeCount}',
                 onTap: onLike,
                 active: isLiked,
@@ -114,16 +125,24 @@ class ReviewCard extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.subdirectory_arrow_right_rounded, size: 16, color: AppTheme.txtSecondary(context)),
+                    Icon(
+                      Icons.subdirectory_arrow_right_rounded,
+                      size: 16,
+                      color: AppTheme.txtSecondary(context),
+                    ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: RichText(
                         text: TextSpan(
-                          style: AppTypography.body(color: AppTheme.txtPrimary(context)).copyWith(fontSize: 13),
+                          style: AppTypography.body(
+                            color: AppTheme.txtPrimary(context),
+                          ).copyWith(fontSize: 13),
                           children: [
                             TextSpan(
                               text: '${r.userName}: ',
-                              style: const TextStyle(fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             TextSpan(text: r.content),
                           ],
@@ -160,7 +179,9 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? AppTheme.prim(context) : AppTheme.txtSecondary(context);
+    final color = active
+        ? AppTheme.prim(context)
+        : AppTheme.txtSecondary(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),

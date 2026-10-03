@@ -1,11 +1,11 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { existsSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import { basename, join } from 'path';
 import request from 'supertest';
-import { AppModule } from '../src/app.module';
 import { uploadsRoot } from '../src/common/image-upload';
 import { recipeSeeds } from '../src/seed/seed-data';
+import { createTestApp } from './helpers/create-test-app';
 
 const newRecipe = {
   name: 'Test Krapao',
@@ -22,11 +22,7 @@ describe('Recipe API (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = moduleRef.createNestApplication();
-    // Same pipe configuration as src/main.ts
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }));
-    await app.init();
+    app = await createTestApp();
   });
 
   afterAll(async () => {
@@ -37,10 +33,7 @@ describe('Recipe API (e2e)', () => {
   const http = () => request(app.getHttpServer());
 
   async function registerUser(email: string): Promise<{ token: string; id: string }> {
-    const res = await http()
-      .post('/auth/register')
-      .send({ name: 'Tester', email, password: 'secret123' })
-      .expect(201);
+    const res = await http().post('/auth/register').send({ name: 'Tester', email, password: 'secret123' }).expect(201);
     return { token: res.body.accessToken, id: res.body.user.id };
   }
 
@@ -59,10 +52,7 @@ describe('Recipe API (e2e)', () => {
         profileImageUrl: null,
       });
 
-      const me = await http()
-        .get('/auth/me')
-        .set('Authorization', `Bearer ${login.body.accessToken}`)
-        .expect(200);
+      const me = await http().get('/auth/me').set('Authorization', `Bearer ${login.body.accessToken}`).expect(200);
       expect(me.body.id).toBe(id);
       expect(me.body).not.toHaveProperty('passwordHash');
     });
@@ -80,6 +70,24 @@ describe('Recipe API (e2e)', () => {
       await http().post('/auth/login').send({ email: 'bob@example.com', password: 'nope-nope' }).expect(401);
     });
 
+    it('gives the same 401 body for an unknown email as for a wrong password', async () => {
+      await registerUser('known@example.com');
+      const wrong = await http()
+        .post('/auth/login')
+        .send({ email: 'known@example.com', password: 'nope-nope' })
+        .expect(401);
+      const unknown = await http()
+        .post('/auth/login')
+        .send({ email: 'nobody-here@example.com', password: 'nope-nope' })
+        .expect(401);
+      // requestId/timestamp legitimately differ per request; everything the caller can learn from must not.
+      expect({ ...unknown.body, requestId: null, timestamp: null }).toEqual({
+        ...wrong.body,
+        requestId: null,
+        timestamp: null,
+      });
+    });
+
     it('rejects invalid bodies and unknown fields with 400', async () => {
       await http().post('/auth/register').send({ name: 'X', email: 'not-an-email', password: 'secret123' }).expect(400);
       await http().post('/auth/register').send({ name: 'X', email: 'x@example.com', password: '123' }).expect(400);
@@ -92,6 +100,29 @@ describe('Recipe API (e2e)', () => {
     it('requires a valid token for protected routes', async () => {
       await http().get('/auth/me').expect(401);
       await http().get('/auth/me').set('Authorization', 'Bearer not-a-real-token').expect(401);
+    });
+
+    it('keeps password reset disabled by default so accounts cannot be taken over by email alone', async () => {
+      await registerUser('victim@example.com');
+
+      await http()
+        .post('/auth/reset-password')
+        .send({ email: 'victim@example.com', newPassword: 'attacker-chosen' })
+        .expect(403);
+      await http().get('/auth/exists/victim@example.com').expect(403);
+
+      // The victim's password is unchanged and the attacker's is not accepted.
+      await http().post('/auth/login').send({ email: 'victim@example.com', password: 'secret123' }).expect(201);
+      await http().post('/auth/login').send({ email: 'victim@example.com', password: 'attacker-chosen' }).expect(401);
+    });
+
+    it('rejects a token signed with the old built-in fallback secret', async () => {
+      const { id } = await registerUser('forged@example.com');
+      const forged = new JwtService({ secret: 'change-this-secret-in-production' }).sign({
+        sub: id,
+        email: 'forged@example.com',
+      });
+      await http().get('/auth/me').set('Authorization', `Bearer ${forged}`).expect(401);
     });
 
     it('invalidates the token after the account is deleted', async () => {
@@ -137,10 +168,37 @@ describe('Recipe API (e2e)', () => {
         .set('Authorization', `Bearer ${other.token}`)
         .send({ name: 'Hacked' })
         .expect(403);
+      await http().delete(`/recipes/${created.body.id}`).set('Authorization', `Bearer ${other.token}`).expect(403);
+    });
+
+    it('counts each detail view and rejects oversized fields', async () => {
+      const { token } = await registerUser('views@example.com');
+      const auth = { Authorization: `Bearer ${token}` };
+      const created = await http().post('/recipes').set(auth).send(newRecipe).expect(201);
+      const id = created.body.id;
+
+      const first = await http().get(`/recipes/${id}`).expect(200);
+      const second = await http().get(`/recipes/${id}`).expect(200);
+      expect(first.body.viewCount).toBe(1);
+      expect(second.body.viewCount).toBe(2);
+
+      const list = await http().get('/recipes').expect(200);
+      expect(list.body.find((r: { id: string }) => r.id === id).viewCount).toBe(2);
+
       await http()
-        .delete(`/recipes/${created.body.id}`)
-        .set('Authorization', `Bearer ${other.token}`)
-        .expect(403);
+        .post('/recipes')
+        .set(auth)
+        .send({ ...newRecipe, name: 'x'.repeat(201) })
+        .expect(400);
+      await http()
+        .post('/recipes')
+        .set(auth)
+        .send({ ...newRecipe, steps: Array(101).fill('step') })
+        .expect(400);
+      await http()
+        .post('/auth/login')
+        .send({ email: 'views@example.com', password: 'p'.repeat(129) })
+        .expect(400);
     });
 
     it('requires a token to create a recipe', async () => {
@@ -149,11 +207,7 @@ describe('Recipe API (e2e)', () => {
 
     it('rejects a recipe missing required fields with 400', async () => {
       const { token } = await registerUser('lazy@example.com');
-      await http()
-        .post('/recipes')
-        .set('Authorization', `Bearer ${token}`)
-        .send({ name: 'No steps' })
-        .expect(400);
+      await http().post('/recipes').set('Authorization', `Bearer ${token}`).send({ name: 'No steps' }).expect(400);
     });
   });
 
@@ -247,7 +301,10 @@ describe('Recipe API (e2e)', () => {
     });
 
     it('requires a token', async () => {
-      await http().post('/recipes/whatever/image').attach('file', png, { filename: 'a.png', contentType: 'image/png' }).expect(401);
+      await http()
+        .post('/recipes/whatever/image')
+        .attach('file', png, { filename: 'a.png', contentType: 'image/png' })
+        .expect(401);
     });
 
     it('deletes the image file when the recipe is deleted', async () => {
