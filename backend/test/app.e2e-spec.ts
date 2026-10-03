@@ -171,6 +171,36 @@ describe('Recipe API (e2e)', () => {
       await http().delete(`/recipes/${created.body.id}`).set('Authorization', `Bearer ${other.token}`).expect(403);
     });
 
+    it('counts each detail view and rejects oversized fields', async () => {
+      const { token } = await registerUser('views@example.com');
+      const auth = { Authorization: `Bearer ${token}` };
+      const created = await http().post('/recipes').set(auth).send(newRecipe).expect(201);
+      const id = created.body.id;
+
+      const first = await http().get(`/recipes/${id}`).expect(200);
+      const second = await http().get(`/recipes/${id}`).expect(200);
+      expect(first.body.viewCount).toBe(1);
+      expect(second.body.viewCount).toBe(2);
+
+      const list = await http().get('/recipes').expect(200);
+      expect(list.body.find((r: { id: string }) => r.id === id).viewCount).toBe(2);
+
+      await http()
+        .post('/recipes')
+        .set(auth)
+        .send({ ...newRecipe, name: 'x'.repeat(201) })
+        .expect(400);
+      await http()
+        .post('/recipes')
+        .set(auth)
+        .send({ ...newRecipe, steps: Array(101).fill('step') })
+        .expect(400);
+      await http()
+        .post('/auth/login')
+        .send({ email: 'views@example.com', password: 'p'.repeat(129) })
+        .expect(400);
+    });
+
     it('requires a token to create a recipe', async () => {
       await http().post('/recipes').send(newRecipe).expect(401);
     });

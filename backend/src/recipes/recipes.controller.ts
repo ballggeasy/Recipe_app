@@ -31,7 +31,7 @@ export class RecipesController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.recipesService.findOne(id);
+    return this.recipesService.findOneAndCountView(id);
   }
 
   @UseGuards(JwtAuthGuard)

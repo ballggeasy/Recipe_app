@@ -26,6 +26,14 @@ export class RecipesService {
     return recipe;
   }
 
+  /** Public detail view: counts the view (atomic increment, so concurrent readers don't lose counts). */
+  async findOneAndCountView(id: string): Promise<Recipe> {
+    const recipe = await this.findOne(id);
+    await this.recipesRepository.increment({ id }, 'viewCount', 1);
+    recipe.viewCount += 1;
+    return recipe;
+  }
+
   create(dto: CreateRecipeDto, user: User): Promise<Recipe> {
     const recipe = this.recipesRepository.create({
       ...dto,
