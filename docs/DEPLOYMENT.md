@@ -49,6 +49,8 @@ flutter run --dart-define=API_BASE_URL=https://api.example.com
 flutter build apk --release --dart-define=API_BASE_URL=https://api.example.com
 ```
 
+The shipped config for the Azure VM is `frontend/config/azure.json`: `flutter run --dart-define-from-file=config/azure.json`. The VM serves plain HTTP on port 3000, so Android only allows cleartext traffic to that IP (and to the emulator/localhost) through `network_security_config.xml`; browsers and iOS need HTTPS (put a TLS reverse proxy in front, then drop the IP from that file). The main Android manifest also declares the `INTERNET` permission now; it used to exist only for debug/profile builds, so a release APK could not reach any backend.
+
 The Android **release** build is still signed with the debug key (`frontend/android/app/build.gradle.kts`). Create a keystore and a `key.properties` before publishing to a store; this cannot be done in the repo.
 
 ## Health and monitoring
