@@ -11,6 +11,12 @@ npm run build
 npm start
 ```
 
+**ต้องตั้ง `JWT_SECRET` ใน `.env` ก่อนรัน** — server จะไม่ยอม start ถ้าว่าง (บน production ต้องยาวอย่างน้อย 32 ตัวอักษรและห้ามเป็นค่าตัวอย่าง) สร้างค่าสุ่มได้ด้วย:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+```
+
 Dev mode (auto-reload):
 
 ```bash
@@ -25,8 +31,8 @@ Server default: `http://localhost:3000`, DB: SQLite ไฟล์ที่ `./dat
 |--------|-----------------------|------|------------------------------------------|
 | POST   | /auth/register         | -    | `{ name, email, password }`              |
 | POST   | /auth/login             | -    | `{ email, password }`                    |
-| GET    | /auth/exists/:email     | -    | -                                         |
-| POST   | /auth/reset-password    | -    | `{ email, newPassword }`                 |
+| GET    | /auth/exists/:email     | -    | ปิดอยู่ (403) ยกเว้นตั้ง `ALLOW_INSECURE_PASSWORD_RESET=true` — ใช้ตอนพัฒนาในเครื่องเท่านั้น |
+| POST   | /auth/reset-password    | -    | `{ email, newPassword }` — ปิดอยู่ (403) เหมือนข้างบน เพราะยืนยันตัวตนด้วยอีเมลอย่างเดียว ใครก็เปลี่ยนรหัสของคนอื่นได้ |
 | GET    | /auth/me                 | JWT  | -                                         |
 | PATCH  | /auth/profile            | JWT  | `{ name?, profileImageUrl? }`            |
 | POST   | /auth/avatar              | JWT  | multipart/form-data field `file` (JPG/PNG/WebP/GIF, ≤5MB) |

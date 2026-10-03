@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import { existsSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import { basename, join } from 'path';
@@ -92,6 +93,29 @@ describe('Recipe API (e2e)', () => {
     it('requires a valid token for protected routes', async () => {
       await http().get('/auth/me').expect(401);
       await http().get('/auth/me').set('Authorization', 'Bearer not-a-real-token').expect(401);
+    });
+
+    it('keeps password reset disabled by default so accounts cannot be taken over by email alone', async () => {
+      await registerUser('victim@example.com');
+
+      await http()
+        .post('/auth/reset-password')
+        .send({ email: 'victim@example.com', newPassword: 'attacker-chosen' })
+        .expect(403);
+      await http().get('/auth/exists/victim@example.com').expect(403);
+
+      // The victim's password is unchanged and the attacker's is not accepted.
+      await http().post('/auth/login').send({ email: 'victim@example.com', password: 'secret123' }).expect(201);
+      await http().post('/auth/login').send({ email: 'victim@example.com', password: 'attacker-chosen' }).expect(401);
+    });
+
+    it('rejects a token signed with the old built-in fallback secret', async () => {
+      const { id } = await registerUser('forged@example.com');
+      const forged = new JwtService({ secret: 'change-this-secret-in-production' }).sign({
+        sub: id,
+        email: 'forged@example.com',
+      });
+      await http().get('/auth/me').set('Authorization', `Bearer ${forged}`).expect(401);
     });
 
     it('invalidates the token after the account is deleted', async () => {

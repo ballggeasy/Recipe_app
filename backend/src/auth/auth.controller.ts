@@ -22,6 +22,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { PasswordResetEnabledGuard } from './password-reset-enabled.guard';
 import { CurrentUser } from './current-user.decorator';
 import { User } from '../users/user.entity';
 
@@ -39,12 +40,15 @@ export class AuthController {
     return this.authService.login(dto.email, dto.password);
   }
 
+  // Both endpoints below are off unless ALLOW_INSECURE_PASSWORD_RESET=true (see the guard).
+  @UseGuards(PasswordResetEnabledGuard)
   @Get('exists/:email')
   async exists(@Param('email') email: string) {
     const exists = await this.authService.checkUserExists(email);
     return { exists };
   }
 
+  @UseGuards(PasswordResetEnabledGuard)
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() dto: ResetPasswordDto) {
