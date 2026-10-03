@@ -27,6 +27,7 @@ class RecipeProvider extends ChangeNotifier {
   Set<String> _favoriteIds = {};
   bool _isLoading = false;
   bool _canSyncFavorites = false;
+  String? _loadError;
 
   String _searchQuery = '';
   String _selectedCategory = 'ทั้งหมด';
@@ -41,6 +42,9 @@ class RecipeProvider extends ChangeNotifier {
 
   List<Recipe> get allRecipes => _allRecipes;
   bool get isLoading => _isLoading;
+
+  /// ข้อความ error ของการโหลดสูตรครั้งล่าสุด — null ถ้าโหลดสำเร็จ
+  String? get loadError => _loadError;
   String get searchQuery => _searchQuery;
   String get selectedCategory => _selectedCategory;
   String get selectedCountry => _selectedCountry;
@@ -169,16 +173,22 @@ class RecipeProvider extends ChangeNotifier {
 
   /// เรียกตอนเปิดแอป — โหลดรายการสูตรจาก backend + ประวัติค้นหาจากเครื่อง
   Future<void> init() async {
-    _isLoading = true;
-    notifyListeners();
-
     final prefs = await SharedPreferences.getInstance();
     _searchHistory = prefs.getStringList(_searchHistoryKey) ?? [];
+    await loadRecipes();
+  }
+
+  /// โหลดรายการสูตรจาก backend — ถ้าล้มเหลวจะเก็บข้อความไว้ใน [loadError] (และคงรายการเดิมไว้)
+  /// ให้หน้าจอแสดงปุ่ม "ลองอีกครั้ง" ที่เรียกเมธอดนี้ซ้ำได้
+  Future<void> loadRecipes() async {
+    _isLoading = true;
+    _loadError = null;
+    notifyListeners();
 
     try {
       _allRecipes = await _recipeService.fetchAll();
-    } on ApiException {
-      _allRecipes = [];
+    } on ApiException catch (e) {
+      _loadError = e.message;
     }
 
     _isLoading = false;

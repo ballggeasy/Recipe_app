@@ -15,6 +15,7 @@ import '../../widgets/recipe_image.dart';
 import '../../widgets/rating_display.dart';
 import '../../widgets/common/filter_chip_widget.dart';
 import '../../widgets/common/empty_state.dart';
+import '../../widgets/common/loading_state.dart';
 import '../../widgets/common/section_header.dart';
 import '../../widgets/common/tap_target.dart';
 import '../../widgets/search/search_bar_widget.dart';
@@ -178,7 +179,23 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ),
-            if (recipes.isEmpty)
+            if (recipes.isEmpty && provider.allRecipes.isEmpty && provider.isLoading)
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: LoadingState(message: 'กำลังโหลดเมนู...'),
+              )
+            else if (recipes.isEmpty && provider.allRecipes.isEmpty && provider.loadError != null)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: EmptyState(
+                  emoji: '📡',
+                  message: 'โหลดเมนูไม่สำเร็จ',
+                  description: provider.loadError,
+                  actionLabel: 'ลองอีกครั้ง',
+                  onAction: provider.loadRecipes,
+                ),
+              )
+            else if (recipes.isEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: EmptyState(

@@ -78,12 +78,61 @@ void main() {
       expect(provider.getById('missing'), isNull);
     });
 
-    test('ends with an empty list when the backend is down', () async {
+    test('ends with an empty list and the error message when the backend is down', () async {
       final provider = buildProvider(extra: {'GET /recipes': (_) => jsonResponse({'message': 'down'}, 503)});
       await provider.init();
 
       expect(provider.allRecipes, isEmpty);
       expect(provider.isLoading, isFalse);
+      expect(provider.loadError, 'down');
+    });
+
+    test('has no error after a successful load', () async {
+      final provider = buildProvider();
+      await provider.init();
+
+      expect(provider.loadError, isNull);
+    });
+  });
+
+  group('loadRecipes (retry)', () {
+    test('recovers once the backend is back and clears the error', () async {
+      var backendUp = false;
+      final provider = buildProvider(extra: {
+        'GET /recipes': (_) => backendUp ? jsonResponse(_catalog) : jsonResponse({'message': 'down'}, 503),
+      });
+      await provider.init();
+      expect(provider.loadError, 'down');
+
+      backendUp = true;
+      await provider.loadRecipes();
+
+      expect(provider.loadError, isNull);
+      expect(provider.allRecipes, hasLength(3));
+    });
+
+    test('keeps the recipes already shown when a refresh fails', () async {
+      var backendUp = true;
+      final provider = buildProvider(extra: {
+        'GET /recipes': (_) => backendUp ? jsonResponse(_catalog) : jsonResponse({'message': 'down'}, 503),
+      });
+      await provider.init();
+
+      backendUp = false;
+      await provider.loadRecipes();
+
+      expect(provider.allRecipes, hasLength(3));
+      expect(provider.loadError, 'down');
+    });
+
+    test('reports loading while a request is in flight', () async {
+      final provider = buildProvider();
+      final states = <bool>[];
+      provider.addListener(() => states.add(provider.isLoading));
+
+      await provider.loadRecipes();
+
+      expect(states, [true, false]);
     });
   });
 
