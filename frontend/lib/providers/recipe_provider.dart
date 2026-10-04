@@ -368,6 +368,7 @@ class RecipeProvider extends ChangeNotifier {
     String? platingTips,
     List<String> dietTags = const [],
     NutritionInfo? nutrition,
+    String? videoUrl,
     XFile? image,
   }) async {
     final Recipe recipe;
@@ -388,6 +389,7 @@ class RecipeProvider extends ChangeNotifier {
         platingTips: platingTips,
         dietTags: dietTags,
         nutrition: nutrition,
+        videoUrl: videoUrl,
       );
     } on ApiException catch (e) {
       return (error: e.message, imageError: null);
@@ -436,6 +438,7 @@ class RecipeProvider extends ChangeNotifier {
         'platingTips': recipe.platingTips,
         'dietTags': recipe.dietTags,
         if (recipe.nutrition != null) 'nutrition': recipe.nutrition!.toJson(),
+        'videoUrl': recipe.videoUrl,
       });
       final index = _allRecipes.indexWhere((r) => r.id == recipe.id);
       if (index != -1) {

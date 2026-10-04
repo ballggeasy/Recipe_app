@@ -126,14 +126,4 @@ class FavoriteProvider extends ChangeNotifier {
       return false;
     }
   }
-
-  /// mock — แชร์สูตร (คืนลิงก์จำลอง)
-  String shareRecipe(Recipe recipe) {
-    return 'https://recipe-app.demo/share/${recipe.id}';
-  }
-
-  /// mock — ดาวน์โหลดสูตร (คืนชื่อไฟล์จำลอง)
-  String downloadRecipe(Recipe recipe) {
-    return '${recipe.name.replaceAll(' ', '_')}.pdf';
-  }
 }

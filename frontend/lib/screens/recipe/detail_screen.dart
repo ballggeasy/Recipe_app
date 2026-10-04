@@ -11,8 +11,10 @@ import '../../theme/app_typography.dart';
 import '../../providers/recipe_provider.dart';
 import '../../providers/review_provider.dart';
 import '../../providers/comment_provider.dart';
-import '../../providers/favorite_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../utils/recipe_actions.dart';
+import '../../utils/recipe_text.dart';
+import '../../widgets/community_dialogs.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
 import '../../widgets/recipe_image.dart';
@@ -65,13 +67,11 @@ class _DetailScreenState extends State<DetailScreen> {
     final provider = context.watch<RecipeProvider>();
     final reviewProvider = context.watch<ReviewProvider>();
     final commentProvider = context.watch<CommentProvider>();
-    final favProvider = context.read<FavoriteProvider>();
     final auth = context.watch<AuthProvider>();
     final isFav = provider.isFavorite(recipe.id);
     final reviews = reviewProvider.getReviewsForRecipe(recipe.id);
     final comments = commentProvider.getTopLevelComments(recipe.id);
     final currentUserId = auth.currentUser?.id;
-    final userName = auth.currentUser?.name ?? 'ผู้เยี่ยมชม';
     final isOwner = currentUserId != null && recipe.uploaderId == currentUserId;
 
     return Scaffold(
@@ -111,12 +111,7 @@ class _DetailScreenState extends State<DetailScreen> {
                 child: _RoundIconButton(
                   icon: Icons.ios_share_rounded,
                   tooltip: 'แชร์สูตร',
-                  onTap: () {
-                    final link = favProvider.shareRecipe(recipe);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('แชร์ (mock): $link')),
-                    );
-                  },
+                  onTap: () => shareRecipe(context, recipe),
                 ),
               ),
               Padding(
@@ -140,12 +135,8 @@ class _DetailScreenState extends State<DetailScreen> {
                 child: _RoundIconButton(
                   icon: Icons.more_vert_rounded,
                   tooltip: 'ตัวเลือกเพิ่มเติม',
-                  onTap: () => _showMoreMenu(
-                    context,
-                    provider,
-                    favProvider,
-                    isOwner: isOwner,
-                  ),
+                  onTap: () =>
+                      _showMoreMenu(context, provider, isOwner: isOwner),
                 ),
               ),
             ],
@@ -245,9 +236,9 @@ class _DetailScreenState extends State<DetailScreen> {
                       ),
                     ],
                   ),
-                  if (recipe.videoUrl != null) ...[
+                  if (hasRecipeVideo(recipe)) ...[
                     const SizedBox(height: AppSpacing.lg),
-                    const _VideoPlaceholder(),
+                    _RecipeVideo(onTap: () => openRecipeVideo(context, recipe)),
                   ],
                   const SizedBox(height: AppSpacing.xl),
                   const SectionHeader(title: 'ส่วนผสม'),
@@ -317,7 +308,8 @@ class _DetailScreenState extends State<DetailScreen> {
                   SectionHeader(
                     title: 'รีวิว (${reviews.length})',
                     actionLabel: 'เขียนรีวิว',
-                    onAction: () => _showAddReviewDialog(context, userName),
+                    onAction: () =>
+                        showReviewComposer(context, recipeId: widget.recipe.id),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   if (reviews.isEmpty)
@@ -342,15 +334,17 @@ class _DetailScreenState extends State<DetailScreen> {
                             const SnackBar(content: Text('รายงานรีวิวแล้ว')),
                           );
                         },
-                        onReply: () =>
-                            _showReplyDialog(context, r.id, userName),
+                        onReply: () => _showReplyDialog(context, r.id),
                       ),
                     ),
                   const SizedBox(height: AppSpacing.xxl),
                   SectionHeader(
                     title: 'ความคิดเห็น (${comments.length})',
                     actionLabel: 'แสดงความคิดเห็น',
-                    onAction: () => _showAddCommentDialog(context, userName),
+                    onAction: () => showCommentComposer(
+                      context,
+                      recipeId: widget.recipe.id,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   if (comments.isEmpty)
@@ -365,9 +359,9 @@ class _DetailScreenState extends State<DetailScreen> {
                       (c) => CommentTile(
                         comment: c,
                         currentUserId: currentUserId,
-                        onReply: () => _showAddCommentDialog(
+                        onReply: () => showCommentComposer(
                           context,
-                          userName,
+                          recipeId: widget.recipe.id,
                           parentId: c.id,
                         ),
                         onDelete: (comment) => _deleteOwnComment(
@@ -469,8 +463,7 @@ class _DetailScreenState extends State<DetailScreen> {
 
   void _showMoreMenu(
     BuildContext context,
-    RecipeProvider provider,
-    FavoriteProvider favProvider, {
+    RecipeProvider provider, {
     required bool isOwner,
   }) {
     showModalBottomSheet(
@@ -499,10 +492,7 @@ class _DetailScreenState extends State<DetailScreen> {
                 title: const Text('ดาวน์โหลดสูตร'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  final file = favProvider.downloadRecipe(recipe);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('ดาวน์โหลด (mock): $file')),
-                  );
+                  downloadRecipe(context, recipe);
                 },
               ),
               if (isOwner)
@@ -527,73 +517,7 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 
-  void _showAddReviewDialog(BuildContext context, String userName) {
-    final controller = TextEditingController();
-    double rating = 5;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setState) => AlertDialog(
-          title: const Text('เขียนรีวิว'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(5, (i) {
-                  return IconButton(
-                    tooltip: 'ให้ ${i + 1} ดาว',
-                    icon: Icon(
-                      i < rating
-                          ? Icons.star_rounded
-                          : Icons.star_border_rounded,
-                      color: AppTheme.star(ctx),
-                    ),
-                    onPressed: () => setState(() => rating = i + 1.0),
-                  );
-                }),
-              ),
-              AppTextField(
-                controller: controller,
-                maxLines: 3,
-                hint: 'เขียนรีวิวของคุณ...',
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              OutlinedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.add_photo_alternate_outlined, size: 18),
-                label: const Text('แนบรูป (placeholder)'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('ยกเลิก'),
-            ),
-            TextButton(
-              onPressed: () {
-                context.read<ReviewProvider>().addReview(
-                  recipeId: recipe.id,
-                  rating: rating,
-                  content: controller.text.trim(),
-                );
-                Navigator.pop(ctx);
-              },
-              child: const Text('ส่ง'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showReplyDialog(
-    BuildContext context,
-    String reviewId,
-    String userName,
-  ) {
+  void _showReplyDialog(BuildContext context, String reviewId) {
     final controller = TextEditingController();
     showDialog(
       context: context,
@@ -610,69 +534,6 @@ class _DetailScreenState extends State<DetailScreen> {
               context.read<ReviewProvider>().addReply(
                 reviewId,
                 controller.text.trim(),
-              );
-              Navigator.pop(ctx);
-            },
-            child: const Text('ส่ง'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAddCommentDialog(
-    BuildContext context,
-    String userName, {
-    String? parentId,
-  }) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(parentId != null ? 'ตอบกลับ' : 'แสดงความคิดเห็น'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppTextField(
-              controller: controller,
-              maxLines: 3,
-              hint: 'พิมพ์ความคิดเห็น... ใช้ @ชื่อ เพื่อ mention',
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: [
-                IconButton(
-                  tooltip: 'ใส่อีโมจิ 👍',
-                  icon: const Text('😊', style: TextStyle(fontSize: 20)),
-                  onPressed: () {
-                    controller.text += ' 👍';
-                  },
-                ),
-                const IconButton(
-                  tooltip: 'แนบรูป (ยังไม่รองรับ)',
-                  icon: Icon(Icons.image_outlined),
-                  onPressed: null,
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('ยกเลิก'),
-          ),
-          TextButton(
-            onPressed: () {
-              final text = controller.text.trim();
-              final mentions = RegExp(
-                r'@(\S+)',
-              ).allMatches(text).map((m) => m.group(1)!).toList();
-              context.read<CommentProvider>().addComment(
-                recipeId: recipe.id,
-                content: text,
-                parentId: parentId,
-                mentions: mentions,
               );
               Navigator.pop(ctx);
             },
@@ -796,33 +657,40 @@ class _ImageGallery extends StatelessWidget {
   }
 }
 
-class _VideoPlaceholder extends StatelessWidget {
-  const _VideoPlaceholder();
+class _RecipeVideo extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _RecipeVideo({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 180,
-      decoration: BoxDecoration(
-        color: AppTheme.primLight(context),
+    return Material(
+      color: AppTheme.primLight(context),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppTheme.div(context)),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.play_circle_outline_rounded,
-              size: 48,
-              color: AppTheme.prim(context),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'วิดีโอการทำอาหาร (Placeholder)',
-              style: AppTypography.body(color: AppTheme.txtSecondary(context)),
-            ),
-          ],
+        child: Container(
+          height: 120,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppTheme.div(context)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.play_circle_outline_rounded,
+                size: 40,
+                color: AppTheme.prim(context),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Text(
+                'ดูวิดีโอวิธีทำ',
+                style: AppTypography.bodyStrong(color: AppTheme.prim(context)),
+              ),
+            ],
+          ),
         ),
       ),
     );

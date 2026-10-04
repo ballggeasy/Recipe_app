@@ -23,6 +23,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
   late TextEditingController _nameController;
   late TextEditingController _tipsController;
   late TextEditingController _cookTimeController;
+  late TextEditingController _videoController;
   XFile? _newImage;
   bool _isSaving = false;
 
@@ -34,6 +35,9 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
     _cookTimeController = TextEditingController(
       text: '${widget.recipe.cookTimeMinutes}',
     );
+    _videoController = TextEditingController(
+      text: widget.recipe.videoUrl ?? '',
+    );
   }
 
   @override
@@ -41,6 +45,7 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
     _nameController.dispose();
     _tipsController.dispose();
     _cookTimeController.dispose();
+    _videoController.dispose();
     super.dispose();
   }
 
@@ -94,6 +99,12 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
             controller: _tipsController,
             maxLines: 3,
           ),
+          const SizedBox(height: AppSpacing.md),
+          AppTextField(
+            label: 'ลิงก์วิดีโอ',
+            controller: _videoController,
+            hint: 'https://... เว้นว่างถ้าไม่มี',
+          ),
         ],
       ),
     );
@@ -104,12 +115,25 @@ class _EditRecipeScreenState extends State<EditRecipeScreen> {
     final provider = context.read<RecipeProvider>();
     final cookTime =
         int.tryParse(_cookTimeController.text) ?? widget.recipe.cookTimeMinutes;
+    final video = _videoController.text.trim();
+    if (video.isNotEmpty &&
+        !video.startsWith('https://') &&
+        !video.startsWith('http://')) {
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('ลิงก์วิดีโอต้องขึ้นต้นด้วย http:// หรือ https://'),
+        ),
+      );
+      return;
+    }
     final updated = widget.recipe.copyWith(
       name: _nameController.text.trim(),
       cookTimeMinutes: cookTime,
       tips: _tipsController.text.trim().isEmpty
           ? null
           : _tipsController.text.trim(),
+      videoUrl: video.isEmpty ? '' : video,
     );
 
     var error = await provider.updateRecipe(updated);

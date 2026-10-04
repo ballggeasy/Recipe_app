@@ -200,6 +200,51 @@ describe('Favorites, reviews, comments, meal plan and profile (e2e)', () => {
       expect(recipe.body.reviewCount).toBe(0);
       expect(recipe.body.rating).toBe(0);
     });
+
+    it('lets only the author attach a photo to a review or a comment', async () => {
+      const author = await registerUser('photo-author@example.com');
+      const other = await registerUser('photo-other@example.com');
+      const recipeId = await createRecipe(author.token);
+      const png = Buffer.from('fake-png-bytes');
+      const review = (
+        await http()
+          .post(`/recipes/${recipeId}/reviews`)
+          .set(bearer(author.token))
+          .send({ rating: 5, content: 'with photo' })
+          .expect(201)
+      ).body;
+      const comment = (
+        await http()
+          .post(`/recipes/${recipeId}/comments`)
+          .set(bearer(author.token))
+          .send({ content: 'with photo' })
+          .expect(201)
+      ).body;
+
+      await http()
+        .post(`/reviews/${review.id}/image`)
+        .set(bearer(other.token))
+        .attach('file', png, { filename: 'a.png', contentType: 'image/png' })
+        .expect(403);
+      const withPhoto = await http()
+        .post(`/reviews/${review.id}/image`)
+        .set(bearer(author.token))
+        .attach('file', png, { filename: 'a.png', contentType: 'image/png' })
+        .expect(201);
+      expect(withPhoto.body.imageUrls[0]).toMatch(/^\/uploads\/reviews\//);
+
+      await http()
+        .post(`/comments/${comment.id}/image`)
+        .set(bearer(other.token))
+        .attach('file', png, { filename: 'a.png', contentType: 'image/png' })
+        .expect(403);
+      const commentPhoto = await http()
+        .post(`/comments/${comment.id}/image`)
+        .set(bearer(author.token))
+        .attach('file', png, { filename: 'a.png', contentType: 'image/png' })
+        .expect(201);
+      expect(commentPhoto.body.imageUrl).toMatch(/^\/uploads\/comments\//);
+    });
   });
 
   describe('comments', () => {

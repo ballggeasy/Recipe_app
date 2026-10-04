@@ -4,6 +4,7 @@ import '../../theme/app_radius.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_typography.dart';
 import '../rating_display.dart';
+import '../uploaded_image.dart';
 
 class ReviewCard extends StatelessWidget {
   final Review review;
@@ -84,14 +85,12 @@ class ReviewCard extends StatelessWidget {
           ),
           if (review.imageUrls.isNotEmpty) ...[
             const SizedBox(height: 10),
-            Container(
-              height: 80,
-              width: 80,
-              decoration: BoxDecoration(
-                color: AppTheme.primLight(context),
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: Icon(Icons.image_outlined, color: AppTheme.prim(context)),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final url in review.imageUrls) UploadedImage(url: url),
+              ],
             ),
           ],
           const SizedBox(height: 10),

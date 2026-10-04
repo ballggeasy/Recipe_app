@@ -1,10 +1,23 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { CreateReplyDto } from './dto/create-reply.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { User } from '../users/user.entity';
+import { imageUploadOptions, uploadedFileUrl } from '../common/image-upload';
 
 @Controller('recipes/:recipeId/reviews')
 export class RecipeReviewsController {
@@ -30,6 +43,16 @@ export class ReviewsController {
   @Delete(':id')
   remove(@Param('id') id: string, @CurrentUser() user: User) {
     return this.reviewsService.remove(id, user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/image')
+  @UseInterceptors(FileInterceptor('file', imageUploadOptions('reviews', (req) => req.params.id)))
+  addImage(@Param('id') id: string, @UploadedFile() file: Express.Multer.File, @CurrentUser() user: User) {
+    if (!file) {
+      throw new BadRequestException('ไม่พบไฟล์รูปภาพ');
+    }
+    return this.reviewsService.addImage(id, uploadedFileUrl('reviews', file.filename), user);
   }
 
   @UseGuards(JwtAuthGuard)

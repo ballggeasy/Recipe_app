@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/comment.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_typography.dart';
+import '../uploaded_image.dart';
 
 class CommentTile extends StatelessWidget {
   final Comment comment;
@@ -68,20 +69,10 @@ class CommentTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     _buildContent(context),
-                    if (comment.imageUrl != null) ...[
+                    if (comment.imageUrl != null &&
+                        comment.imageUrl!.isNotEmpty) ...[
                       const SizedBox(height: 8),
-                      Container(
-                        height: 60,
-                        width: 60,
-                        decoration: BoxDecoration(
-                          color: AppTheme.primLight(context),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.image_rounded,
-                          color: AppTheme.prim(context),
-                        ),
-                      ),
+                      UploadedImage(url: comment.imageUrl!, size: 120),
                     ],
                     const SizedBox(height: 6),
                     Row(

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../models/review.dart';
 import '../services/api_client.dart';
@@ -51,26 +52,37 @@ class ReviewProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addReview({
+  /// `error` = ส่งรีวิวไม่สำเร็จ, `imageError` = รีวิวถูกบันทึกแล้วแต่รูปไม่ขึ้น
+  Future<({String? error, String? imageError})> addReview({
     required String recipeId,
     required double rating,
     required String content,
     List<String> imageUrls = const [],
+    XFile? image,
   }) async {
     final epoch = _authEpoch;
     try {
-      final review = await _reviewService.create(
+      var review = await _reviewService.create(
         recipeId,
         rating: rating,
         content: content,
         imageUrls: imageUrls,
       );
-      if (epoch != _authEpoch) return;
+      String? imageError;
+      if (image != null && epoch == _authEpoch) {
+        try {
+          review = await _reviewService.uploadImage(review.id, image);
+        } on ApiException catch (e) {
+          imageError = e.message;
+        }
+      }
+      if (epoch != _authEpoch) return (error: null, imageError: imageError);
       final list = _reviewsByRecipe.putIfAbsent(recipeId, () => []);
       list.insert(0, review);
       notifyListeners();
-    } on ApiException {
-      // ส่งรีวิวไม่สำเร็จ
+      return (error: null, imageError: imageError);
+    } on ApiException catch (e) {
+      return (error: e.message, imageError: null);
     }
   }
 

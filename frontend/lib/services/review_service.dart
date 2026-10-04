@@ -1,3 +1,5 @@
+import 'package:image_picker/image_picker.dart';
+
 import '../models/review.dart';
 import 'api_client.dart';
 
@@ -33,6 +35,19 @@ class ReviewService {
   }
 
   Future<void> delete(String reviewId) => _api.delete('/reviews/$reviewId');
+
+  Future<Review> uploadImage(String reviewId, XFile file) async {
+    final data =
+        await _api.uploadFile(
+              '/reviews/$reviewId/image',
+              fieldName: 'file',
+              bytes: await file.readAsBytes(),
+              filename: file.name,
+              contentType: file.mimeType,
+            )
+            as Map<String, dynamic>;
+    return Review.fromApi(data);
+  }
 
   Future<Review> toggleLike(String reviewId) async {
     final data =

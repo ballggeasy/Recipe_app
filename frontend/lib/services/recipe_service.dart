@@ -32,6 +32,7 @@ class RecipeService {
     String? platingTips,
     List<String> dietTags = const [],
     NutritionInfo? nutrition,
+    String? videoUrl,
   }) async {
     final data =
         await _api.post(
@@ -54,6 +55,7 @@ class RecipeService {
                 'platingTips': ?platingTips,
                 'dietTags': dietTags,
                 'nutrition': ?nutrition?.toJson(),
+                'videoUrl': ?videoUrl,
               },
             )
             as Map<String, dynamic>;

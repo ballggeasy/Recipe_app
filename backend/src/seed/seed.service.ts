@@ -18,6 +18,16 @@ export class SeedService implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
+    await this.recipesRepository
+      .createQueryBuilder()
+      .update(Recipe)
+      .set({
+        videoUrl:
+          'https://www.youtube.com/results?search_query=%E0%B8%9C%E0%B8%B1%E0%B8%94%E0%B8%81%E0%B8%B0%E0%B9%80%E0%B8%9E%E0%B8%A3%E0%B8%B2%E0%B8%AB%E0%B8%A1%E0%B8%B9%E0%B8%AA%E0%B8%B1%E0%B8%9A',
+      })
+      .where('videoUrl LIKE :prefix', { prefix: 'placeholder:%' })
+      .execute();
+
     const existingCount = await this.recipesRepository.count();
     if (existingCount > 0) {
       return;

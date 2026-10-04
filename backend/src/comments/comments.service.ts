@@ -5,6 +5,7 @@ import { Comment } from './comment.entity';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { User } from '../users/user.entity';
 import { RecipesService } from '../recipes/recipes.service';
+import { removeUploadedFile } from '../common/image-upload';
 
 export interface CommentNode extends Comment {
   replies: CommentNode[];
@@ -58,6 +59,23 @@ export class CommentsService {
         imageUrl: dto.imageUrl ?? null,
       }),
     );
+  }
+
+  async setImage(id: string, imageUrl: string, user: User): Promise<Comment> {
+    const comment = await this.commentsRepository.findOne({ where: { id } });
+    if (!comment) {
+      await removeUploadedFile(imageUrl);
+      throw new NotFoundException('ไม่พบคอมเมนต์นี้');
+    }
+    if (comment.userId !== user.id) {
+      await removeUploadedFile(imageUrl);
+      throw new ForbiddenException('แนบรูปได้เฉพาะคอมเมนต์ของคุณเอง');
+    }
+    if (comment.imageUrl) {
+      await removeUploadedFile(comment.imageUrl);
+    }
+    comment.imageUrl = imageUrl;
+    return this.commentsRepository.save(comment);
   }
 
   async remove(id: string, user: User): Promise<void> {

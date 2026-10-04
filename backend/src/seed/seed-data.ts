@@ -79,7 +79,7 @@ export const recipeSeeds: RecipeSeed[] = [
     season: 'ตลอดปี',
     viewCount: 1250,
     isRecommended: true,
-    videoUrl: 'placeholder://video/pad-krapao',
+    videoUrl: 'https://www.youtube.com/results?search_query=%E0%B8%9C%E0%B8%B1%E0%B8%94%E0%B8%81%E0%B8%B0%E0%B9%80%E0%B8%9E%E0%B8%A3%E0%B8%B2%E0%B8%AB%E0%B8%A1%E0%B8%B9%E0%B8%AA%E0%B8%B1%E0%B8%9A',
     createdAt: new Date('2025-07-20'),
   },
   {

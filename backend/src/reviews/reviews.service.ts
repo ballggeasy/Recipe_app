@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Review, ReviewReply } from './review.entity';
@@ -7,6 +7,8 @@ import { CreateReplyDto } from './dto/create-reply.dto';
 import { User } from '../users/user.entity';
 import { Recipe } from '../recipes/recipe.entity';
 import { RecipesService } from '../recipes/recipes.service';
+import { LIMITS } from '../common/limits';
+import { removeUploadedFile } from '../common/image-upload';
 
 @Injectable()
 export class ReviewsService {
@@ -100,6 +102,21 @@ export class ReviewsService {
         { rating: Number(aggregate?.average ?? 0), reviewCount: Number(aggregate?.count ?? 0) },
       );
     });
+  }
+
+  async addImage(id: string, imageUrl: string, user: User): Promise<Review> {
+    const review = await this.findOne(id);
+    if (review.userId !== user.id) {
+      await removeUploadedFile(imageUrl);
+      throw new ForbiddenException('แนบรูปได้เฉพาะรีวิวของคุณเอง');
+    }
+    const urls = review.imageUrls ?? [];
+    if (urls.length >= LIMITS.imageUrls) {
+      await removeUploadedFile(imageUrl);
+      throw new BadRequestException('แนบรูปได้ไม่เกิน 10 รูป');
+    }
+    review.imageUrls = [...urls, imageUrl];
+    return this.reviewsRepository.save(review);
   }
 
   async report(id: string): Promise<Review> {

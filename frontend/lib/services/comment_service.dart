@@ -1,3 +1,5 @@
+import 'package:image_picker/image_picker.dart';
+
 import '../models/comment.dart';
 import 'api_client.dart';
 
@@ -35,4 +37,17 @@ class CommentService {
   }
 
   Future<void> delete(String id) => _api.delete('/comments/$id');
+
+  Future<Comment> uploadImage(String commentId, XFile file) async {
+    final data =
+        await _api.uploadFile(
+              '/comments/$commentId/image',
+              fieldName: 'file',
+              bytes: await file.readAsBytes(),
+              filename: file.name,
+              contentType: file.mimeType,
+            )
+            as Map<String, dynamic>;
+    return Comment.fromApi(data);
+  }
 }

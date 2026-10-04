@@ -27,6 +27,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   final _tipsController = TextEditingController();
   final _platingController = TextEditingController();
   final _stepsController = TextEditingController();
+  final _videoController = TextEditingController();
 
   String _category = 'อาหารจานเดียว';
   String _country = 'ไทย';
@@ -49,6 +50,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     _tipsController.dispose();
     _platingController.dispose();
     _stepsController.dispose();
+    _videoController.dispose();
     for (final c in _ingredientControllers) {
       c.dispose();
     }
@@ -246,6 +248,12 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
                   label: 'วิธีจัดจาน',
                   hint: 'ไม่บังคับ',
                 ),
+                const SizedBox(height: AppSpacing.md),
+                AppTextField(
+                  controller: _videoController,
+                  label: 'ลิงก์วิดีโอ',
+                  hint: 'https://... ไม่บังคับ',
+                ),
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -263,6 +271,17 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    final video = _videoController.text.trim();
+    if (video.isNotEmpty &&
+        !video.startsWith('https://') &&
+        !video.startsWith('http://')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('ลิงก์วิดีโอต้องขึ้นต้นด้วย http:// หรือ https://'),
+        ),
+      );
+      return;
+    }
 
     setState(() => _isSaving = true);
     final provider = context.read<RecipeProvider>();
@@ -295,6 +314,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
           ? null
           : _platingController.text.trim(),
       dietTags: _selectedDietTags,
+      videoUrl: video.isEmpty ? null : video,
       image: _image,
     );
 

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../models/comment.dart';
 import '../services/api_client.dart';
@@ -45,26 +46,37 @@ class CommentProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addComment({
+  /// `error` = ส่งคอมเมนต์ไม่สำเร็จ, `imageError` = คอมเมนต์ถูกบันทึกแล้วแต่รูปไม่ขึ้น
+  Future<({String? error, String? imageError})> addComment({
     required String recipeId,
     required String content,
     String? parentId,
     List<String> mentions = const [],
     String? imageUrl,
+    XFile? image,
   }) async {
     final epoch = _authEpoch;
     try {
-      await _commentService.create(
+      final comment = await _commentService.create(
         recipeId,
         content: content,
         parentId: parentId,
         mentions: mentions,
         imageUrl: imageUrl,
       );
-      if (epoch != _authEpoch) return;
+      String? imageError;
+      if (image != null && epoch == _authEpoch) {
+        try {
+          await _commentService.uploadImage(comment.id, image);
+        } on ApiException catch (e) {
+          imageError = e.message;
+        }
+      }
+      if (epoch != _authEpoch) return (error: null, imageError: imageError);
       await loadForRecipe(recipeId);
-    } on ApiException {
-      // ส่งคอมเมนต์ไม่สำเร็จ
+      return (error: null, imageError: imageError);
+    } on ApiException catch (e) {
+      return (error: e.message, imageError: null);
     }
   }
 
