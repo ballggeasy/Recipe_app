@@ -1,9 +1,31 @@
 services:
+  # Brings the database up to date and seeds it, once, before any replica starts. Several replicas
+  # starting together would otherwise race on the same pending migrations and on the first-time seed.
+  migrate:
+    image: ${BACKEND_IMAGE:-recipe-backend:latest}
+    build: .
+    restart: "no"
+    command: ["node", "dist/migrate.js"]
+    env_file:
+      - ${BACKEND_ENV_FILE:-.env}
+    environment:
+      DB_PATH: /app/data/app.sqlite
+    volumes:
+      - data:/app/data
+
   backend:
     build: .
     # The VM sets BACKEND_IMAGE to the GHCR image published by CI; locally it builds.
     image: ${BACKEND_IMAGE:-recipe-backend:latest}
     restart: unless-stopped
+    # Several identical replicas behind nginx. They share one SQLite file (WAL mode, see
+    # database.config.ts) and the uploads volume, so they must run on the same host.
+    # BACKEND_REPLICAS=1 runs a single one.
+    deploy:
+      replicas: ${BACKEND_REPLICAS:-2}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     # Secrets (JWT_SECRET, ...) live only on the host. Deploy sets BACKEND_ENV_FILE
     # to a path outside the checkout; locally it falls back to ./.env.
     env_file:
@@ -11,12 +33,28 @@ services:
     environment:
       PORT: 3000
       DB_PATH: /app/data/app.sqlite
-    ports:
-      # BACKEND_BIND=127.0.0.1 (set by Ansible when HTTPS is on) keeps the API reachable only through the proxy.
-      - "${BACKEND_BIND:-0.0.0.0}:${HOST_PORT:-3000}:3000"
+    # No published port: replicas cannot share one, and clients go through nginx.
     volumes:
       - data:/app/data
       - uploads:/app/uploads
+
+  # Load balancer: the only way in. Caddy (HTTPS) on the VM, or a browser/app locally, talks to this.
+  nginx:
+    image: nginx:1.28-alpine
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      # BACKEND_BIND=127.0.0.1 (set by Ansible when HTTPS is on) keeps the API reachable only through the proxy.
+      - "${BACKEND_BIND:-0.0.0.0}:${HOST_PORT:-3000}:80"
+    volumes:
+      # Mount the directory, not the file, so config edits from a new checkout are picked up.
+      - ./nginx:/etc/nginx/conf.d:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/nginx-health"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
 
   prometheus:
     image: prom/prometheus:v3.5.0

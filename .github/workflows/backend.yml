@@ -79,6 +79,8 @@ jobs:
           cache-from: type=gha
       - name: Smoke test image
         run: bash .github/scripts/smoke-image.sh recipe-backend:ci "$GITHUB_SHA"
+      - name: Smoke test the load-balanced stack (nginx + replicas)
+        run: bash .github/scripts/smoke-lb.sh recipe-backend:ci
 
   publish:
     name: Publish image to GHCR
