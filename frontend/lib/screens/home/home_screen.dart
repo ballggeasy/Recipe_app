@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -26,15 +29,18 @@ import '../recipe/add_recipe_screen.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  Recipe? _featuredRecipe(RecipeProvider provider) {
-    if (provider.allRecipes.isEmpty) return null;
+  /// เมนูแนะนำสำหรับ carousel: เมนูแนะนำที่คะแนนสูงสุดก่อน (ถ้าไม่มีเมนูแนะนำเลยใช้ทุกเมนู)
+  List<Recipe> _featuredRecipes(RecipeProvider provider) {
+    if (provider.allRecipes.isEmpty) return const [];
     final recommended = provider.allRecipes
         .where((r) => r.isRecommended)
         .toList();
     final pool = recommended.isNotEmpty ? recommended : provider.allRecipes;
     final sorted = [...pool]..sort((a, b) => b.rating.compareTo(a.rating));
-    return sorted.first;
+    return sorted.take(_maxFeatured).toList();
   }
+
+  static const _maxFeatured = 8;
 
   String _greeting() {
     final hour = DateTime.now().hour;
@@ -49,8 +55,8 @@ class HomeScreen extends StatelessWidget {
     final auth = context.watch<AuthProvider>();
     final recipes = provider.filteredRecipes;
     final featured = provider.searchQuery.isEmpty
-        ? _featuredRecipe(provider)
-        : null;
+        ? _featuredRecipes(provider)
+        : const <Recipe>[];
     final resultsTitle =
         provider.searchQuery.isNotEmpty ||
             provider.selectedCategory != 'ทั้งหมด'
@@ -189,24 +195,11 @@ class HomeScreen extends StatelessWidget {
                 child: _QuickPicksRow(provider: provider),
               ),
             ),
-            if (featured != null)
+            if (featured.isNotEmpty)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    AppSpacing.xl,
-                    AppSpacing.lg,
-                    0,
-                  ),
-                  child: _FeaturedRecipeCard(
-                    recipe: featured,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => DetailScreen(recipe: featured),
-                      ),
-                    ),
-                  ),
+                  padding: const EdgeInsets.only(top: AppSpacing.xl),
+                  child: _FeaturedCarousel(recipes: featured),
                 ),
               ),
             SliverToBoxAdapter(
@@ -377,6 +370,140 @@ class _QuickPicksRow extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// การ์ดเมนูแนะนำที่ปัดต่อไปเรื่อย ๆ ได้ (วนกลับไปเมนูแรกเมื่อสุดท้าย) พร้อมจุดบอกตำแหน่ง
+/// ลากด้วยเมาส์ได้ด้วย เพราะบนเว็บ PageView ปัดได้เฉพาะ touch เป็นค่าเริ่มต้น
+/// เลื่อนไปเมนูถัดไปเองทุก 5 วินาที หยุดระหว่างที่ผู้ใช้แตะ/ลากอยู่ (นับเวลาใหม่หลังปล่อยนิ้ว)
+/// และไม่เลื่อนเองเมื่อผู้ใช้ปิดแอนิเมชันในระบบ หรือเมื่อหน้านี้ถูกหน้าอื่นทับอยู่
+class _FeaturedCarousel extends StatefulWidget {
+  final List<Recipe> recipes;
+  const _FeaturedCarousel({required this.recipes});
+
+  static const autoPlayInterval = Duration(seconds: 5);
+
+  @override
+  State<_FeaturedCarousel> createState() => _FeaturedCarouselState();
+}
+
+class _FeaturedCarouselState extends State<_FeaturedCarousel> {
+  // เริ่มกลาง ๆ ของช่วงที่ใหญ่มาก เพื่อให้ปัดย้อนกลับจากเมนูแรกได้เหมือนปัดไปข้างหน้า
+  static const _loopSpan = 10000;
+
+  late final PageController _controller = PageController(
+    viewportFraction: 0.92,
+    initialPage: _initialPage,
+  );
+  late int _page = _initialPage;
+  Timer? _autoPlay;
+
+  int get _initialPage => widget.recipes.length > 1
+      ? (_loopSpan ~/ 2) - ((_loopSpan ~/ 2) % widget.recipes.length)
+      : 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _startAutoPlay();
+  }
+
+  @override
+  void dispose() {
+    _autoPlay?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _startAutoPlay() {
+    _autoPlay?.cancel();
+    if (widget.recipes.length < 2) return;
+    _autoPlay = Timer.periodic(_FeaturedCarousel.autoPlayInterval, (_) {
+      if (!mounted || !_controller.hasClients) return;
+      // หน้านี้ถูกหน้าอื่นทับอยู่ (TickerMode ปิด) หรือผู้ใช้ปิดแอนิเมชัน -> ไม่เลื่อนเอง
+      if (!TickerMode.valuesOf(context).enabled ||
+          MediaQuery.disableAnimationsOf(context)) {
+        return;
+      }
+      _controller.nextPage(
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  void _open(Recipe recipe) => Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => DetailScreen(recipe: recipe)),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final recipes = widget.recipes;
+    final count = recipes.length;
+    final loops = count > 1;
+    final current = _page % count;
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 220,
+          child: ScrollConfiguration(
+            behavior: ScrollConfiguration.of(context).copyWith(
+              dragDevices: {
+                PointerDeviceKind.touch,
+                PointerDeviceKind.mouse,
+                PointerDeviceKind.stylus,
+                PointerDeviceKind.trackpad,
+              },
+            ),
+            child: Listener(
+              // แตะ/ลากอยู่ = หยุดเลื่อนเอง ปล่อยแล้วนับ 5 วินาทีใหม่
+              onPointerDown: (_) => _autoPlay?.cancel(),
+              onPointerUp: (_) => _startAutoPlay(),
+              onPointerCancel: (_) => _startAutoPlay(),
+              child: PageView.builder(
+                key: const Key('featured-carousel'),
+                controller: _controller,
+                itemCount: loops ? _loopSpan : 1,
+                onPageChanged: (page) => setState(() => _page = page),
+                itemBuilder: (context, index) {
+                  final recipe = recipes[index % count];
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: _FeaturedRecipeCard(
+                      recipe: recipe,
+                      onTap: () => _open(recipe),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+        if (loops) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (var i = 0; i < count; i++)
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: i == current ? 18 : 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: i == current
+                        ? AppTheme.prim(context)
+                        : AppTheme.prim(context).withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 }
