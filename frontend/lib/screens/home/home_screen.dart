@@ -27,6 +27,9 @@ import '../profile/profile_screen.dart';
 import '../recipe/detail_screen.dart';
 import '../recipe/add_recipe_screen.dart';
 
+/// แสดงเมื่อผู้ที่ยังไม่ล็อกอินกดเพิ่มสูตร แล้วถูกพาไปหน้าล็อกอิน
+const addRecipeLoginMessage = 'กรุณา Log in เพื่อแชร์ความอร่อย';
+
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -67,10 +70,24 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'home_add_recipe_fab',
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const AddRecipeScreen()),
-        ),
+        // เพิ่มสูตรได้เฉพาะคนที่ล็อกอิน (backend ปฏิเสธด้วย 401 อยู่แล้ว) ผู้เยี่ยมชมจึงถูกพาไปหน้าล็อกอิน
+        // แทนที่จะกรอกฟอร์มยาวแล้วเพิ่งรู้ตอนกดบันทึก
+        onPressed: () {
+          if (!auth.isLoggedIn) {
+            // ScaffoldMessenger อยู่ที่ระดับแอป: SnackBar ที่แสดงตรงนี้ยังค้างอยู่เมื่อสลับไปหน้าล็อกอิน
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                const SnackBar(content: Text(addRecipeLoginMessage)),
+              );
+            context.read<AuthProvider>().goToLogin();
+            return;
+          }
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AddRecipeScreen()),
+          );
+        },
         backgroundColor: AppTheme.prim(context),
         icon: Icon(Icons.add_rounded, color: AppTheme.onAccent(context)),
         label: Text(

@@ -40,4 +40,28 @@ void main() {
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.textContaining('กินอะไรดี'), findsOneWidget);
   });
+
+  testWidgets(
+    'Guest tapping "เพิ่มสูตร" lands on the login screen with a message',
+    (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({});
+
+      await tester.pumpWidget(const RecipeApp());
+      await tester.pumpAndSettle();
+      final guestButton = find.text('ดูสูตรอาหารโดยไม่เข้าสู่ระบบ');
+      await tester.ensureVisible(guestButton);
+      await tester.pumpAndSettle();
+      await tester.tap(guestButton);
+      await tester.pumpAndSettle();
+      expect(find.byType(NavigationBar), findsOneWidget);
+
+      await tester.tap(find.text('เพิ่มสูตร'));
+      await tester.pumpAndSettle();
+
+      // The whole home screen is gone, and the message survived the switch to the login screen.
+      expect(find.byType(NavigationBar), findsNothing);
+      expect(find.text('ดูสูตรอาหารโดยไม่เข้าสู่ระบบ'), findsOneWidget);
+      expect(find.text('กรุณา Log in เพื่อแชร์ความอร่อย'), findsOneWidget);
+    },
+  );
 }
