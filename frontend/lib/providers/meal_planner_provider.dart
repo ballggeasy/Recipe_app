@@ -15,6 +15,7 @@ class MealPlannerProvider extends ChangeNotifier {
 
   List<MealPlanEntry> _entries = [];
   bool _isLoading = false;
+  int _authEpoch = 0;
 
   List<MealPlanEntry> get entries => List.unmodifiable(_entries);
   bool get isLoading => _isLoading;
@@ -47,10 +48,13 @@ class MealPlannerProvider extends ChangeNotifier {
         .toList();
   }
 
-  /// เรียกทุกครั้งที่สถานะล็อกอินเปลี่ยน
+  /// เรียกทุกครั้งที่สถานะล็อกอินเปลี่ยน — ล้างแผนของบัญชีก่อนทันที
+  /// คำตอบที่กลับมาช้าจากบัญชีก่อนหน้าจะถูกทิ้ง
   Future<void> onAuthChanged(bool isLoggedIn) async {
+    final epoch = ++_authEpoch;
+    _entries = [];
     if (!isLoggedIn) {
-      _entries = [];
+      _isLoading = false;
       notifyListeners();
       return;
     }
@@ -58,10 +62,14 @@ class MealPlannerProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      _entries = await _mealPlanService.fetchAll();
+      final entries = await _mealPlanService.fetchAll();
+      if (epoch != _authEpoch) return;
+      _entries = entries;
     } on ApiException {
+      if (epoch != _authEpoch) return;
       _entries = [];
     }
+    if (epoch != _authEpoch) return;
     _isLoading = false;
     notifyListeners();
   }
@@ -72,6 +80,7 @@ class MealPlannerProvider extends ChangeNotifier {
     required MealType mealType,
     int servings = 1,
   }) async {
+    final epoch = _authEpoch;
     try {
       final entry = await _mealPlanService.create(
         recipeId: recipeId,
@@ -79,6 +88,7 @@ class MealPlannerProvider extends ChangeNotifier {
         mealType: mealType,
         servings: servings,
       );
+      if (epoch != _authEpoch) return;
       _entries.add(entry);
       notifyListeners();
     } on ApiException {
@@ -87,8 +97,10 @@ class MealPlannerProvider extends ChangeNotifier {
   }
 
   Future<void> removeEntry(String id) async {
+    final epoch = _authEpoch;
     try {
       await _mealPlanService.delete(id);
+      if (epoch != _authEpoch) return;
       _entries.removeWhere((e) => e.id == id);
       notifyListeners();
     } on ApiException {

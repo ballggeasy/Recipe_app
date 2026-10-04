@@ -187,6 +187,17 @@ void main() {
     expect(auth.currentUser, isNull);
   });
 
+  test('goToLogin takes a guest back to the login screen state', () {
+    final auth = buildProvider({});
+    auth.continueAsGuest();
+
+    auth.goToLogin();
+
+    expect(auth.status, AuthStatus.loggedOut);
+    expect(auth.isGuest, isFalse);
+    expect(auth.currentUser, isNull);
+  });
+
   test('logout clears the user and the stored token', () async {
     final auth = buildProvider({
       'POST /auth/login': (_) =>

@@ -14,6 +14,7 @@ import '../../providers/recipe_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/constants.dart';
 import '../../widgets/recipe_card.dart';
+import '../../widgets/add_to_folder_sheet.dart';
 import '../../widgets/recipe_image.dart';
 import '../../widgets/rating_display.dart';
 import '../../widgets/common/filter_chip_widget.dart';
@@ -268,6 +269,8 @@ class HomeScreen extends StatelessWidget {
                     final recipe = recipes[index];
                     return RecipeCard(
                       recipe: recipe,
+                      onAddToFolder: () =>
+                          showAddToFolderSheet(context, recipe: recipe),
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -566,24 +569,44 @@ class _FeaturedRecipeCard extends StatelessWidget {
             Positioned(
               top: 4,
               right: 4,
-              child: TapTarget(
-                onTap: () => provider.toggleFavorite(recipe.id),
-                label: isFav ? 'เอาออกจากสูตรโปรด' : 'บันทึกเป็นสูตรโปรด',
-                selected: isFav,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.22),
-                    shape: BoxShape.circle,
+              child: Column(
+                children: [
+                  TapTarget(
+                    onTap: () => provider.toggleFavorite(recipe.id),
+                    label: isFav ? 'เอาออกจากสูตรโปรด' : 'บันทึกเป็นสูตรโปรด',
+                    selected: isFav,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.22),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isFav
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
                   ),
-                  child: Icon(
-                    isFav
-                        ? Icons.favorite_rounded
-                        : Icons.favorite_border_rounded,
-                    color: Colors.white,
-                    size: 20,
+                  TapTarget(
+                    onTap: () => showAddToFolderSheet(context, recipe: recipe),
+                    label: 'เพิ่มเข้าโฟลเดอร์',
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.22),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.create_new_folder_outlined,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
             Positioned(

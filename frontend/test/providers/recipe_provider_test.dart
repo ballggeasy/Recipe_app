@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:recipe_app/models/ingredient.dart';
 import 'package:recipe_app/providers/recipe_provider.dart';
@@ -270,6 +272,93 @@ void main() {
       },
     );
 
+    test(
+      'switching accounts replaces favorites instead of keeping the old list',
+      () async {
+        var owner = 'a';
+        final provider = buildProvider(
+          extra: {
+            'GET /favorites': (_) =>
+                jsonResponse(owner == 'a' ? ['krapao'] : ['tomyum']),
+          },
+        );
+        await provider.init();
+        await provider.onAuthChanged(true);
+        expect(provider.isFavorite('krapao'), isTrue);
+        expect(provider.isFavorite('tomyum'), isFalse);
+
+        owner = 'b';
+        await provider.onAuthChanged(true);
+
+        expect(provider.isFavorite('krapao'), isFalse);
+        expect(provider.isFavorite('tomyum'), isTrue);
+      },
+    );
+
+    test(
+      'a failed reload after switch does not keep the previous favorites',
+      () async {
+        var fail = false;
+        final provider = buildProvider(
+          extra: {
+            'GET /favorites': (_) => fail
+                ? jsonResponse({'message': 'down'}, 503)
+                : jsonResponse(['krapao']),
+          },
+        );
+        await provider.init();
+        await provider.onAuthChanged(true);
+        expect(provider.isFavorite('krapao'), isTrue);
+
+        fail = true;
+        await provider.onAuthChanged(true);
+
+        expect(provider.isFavorite('krapao'), isFalse);
+      },
+    );
+
+    test(
+      'a slower response from the previous account does not overwrite the new one',
+      () async {
+        final gate = Completer<void>();
+        var firstFavoriteRequest = true;
+        final api = ApiClient.forTesting(
+          MockClient((request) async {
+            if (request.url.path == '/recipes') {
+              return jsonResponse(_catalog);
+            }
+            if (request.method == 'GET' && request.url.path == '/favorites') {
+              if (firstFavoriteRequest) {
+                firstFavoriteRequest = false;
+                await gate.future;
+                return jsonResponse(['krapao']);
+              }
+              return jsonResponse(['tomyum']);
+            }
+            return jsonResponse({'message': 'no route'}, 404);
+          }),
+        );
+        final provider = RecipeProvider(
+          recipeService: RecipeService(api: api),
+          favoriteService: FavoriteService(api: api),
+        );
+        await provider.init();
+
+        final first = provider.onAuthChanged(true);
+        final second = provider.onAuthChanged(true);
+        await second;
+
+        expect(provider.isFavorite('tomyum'), isTrue);
+        expect(provider.isFavorite('krapao'), isFalse);
+
+        gate.complete();
+        await first;
+
+        expect(provider.isFavorite('tomyum'), isTrue);
+        expect(provider.isFavorite('krapao'), isFalse);
+      },
+    );
+
     test('rolls the toggle back when the backend rejects it', () async {
       final provider = buildProvider(
         extra: {
@@ -318,6 +407,27 @@ void main() {
         expect(prefs.getStringList('search_history')!.first, 'q5');
       },
     );
+
+    test('keeps a separate search history for each account', () async {
+      final provider = buildProvider();
+      await provider.init();
+
+      await provider.onAuthChanged(true, userId: 'user-a');
+      provider.addToSearchHistory('กะเพรา');
+      await pumpEventQueue();
+
+      await provider.onAuthChanged(true, userId: 'user-b');
+      expect(provider.searchHistory, isEmpty);
+
+      provider.addToSearchHistory('ต้มยำ');
+      await pumpEventQueue();
+
+      await provider.onAuthChanged(true, userId: 'user-a');
+      expect(provider.searchHistory, ['กะเพรา']);
+
+      await provider.onAuthChanged(false);
+      expect(provider.searchHistory, isEmpty);
+    });
   });
 
   group('recipe CRUD', () {

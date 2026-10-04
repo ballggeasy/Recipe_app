@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../theme/app_radius.dart';
@@ -14,6 +13,7 @@ import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
 import '../../widgets/recipe_card.dart';
 import '../../widgets/common/empty_state.dart';
+import '../../widgets/add_to_folder_sheet.dart';
 import '../recipe/detail_screen.dart';
 
 /// ระบบ Favorite — บันทึกสูตรโปรด, โฟลเดอร์, แชร์, ดาวน์โหลด
@@ -80,6 +80,7 @@ class _AllFavoritesTab extends StatelessWidget {
         final recipe = favorites[index];
         return RecipeCard(
           recipe: recipe,
+          onAddToFolder: () => showAddToFolderSheet(context, recipe: recipe),
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => DetailScreen(recipe: recipe)),
@@ -125,131 +126,164 @@ class _FoldersTab extends StatelessWidget {
                 boxShadow: AppShadows.softFor(context),
               ),
               clipBehavior: Clip.antiAlias,
-              child: Material(
-                type: MaterialType.transparency,
-                child: Theme(
-                  data: Theme.of(
-                    context,
-                  ).copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    leading: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primLight(context),
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                      child: Center(
-                        child: Text(
-                          folder.emoji,
-                          style: const TextStyle(fontSize: 20),
-                        ),
-                      ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.base,
+                      AppSpacing.md,
+                      AppSpacing.sm,
+                      AppSpacing.sm,
                     ),
-                    title: Text(
-                      folder.name,
-                      style: AppTypography.bodyStrong(
-                        color: AppTheme.txtPrimary(context),
-                      ),
-                    ),
-                    subtitle: Text(
-                      '${recipes.length} เมนู',
-                      style: AppTypography.caption(
-                        color: AppTheme.txtSecondary(context),
-                      ),
-                    ),
-                    children: recipes.isEmpty
-                        ? [
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(
-                                AppSpacing.base,
-                                0,
-                                AppSpacing.base,
-                                AppSpacing.base,
-                              ),
-                              child: Text(
-                                'ยังไม่มีสูตรในโฟลเดอร์นี้',
-                                style: AppTypography.body(
-                                  color: AppTheme.txtSecondary(context),
-                                ),
-                              ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppTheme.primLight(context),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                          child: Center(
+                            child: Text(
+                              folder.emoji,
+                              style: const TextStyle(fontSize: 20),
                             ),
-                          ]
-                        : recipes.map((recipe) {
-                            return ListTile(
-                              title: Text(
-                                recipe.name,
-                                style: AppTypography.body(
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                folder.name,
+                                style: AppTypography.bodyStrong(
                                   color: AppTheme.txtPrimary(context),
                                 ),
                               ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    tooltip: 'คัดลอกลิงก์สูตร',
-                                    icon: Icon(
-                                      Icons.share_outlined,
-                                      size: 20,
-                                      color: AppTheme.txtSecondary(context),
-                                    ),
-                                    onPressed: () {
-                                      final link = favProvider.shareRecipe(
-                                        recipe,
-                                      );
-                                      Clipboard.setData(
-                                        ClipboardData(text: link),
-                                      );
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            'คัดลอกลิงก์แล้ว: $link',
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  IconButton(
-                                    tooltip: 'ดาวน์โหลดสูตร',
-                                    icon: Icon(
-                                      Icons.download_outlined,
-                                      size: 20,
-                                      color: AppTheme.txtSecondary(context),
-                                    ),
-                                    onPressed: () {
-                                      final file = favProvider.downloadRecipe(
-                                        recipe,
-                                      );
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            'ดาวน์โหลด (mock): $file',
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => DetailScreen(recipe: recipe),
+                              Text(
+                                '${recipes.length} เมนู',
+                                style: AppTypography.caption(
+                                  color: AppTheme.txtSecondary(context),
                                 ),
                               ),
-                            );
-                          }).toList(),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'ลบโฟลเดอร์',
+                          icon: Icon(
+                            Icons.delete_outline_rounded,
+                            color: AppTheme.error(context),
+                          ),
+                          onPressed: () => _confirmDeleteFolder(
+                            context,
+                            favProvider,
+                            folder.id,
+                            folder.name,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: () => showPickFavoriteForFolderSheet(
+                          context,
+                          folderId: folder.id,
+                        ),
+                        icon: const Icon(Icons.add_rounded),
+                        label: const Text('เพิ่มสูตรโปรด'),
+                      ),
+                    ),
+                  ),
+                  if (recipes.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.base,
+                        0,
+                        AppSpacing.base,
+                        AppSpacing.base,
+                      ),
+                      child: Text(
+                        'ยังไม่มีสูตรในโฟลเดอร์นี้ — กด "เพิ่มสูตรโปรด" แล้วเลือกจากหัวใจที่บันทึกไว้',
+                        style: AppTypography.body(
+                          color: AppTheme.txtSecondary(context),
+                        ),
+                      ),
+                    )
+                  else
+                    ...recipes.map((recipe) {
+                      return ListTile(
+                        title: Text(
+                          recipe.name,
+                          style: AppTypography.body(
+                            color: AppTheme.txtPrimary(context),
+                          ),
+                        ),
+                        trailing: IconButton(
+                          tooltip: 'เอาออกจากโฟลเดอร์',
+                          icon: Icon(
+                            Icons.remove_circle_outline_rounded,
+                            color: AppTheme.error(context),
+                          ),
+                          onPressed: () => favProvider.removeRecipeFromFolder(
+                            folder.id,
+                            recipe.id,
+                          ),
+                        ),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => DetailScreen(recipe: recipe),
+                          ),
+                        ),
+                      );
+                    }),
+                ],
               ),
             );
           }),
       ],
     );
+  }
+
+  Future<void> _confirmDeleteFolder(
+    BuildContext context,
+    FavoriteProvider favProvider,
+    String folderId,
+    String name,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('ลบโฟลเดอร์ $name?'),
+        content: const Text('สูตรในโฟลเดอร์จะไม่ถูกลบออกจากรายการโปรด'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('ยกเลิก'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(
+              'ลบ',
+              style: TextStyle(color: AppTheme.error(dialogContext)),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      await favProvider.deleteFolder(folderId);
+    }
   }
 
   void _createFolder(BuildContext context) {

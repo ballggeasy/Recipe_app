@@ -10,7 +10,6 @@ import '../widgets/common/app_button.dart';
 import '../widgets/common/app_text_field.dart';
 import '../widgets/common/tap_target.dart';
 import 'login_screen.dart';
-import 'main/main_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -84,11 +83,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _showMessage(error);
       return;
     }
-
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const MainScreen()),
-      (route) => false,
-    );
+    Navigator.of(context).pop();
   }
 
   void _comingSoon(String provider) {

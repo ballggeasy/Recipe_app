@@ -13,6 +13,15 @@ class ReviewProvider extends ChangeNotifier {
 
   final Map<String, List<Review>> _reviewsByRecipe = {};
   final Set<String> _loadingRecipeIds = {};
+  int _authEpoch = 0;
+
+  /// ล้างแคชตอนสลับบัญชี เพื่อไม่ให้สถานะถูกใจ/รีวิวของคนก่อนค้างบนหน้า
+  void onAuthChanged() {
+    _authEpoch++;
+    _reviewsByRecipe.clear();
+    _loadingRecipeIds.clear();
+    notifyListeners();
+  }
 
   List<Review> getReviewsForRecipe(String recipeId) =>
       _reviewsByRecipe[recipeId] ?? const [];
@@ -26,15 +35,18 @@ class ReviewProvider extends ChangeNotifier {
   }
 
   Future<void> loadForRecipe(String recipeId) async {
+    final epoch = _authEpoch;
     _loadingRecipeIds.add(recipeId);
     notifyListeners();
     try {
-      _reviewsByRecipe[recipeId] = await _reviewService.fetchForRecipe(
-        recipeId,
-      );
+      final reviews = await _reviewService.fetchForRecipe(recipeId);
+      if (epoch != _authEpoch) return;
+      _reviewsByRecipe[recipeId] = reviews;
     } on ApiException {
+      if (epoch != _authEpoch) return;
       _reviewsByRecipe[recipeId] = _reviewsByRecipe[recipeId] ?? [];
     }
+    if (epoch != _authEpoch) return;
     _loadingRecipeIds.remove(recipeId);
     notifyListeners();
   }
@@ -45,6 +57,7 @@ class ReviewProvider extends ChangeNotifier {
     required String content,
     List<String> imageUrls = const [],
   }) async {
+    final epoch = _authEpoch;
     try {
       final review = await _reviewService.create(
         recipeId,
@@ -52,6 +65,7 @@ class ReviewProvider extends ChangeNotifier {
         content: content,
         imageUrls: imageUrls,
       );
+      if (epoch != _authEpoch) return;
       final list = _reviewsByRecipe.putIfAbsent(recipeId, () => []);
       list.insert(0, review);
       notifyListeners();
@@ -61,8 +75,10 @@ class ReviewProvider extends ChangeNotifier {
   }
 
   Future<void> toggleLike(String reviewId) async {
+    final epoch = _authEpoch;
     try {
       final updated = await _reviewService.toggleLike(reviewId);
+      if (epoch != _authEpoch) return;
       _replaceReview(updated);
     } on ApiException {
       // ไม่สำเร็จ — คงเดิม
@@ -70,8 +86,10 @@ class ReviewProvider extends ChangeNotifier {
   }
 
   Future<void> reportReview(String reviewId) async {
+    final epoch = _authEpoch;
     try {
       final updated = await _reviewService.report(reviewId);
+      if (epoch != _authEpoch) return;
       _replaceReview(updated);
     } on ApiException {
       // ไม่สำเร็จ
@@ -79,8 +97,10 @@ class ReviewProvider extends ChangeNotifier {
   }
 
   Future<void> addReply(String reviewId, String content) async {
+    final epoch = _authEpoch;
     try {
       final updated = await _reviewService.addReply(reviewId, content);
+      if (epoch != _authEpoch) return;
       _replaceReview(updated);
     } on ApiException {
       // ไม่สำเร็จ

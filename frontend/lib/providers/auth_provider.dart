@@ -102,6 +102,13 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// ผู้เยี่ยมชมกดเข้าสู่ระบบ — กลับหน้าล็อกอินโดยไม่ต้องเรียก API
+  void goToLogin() {
+    _currentUser = null;
+    _status = AuthStatus.loggedOut;
+    notifyListeners();
+  }
+
   Future<String?> resetPassword({
     required String email,
     required String newPassword,

@@ -14,8 +14,6 @@ import '../utils/constants.dart';
 
 /// จัดการ state หลัก: รายการสูตร (จาก backend), ค้นหา, กรอง, เรียง, favorites
 class RecipeProvider extends ChangeNotifier {
-  static const _searchHistoryKey = 'search_history';
-
   final RecipeService _recipeService;
   final FavoriteService _favoriteService;
 
@@ -41,6 +39,8 @@ class RecipeProvider extends ChangeNotifier {
   int? _maxCookTime;
   String? _selectedDifficulty;
   List<String> _searchHistory = [];
+  String _historyScope = 'search_history';
+  int _authEpoch = 0;
 
   List<Recipe> get allRecipes => _allRecipes;
   bool get isLoading => _isLoading;
@@ -179,10 +179,9 @@ class RecipeProvider extends ChangeNotifier {
     return {...names, ...ingredients}.take(8).toList();
   }
 
-  /// เรียกตอนเปิดแอป — โหลดรายการสูตรจาก backend + ประวัติค้นหาจากเครื่อง
+  /// เรียกตอนเปิดแอป — โหลดรายการสูตรจาก backend
+  /// ประวัติค้นหาโหลดทีหลังใน [onAuthChanged] เพื่อไม่ให้ทุกบัญชีใช้รายการเดียวกัน
   Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
-    _searchHistory = prefs.getStringList(_searchHistoryKey) ?? [];
     await loadRecipes();
   }
 
@@ -203,27 +202,47 @@ class RecipeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// เรียกทุกครั้งที่สถานะล็อกอินเปลี่ยน — favorites sync ได้เฉพาะบัญชีจริง ไม่รองรับ guest
-  Future<void> onAuthChanged(bool isLoggedIn) async {
+  /// เรียกทุกครั้งที่สถานะล็อกอินเปลี่ยน — favorites และประวัติค้นหาเป็นของบัญชีนั้นเท่านั้น
+  /// ล้างรายการเก่าทันที แล้วค่อยโหลดของบัญชีใหม่ (โหลดไม่สำเร็จ = ว่าง ไม่ยืมของบัญชีก่อน)
+  /// คำตอบที่กลับมาช้าจากบัญชีก่อนหน้าจะถูกทิ้ง
+  Future<void> onAuthChanged(bool isLoggedIn, {String? userId}) async {
+    final epoch = ++_authEpoch;
     _canSyncFavorites = isLoggedIn;
-    if (!isLoggedIn) {
-      _favoriteIds = {};
+    _favoriteIds = {};
+    notifyListeners();
+
+    final scope = _historyScopeFor(isLoggedIn, userId);
+    if (scope != _historyScope) {
+      _historyScope = scope;
+      final prefs = await SharedPreferences.getInstance();
+      if (epoch != _authEpoch) return;
+      _searchHistory = prefs.getStringList(_historyScope) ?? [];
       notifyListeners();
-      return;
     }
+
+    if (!isLoggedIn) return;
 
     try {
       final ids = await _favoriteService.listFavoriteIds();
+      if (epoch != _authEpoch) return;
       _favoriteIds = ids.toSet();
-      notifyListeners();
     } on ApiException {
-      // เชื่อมต่อไม่ได้ — คงรายการเดิมไว้
+      if (epoch != _authEpoch) return;
+      _favoriteIds = {};
     }
+    if (epoch != _authEpoch) return;
+    notifyListeners();
+  }
+
+  String _historyScopeFor(bool isLoggedIn, String? userId) {
+    if (!isLoggedIn) return 'search_history_guest';
+    if (userId == null) return _historyScope;
+    return 'search_history_$userId';
   }
 
   Future<void> _persistSearchHistory() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_searchHistoryKey, _searchHistory);
+    await prefs.setStringList(_historyScope, _searchHistory);
   }
 
   void toggleFavorite(String recipeId) {
@@ -236,11 +255,12 @@ class RecipeProvider extends ChangeNotifier {
     notifyListeners();
 
     if (!_canSyncFavorites) return;
+    final epoch = _authEpoch;
     final future = wasFavorite
         ? _favoriteService.removeFavorite(recipeId)
         : _favoriteService.addFavorite(recipeId);
     future.catchError((_) {
-      // ย้อน state กลับถ้าซิงก์ไม่สำเร็จ
+      if (epoch != _authEpoch) return;
       if (wasFavorite) {
         _favoriteIds.add(recipeId);
       } else {

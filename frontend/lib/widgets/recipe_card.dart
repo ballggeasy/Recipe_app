@@ -16,8 +16,14 @@ import 'source_badge.dart';
 class RecipeCard extends StatelessWidget {
   final Recipe recipe;
   final VoidCallback onTap;
+  final VoidCallback? onAddToFolder;
 
-  const RecipeCard({super.key, required this.recipe, required this.onTap});
+  const RecipeCard({
+    super.key,
+    required this.recipe,
+    required this.onTap,
+    this.onAddToFolder,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -56,9 +62,15 @@ class RecipeCard extends StatelessWidget {
                     Positioned(
                       top: 0,
                       right: 0,
-                      child: _FavoriteButton(
-                        isFav: isFav,
-                        onTap: () => provider.toggleFavorite(recipe.id),
+                      child: Column(
+                        children: [
+                          _FavoriteButton(
+                            isFav: isFav,
+                            onTap: () => provider.toggleFavorite(recipe.id),
+                          ),
+                          if (onAddToFolder != null)
+                            _FolderButton(onTap: onAddToFolder!),
+                        ],
                       ),
                     ),
                   ],
@@ -123,6 +135,33 @@ class RecipeCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FolderButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _FolderButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return TapTarget(
+      onTap: onTap,
+      label: 'เพิ่มเข้าโฟลเดอร์',
+      child: Container(
+        margin: const EdgeInsets.only(top: 4),
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: AppTheme.surf(context),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          Icons.create_new_folder_outlined,
+          size: 18,
+          color: AppTheme.txtSecondary(context),
         ),
       ),
     );

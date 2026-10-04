@@ -13,6 +13,15 @@ class CommentProvider extends ChangeNotifier {
 
   final Map<String, List<Comment>> _commentsByRecipe = {};
   final Set<String> _loadingRecipeIds = {};
+  int _authEpoch = 0;
+
+  /// ล้างแคชตอนสลับบัญชี
+  void onAuthChanged() {
+    _authEpoch++;
+    _commentsByRecipe.clear();
+    _loadingRecipeIds.clear();
+    notifyListeners();
+  }
 
   List<Comment> getTopLevelComments(String recipeId) =>
       _commentsByRecipe[recipeId] ?? const [];
@@ -20,15 +29,18 @@ class CommentProvider extends ChangeNotifier {
   bool isLoading(String recipeId) => _loadingRecipeIds.contains(recipeId);
 
   Future<void> loadForRecipe(String recipeId) async {
+    final epoch = _authEpoch;
     _loadingRecipeIds.add(recipeId);
     notifyListeners();
     try {
-      _commentsByRecipe[recipeId] = await _commentService.fetchForRecipe(
-        recipeId,
-      );
+      final comments = await _commentService.fetchForRecipe(recipeId);
+      if (epoch != _authEpoch) return;
+      _commentsByRecipe[recipeId] = comments;
     } on ApiException {
+      if (epoch != _authEpoch) return;
       _commentsByRecipe[recipeId] = _commentsByRecipe[recipeId] ?? [];
     }
+    if (epoch != _authEpoch) return;
     _loadingRecipeIds.remove(recipeId);
     notifyListeners();
   }
@@ -40,6 +52,7 @@ class CommentProvider extends ChangeNotifier {
     List<String> mentions = const [],
     String? imageUrl,
   }) async {
+    final epoch = _authEpoch;
     try {
       await _commentService.create(
         recipeId,
@@ -48,6 +61,7 @@ class CommentProvider extends ChangeNotifier {
         mentions: mentions,
         imageUrl: imageUrl,
       );
+      if (epoch != _authEpoch) return;
       await loadForRecipe(recipeId);
     } on ApiException {
       // ส่งคอมเมนต์ไม่สำเร็จ
@@ -55,8 +69,10 @@ class CommentProvider extends ChangeNotifier {
   }
 
   Future<void> deleteComment(String recipeId, String commentId) async {
+    final epoch = _authEpoch;
     try {
       await _commentService.delete(commentId);
+      if (epoch != _authEpoch) return;
       await loadForRecipe(recipeId);
     } on ApiException {
       // ลบไม่สำเร็จ (เช่น ไม่ใช่เจ้าของคอมเมนต์)

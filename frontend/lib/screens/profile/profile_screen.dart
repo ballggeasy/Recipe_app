@@ -12,7 +12,6 @@ import '../../services/api_client.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
 import '../../widgets/common/tap_target.dart';
-import '../login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -172,20 +171,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (confirmed != true || !mounted) return;
 
     await context.read<AuthProvider>().deleteAccount();
-    if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
   }
 
   Future<void> _logout() async {
     await context.read<AuthProvider>().logout();
-    if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
   }
 
   @override
@@ -228,10 +217,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 AppButton.primary(
                   label: 'เข้าสู่ระบบ',
                   fullWidth: false,
-                  onPressed: () => Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    (route) => false,
-                  ),
+                  onPressed: () => context.read<AuthProvider>().goToLogin(),
                 ),
               ],
             ),

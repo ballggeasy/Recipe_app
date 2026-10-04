@@ -11,7 +11,6 @@ import '../providers/auth_provider.dart';
 import '../widgets/common/app_button.dart';
 import '../widgets/common/app_text_field.dart';
 import '../widgets/common/tap_target.dart';
-import 'main/main_screen.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 
@@ -67,17 +66,11 @@ class _LoginScreenState extends State<LoginScreen> {
       _showMessage(error);
       return;
     }
-
-    Navigator.of(
-      context,
-    ).pushReplacement(MaterialPageRoute(builder: (_) => const MainScreen()));
+    // AuthGate สลับไป MainScreen เอง — ห้าม push ทับ ไม่เช่นนั้น state ต่อบัญชีจะไม่รีเฟรช
   }
 
   void _loginAsGuest() {
     context.read<AuthProvider>().continueAsGuest();
-    Navigator.of(
-      context,
-    ).pushReplacement(MaterialPageRoute(builder: (_) => const MainScreen()));
   }
 
   void _comingSoon(String provider) {

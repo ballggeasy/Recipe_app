@@ -21,6 +21,7 @@ import '../../widgets/source_badge.dart';
 import '../../widgets/common/section_header.dart';
 import '../../widgets/review/review_card.dart';
 import '../../widgets/comment/comment_tile.dart';
+import '../../widgets/add_to_folder_sheet.dart';
 import 'cooking_mode_screen.dart';
 import 'edit_recipe_screen.dart';
 
@@ -35,6 +36,8 @@ class DetailScreen extends StatefulWidget {
 
 class _DetailScreenState extends State<DetailScreen> {
   int _imageIndex = 0;
+  String? _loadedForUserId;
+  bool _loadedOnce = false;
 
   Recipe get recipe {
     return context.watch<RecipeProvider>().getById(widget.recipe.id) ??
@@ -42,12 +45,18 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final userId = context.read<AuthProvider>().currentUser?.id;
+    if (_loadedOnce && userId == _loadedForUserId) return;
+    _loadedOnce = true;
+    _loadedForUserId = userId;
+    final recipeId = widget.recipe.id;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<ReviewProvider>().loadForRecipe(widget.recipe.id);
-      context.read<CommentProvider>().loadForRecipe(widget.recipe.id);
+      if (context.read<AuthProvider>().currentUser?.id != userId) return;
+      context.read<ReviewProvider>().loadForRecipe(recipeId);
+      context.read<CommentProvider>().loadForRecipe(recipeId);
     });
   }
 
@@ -391,6 +400,14 @@ class _DetailScreenState extends State<DetailScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              ListTile(
+                leading: const Icon(Icons.create_new_folder_outlined),
+                title: const Text('เพิ่มเข้าโฟลเดอร์'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  showAddToFolderSheet(context, recipe: recipe);
+                },
+              ),
               ListTile(
                 leading: const Icon(Icons.download_outlined),
                 title: const Text('ดาวน์โหลดสูตร'),

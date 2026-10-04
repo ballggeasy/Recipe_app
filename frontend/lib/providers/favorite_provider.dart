@@ -15,6 +15,7 @@ class FavoriteProvider extends ChangeNotifier {
 
   List<FavoriteFolder> _folders = [];
   bool _isLoading = false;
+  int _authEpoch = 0;
 
   List<FavoriteFolder> get folders => List.unmodifiable(_folders);
   bool get isLoading => _isLoading;
@@ -36,10 +37,13 @@ class FavoriteProvider extends ChangeNotifier {
         .toList();
   }
 
-  /// เรียกทุกครั้งที่สถานะล็อกอินเปลี่ยน
+  /// เรียกทุกครั้งที่สถานะล็อกอินเปลี่ยน — โฟลเดอร์เป็นของบัญชีนั้นเท่านั้น
+  /// คำตอบที่กลับมาช้าจากบัญชีก่อนหน้าจะถูกทิ้ง
   Future<void> onAuthChanged(bool isLoggedIn) async {
+    final epoch = ++_authEpoch;
+    _folders = [];
     if (!isLoggedIn) {
-      _folders = [];
+      _isLoading = false;
       notifyListeners();
       return;
     }
@@ -47,17 +51,23 @@ class FavoriteProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      _folders = await _favoriteService.listFolders();
+      final folders = await _favoriteService.listFolders();
+      if (epoch != _authEpoch) return;
+      _folders = folders;
     } on ApiException {
+      if (epoch != _authEpoch) return;
       _folders = [];
     }
+    if (epoch != _authEpoch) return;
     _isLoading = false;
     notifyListeners();
   }
 
   Future<void> createFolder(String name, {String emoji = '📁'}) async {
+    final epoch = _authEpoch;
     try {
       final folder = await _favoriteService.createFolder(name, emoji: emoji);
+      if (epoch != _authEpoch) return;
       _folders.add(folder);
       notifyListeners();
     } on ApiException {
@@ -66,8 +76,10 @@ class FavoriteProvider extends ChangeNotifier {
   }
 
   Future<void> deleteFolder(String id) async {
+    final epoch = _authEpoch;
     try {
       await _favoriteService.deleteFolder(id);
+      if (epoch != _authEpoch) return;
       _folders.removeWhere((f) => f.id == id);
       notifyListeners();
     } on ApiException {
@@ -75,35 +87,43 @@ class FavoriteProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> addRecipeToFolder(String folderId, String recipeId) async {
+  /// คืน true เมื่อบันทึกสำเร็จในบัญชีที่ยังล็อกอินอยู่
+  Future<bool> addRecipeToFolder(String folderId, String recipeId) async {
+    final epoch = _authEpoch;
     try {
       final updated = await _favoriteService.addRecipeToFolder(
         folderId,
         recipeId,
       );
+      if (epoch != _authEpoch) return false;
       final index = _folders.indexWhere((f) => f.id == folderId);
       if (index != -1) {
         _folders[index] = updated;
         notifyListeners();
       }
+      return true;
     } on ApiException {
-      // เพิ่มไม่สำเร็จ
+      return false;
     }
   }
 
-  Future<void> removeRecipeFromFolder(String folderId, String recipeId) async {
+  /// คืน true เมื่อเอาออกสำเร็จในบัญชีที่ยังล็อกอินอยู่
+  Future<bool> removeRecipeFromFolder(String folderId, String recipeId) async {
+    final epoch = _authEpoch;
     try {
       final updated = await _favoriteService.removeRecipeFromFolder(
         folderId,
         recipeId,
       );
+      if (epoch != _authEpoch) return false;
       final index = _folders.indexWhere((f) => f.id == folderId);
       if (index != -1) {
         _folders[index] = updated;
         notifyListeners();
       }
+      return true;
     } on ApiException {
-      // ลบไม่สำเร็จ
+      return false;
     }
   }
 

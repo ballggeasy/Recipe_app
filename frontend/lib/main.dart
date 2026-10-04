@@ -59,16 +59,22 @@ class _AuthGateState extends State<_AuthGate> {
   String? _lastSyncedKey = 'unset';
 
   void _syncOnAuthChange(AuthProvider auth) {
-    String? key;
-    bool isLoggedIn;
-    if (auth.status == AuthStatus.loggedIn) {
-      key = auth.currentUser?.id;
-      isLoggedIn = true;
-    } else if (auth.status == AuthStatus.guest) {
-      key = 'guest';
-      isLoggedIn = false;
-    } else {
-      return;
+    final String key;
+    final bool isLoggedIn;
+    switch (auth.status) {
+      case AuthStatus.loggedIn:
+        final userId = auth.currentUser?.id;
+        if (userId == null) return;
+        key = userId;
+        isLoggedIn = true;
+      case AuthStatus.guest:
+        key = 'guest';
+        isLoggedIn = false;
+      case AuthStatus.loggedOut:
+        key = 'loggedOut';
+        isLoggedIn = false;
+      case AuthStatus.unknown:
+        return;
     }
 
     if (key == _lastSyncedKey) return;
@@ -76,9 +82,18 @@ class _AuthGateState extends State<_AuthGate> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<RecipeProvider>().onAuthChanged(isLoggedIn);
+      final navigator = Navigator.of(context);
+      if (navigator.canPop()) {
+        navigator.popUntil((route) => route.isFirst);
+      }
+      context.read<RecipeProvider>().onAuthChanged(
+        isLoggedIn,
+        userId: isLoggedIn ? key : null,
+      );
       context.read<FavoriteProvider>().onAuthChanged(isLoggedIn);
       context.read<MealPlannerProvider>().onAuthChanged(isLoggedIn);
+      context.read<ReviewProvider>().onAuthChanged();
+      context.read<CommentProvider>().onAuthChanged();
     });
   }
 
