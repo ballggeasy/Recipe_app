@@ -72,6 +72,7 @@ class _DetailScreenState extends State<DetailScreen> {
     final comments = commentProvider.getTopLevelComments(recipe.id);
     final currentUserId = auth.currentUser?.id;
     final userName = auth.currentUser?.name ?? 'ผู้เยี่ยมชม';
+    final isOwner = currentUserId != null && recipe.uploaderId == currentUserId;
 
     return Scaffold(
       body: CustomScrollView(
@@ -91,19 +92,20 @@ class _DetailScreenState extends State<DetailScreen> {
               ),
             ),
             actions: [
-              Padding(
-                padding: const EdgeInsets.all(4),
-                child: _RoundIconButton(
-                  icon: Icons.edit_outlined,
-                  tooltip: 'แก้ไขสูตร',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => EditRecipeScreen(recipe: recipe),
+              if (isOwner)
+                Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: _RoundIconButton(
+                    icon: Icons.edit_outlined,
+                    tooltip: 'แก้ไขสูตร',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => EditRecipeScreen(recipe: recipe),
+                      ),
                     ),
                   ),
                 ),
-              ),
               Padding(
                 padding: const EdgeInsets.all(4),
                 child: _RoundIconButton(
@@ -138,7 +140,12 @@ class _DetailScreenState extends State<DetailScreen> {
                 child: _RoundIconButton(
                   icon: Icons.more_vert_rounded,
                   tooltip: 'ตัวเลือกเพิ่มเติม',
-                  onTap: () => _showMoreMenu(context, provider, favProvider),
+                  onTap: () => _showMoreMenu(
+                    context,
+                    provider,
+                    favProvider,
+                    isOwner: isOwner,
+                  ),
                 ),
               ),
             ],
@@ -169,6 +176,22 @@ class _DetailScreenState extends State<DetailScreen> {
                       color: AppTheme.txtPrimary(context),
                     ).copyWith(fontSize: 26),
                   ),
+                  if (isOwner)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: () =>
+                            _confirmDeleteRecipe(provider, widget.recipe.id),
+                        icon: Icon(
+                          Icons.delete_outline_rounded,
+                          color: AppTheme.error(context),
+                        ),
+                        label: Text(
+                          'ลบสูตรนี้',
+                          style: TextStyle(color: AppTheme.error(context)),
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: AppSpacing.sm),
                   RatingDisplay(
                     rating: recipe.rating,
@@ -310,6 +333,9 @@ class _DetailScreenState extends State<DetailScreen> {
                         review: r,
                         isLiked: r.likedBy(currentUserId),
                         onLike: () => reviewProvider.toggleLike(r.id),
+                        onDelete: r.userId == currentUserId
+                            ? () => _deleteOwnReview(reviewProvider, r.id)
+                            : null,
                         onReport: () {
                           reviewProvider.reportReview(r.id);
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -338,13 +364,17 @@ class _DetailScreenState extends State<DetailScreen> {
                     ...comments.map(
                       (c) => CommentTile(
                         comment: c,
+                        currentUserId: currentUserId,
                         onReply: () => _showAddCommentDialog(
                           context,
                           userName,
                           parentId: c.id,
                         ),
-                        onDelete: () =>
-                            commentProvider.deleteComment(recipe.id, c.id),
+                        onDelete: (comment) => _deleteOwnComment(
+                          commentProvider,
+                          recipe.id,
+                          comment.id,
+                        ),
                       ),
                     ),
                 ],
@@ -382,11 +412,67 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 
+  Future<void> _confirmDeleteRecipe(
+    RecipeProvider provider,
+    String recipeId,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('ลบสูตรนี้?'),
+        content: const Text(
+          'ลบได้เฉพาะสูตรที่คุณเพิ่มเอง คนอื่นจะแก้หรือลบสูตรนี้ให้ไม่ได้',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('ยกเลิก'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(
+              'ลบ',
+              style: TextStyle(color: AppTheme.error(dialogContext)),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final error = await provider.deleteRecipe(recipeId);
+    if (!mounted) return;
+    if (error != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+    Navigator.pop(context);
+  }
+
+  Future<void> _deleteOwnReview(ReviewProvider reviews, String reviewId) async {
+    final error = await reviews.deleteReview(reviewId);
+    if (!mounted || error == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+  }
+
+  Future<void> _deleteOwnComment(
+    CommentProvider comments,
+    String recipeId,
+    String commentId,
+  ) async {
+    final error = await comments.deleteComment(recipeId, commentId);
+    if (!mounted || error == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+  }
+
   void _showMoreMenu(
     BuildContext context,
     RecipeProvider provider,
-    FavoriteProvider favProvider,
-  ) {
+    FavoriteProvider favProvider, {
+    required bool isOwner,
+  }) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -419,21 +505,21 @@ class _DetailScreenState extends State<DetailScreen> {
                   );
                 },
               ),
-              ListTile(
-                leading: Icon(
-                  Icons.delete_outline_rounded,
-                  color: AppTheme.error(context),
+              if (isOwner)
+                ListTile(
+                  leading: Icon(
+                    Icons.delete_outline_rounded,
+                    color: AppTheme.error(context),
+                  ),
+                  title: Text(
+                    'ลบสูตร',
+                    style: TextStyle(color: AppTheme.error(context)),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _confirmDeleteRecipe(provider, widget.recipe.id);
+                  },
                 ),
-                title: Text(
-                  'ลบสูตร',
-                  style: TextStyle(color: AppTheme.error(context)),
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  provider.deleteRecipe(recipe.id);
-                  Navigator.pop(context);
-                },
-              ),
             ],
           ),
         ),

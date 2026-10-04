@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Review, ReviewReply } from './review.entity';
@@ -74,6 +74,32 @@ export class ReviewsService {
       ? review.likedByUserIds.filter((u) => u !== userId)
       : [...review.likedByUserIds, userId];
     return this.reviewsRepository.save(review);
+  }
+
+  async remove(id: string, user: User): Promise<void> {
+    const review = await this.findOne(id);
+    if (review.userId !== user.id) {
+      throw new ForbiddenException('ลบได้เฉพาะรีวิวของคุณเอง');
+    }
+    const recipeId = review.recipeId;
+
+    await this.reviewsRepository.manager.transaction(async (manager) => {
+      await manager.delete(ReviewReply, { reviewId: id });
+      await manager.delete(Review, { id });
+
+      const reviews = manager.getRepository(Review);
+      const aggregate = await reviews
+        .createQueryBuilder('review')
+        .select('AVG(review.rating)', 'average')
+        .addSelect('COUNT(*)', 'count')
+        .where('review.recipeId = :recipeId', { recipeId })
+        .getRawOne<{ average: number | null; count: number }>();
+      await manager.update(
+        Recipe,
+        { id: recipeId },
+        { rating: Number(aggregate?.average ?? 0), reviewCount: Number(aggregate?.count ?? 0) },
+      );
+    });
   }
 
   async report(id: string): Promise<Review> {

@@ -74,6 +74,26 @@ class ReviewProvider extends ChangeNotifier {
     }
   }
 
+  /// คืนข้อความ error ถ้าลบไม่สำเร็จ — คนอื่นลบรีวิวของเราไม่ได้
+  Future<String?> deleteReview(String reviewId) async {
+    final epoch = _authEpoch;
+    try {
+      await _reviewService.delete(reviewId);
+      if (epoch != _authEpoch) return null;
+      for (final list in _reviewsByRecipe.values) {
+        final index = list.indexWhere((r) => r.id == reviewId);
+        if (index != -1) {
+          list.removeAt(index);
+          notifyListeners();
+          break;
+        }
+      }
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
+    }
+  }
+
   Future<void> toggleLike(String reviewId) async {
     final epoch = _authEpoch;
     try {

@@ -176,6 +176,30 @@ describe('Favorites, reviews, comments, meal plan and profile (e2e)', () => {
       await http().post('/reviews/no-such-review/like').set(bearer(cook.token)).expect(404);
       await http().post(`/reviews/${review.id}/like`).expect(401);
     });
+
+    it('lets only the author delete a review and refreshes the recipe rating', async () => {
+      const cook = await registerUser('review-delete-cook@example.com');
+      const fan = await registerUser('review-delete-fan@example.com');
+      const other = await registerUser('review-delete-other@example.com');
+      const recipeId = await createRecipe(cook.token);
+      const review = (
+        await http()
+          .post(`/recipes/${recipeId}/reviews`)
+          .set(bearer(fan.token))
+          .send({ rating: 2, content: 'mine' })
+          .expect(201)
+      ).body;
+
+      await http().delete(`/reviews/${review.id}`).set(bearer(other.token)).expect(403);
+      await http().delete(`/reviews/${review.id}`).expect(401);
+      await http().delete(`/reviews/${review.id}`).set(bearer(fan.token)).expect(200);
+
+      const list = await http().get(`/recipes/${recipeId}/reviews`).expect(200);
+      expect(list.body).toEqual([]);
+      const recipe = await http().get(`/recipes/${recipeId}`).expect(200);
+      expect(recipe.body.reviewCount).toBe(0);
+      expect(recipe.body.rating).toBe(0);
+    });
   });
 
   describe('comments', () => {

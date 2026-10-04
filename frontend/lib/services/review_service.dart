@@ -32,6 +32,8 @@ class ReviewService {
     return Review.fromApi(data);
   }
 
+  Future<void> delete(String reviewId) => _api.delete('/reviews/$reviewId');
+
   Future<Review> toggleLike(String reviewId) async {
     final data =
         await _api.post('/reviews/$reviewId/like') as Map<String, dynamic>;

@@ -11,6 +11,7 @@ class ReviewCard extends StatelessWidget {
   final VoidCallback? onLike;
   final VoidCallback? onReport;
   final VoidCallback? onReply;
+  final VoidCallback? onDelete;
 
   const ReviewCard({
     super.key,
@@ -19,6 +20,7 @@ class ReviewCard extends StatelessWidget {
     this.onLike,
     this.onReport,
     this.onReply,
+    this.onDelete,
   });
 
   @override
@@ -109,6 +111,14 @@ class ReviewCard extends StatelessWidget {
                 label: 'ตอบกลับ',
                 onTap: onReply,
               ),
+              if (onDelete != null) ...[
+                const SizedBox(width: 16),
+                _ActionButton(
+                  icon: Icons.delete_outline_rounded,
+                  label: 'ลบ',
+                  onTap: onDelete,
+                ),
+              ],
               const Spacer(),
               _ActionButton(
                 icon: Icons.flag_outlined,

@@ -6,7 +6,8 @@ import '../../theme/app_typography.dart';
 class CommentTile extends StatelessWidget {
   final Comment comment;
   final VoidCallback? onReply;
-  final VoidCallback? onDelete;
+  final void Function(Comment comment)? onDelete;
+  final String? currentUserId;
   final bool isNested;
 
   const CommentTile({
@@ -14,11 +15,17 @@ class CommentTile extends StatelessWidget {
     required this.comment,
     this.onReply,
     this.onDelete,
+    this.currentUserId,
     this.isNested = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final canDelete =
+        onDelete != null &&
+        currentUserId != null &&
+        comment.userId == currentUserId;
+
     return Padding(
       padding: EdgeInsets.only(left: isNested ? 24 : 0, bottom: 14),
       child: Column(
@@ -84,12 +91,12 @@ class CommentTile extends StatelessWidget {
                           label: 'ตอบกลับ',
                           onTap: onReply,
                         ),
-                        if (onDelete != null) ...[
+                        if (canDelete) ...[
                           const SizedBox(width: 12),
                           _SmallButton(
                             icon: Icons.delete_outline_rounded,
                             label: 'ลบ',
-                            onTap: onDelete,
+                            onTap: () => onDelete!(comment),
                           ),
                         ],
                       ],
@@ -101,7 +108,13 @@ class CommentTile extends StatelessWidget {
           ),
           if (comment.replies.isNotEmpty)
             ...comment.replies.map(
-              (r) => CommentTile(comment: r, isNested: true, onReply: onReply),
+              (r) => CommentTile(
+                comment: r,
+                isNested: true,
+                onReply: onReply,
+                onDelete: onDelete,
+                currentUserId: currentUserId,
+              ),
             ),
         ],
       ),

@@ -68,14 +68,16 @@ class CommentProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> deleteComment(String recipeId, String commentId) async {
+  /// คืนข้อความ error ถ้าลบไม่สำเร็จ — คนอื่นลบคอมเมนต์ของเราไม่ได้
+  Future<String?> deleteComment(String recipeId, String commentId) async {
     final epoch = _authEpoch;
     try {
       await _commentService.delete(commentId);
-      if (epoch != _authEpoch) return;
+      if (epoch != _authEpoch) return null;
       await loadForRecipe(recipeId);
-    } on ApiException {
-      // ลบไม่สำเร็จ (เช่น ไม่ใช่เจ้าของคอมเมนต์)
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
     }
   }
 }

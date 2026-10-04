@@ -228,15 +228,22 @@ class _FoldersTab extends StatelessWidget {
                             color: AppTheme.txtPrimary(context),
                           ),
                         ),
-                        trailing: IconButton(
-                          tooltip: 'เอาออกจากโฟลเดอร์',
-                          icon: Icon(
-                            Icons.remove_circle_outline_rounded,
-                            color: AppTheme.error(context),
-                          ),
-                          onPressed: () => favProvider.removeRecipeFromFolder(
-                            folder.id,
-                            recipe.id,
+                        trailing: TextButton(
+                          onPressed: () async {
+                            final ok = await favProvider.removeRecipeFromFolder(
+                              folder.id,
+                              recipe.id,
+                            );
+                            if (!context.mounted || ok) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('เอาออกจากโฟลเดอร์ไม่สำเร็จ'),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            'เอาออก',
+                            style: TextStyle(color: AppTheme.error(context)),
                           ),
                         ),
                         onTap: () => Navigator.push(
