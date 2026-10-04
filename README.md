@@ -45,7 +45,7 @@ flutter run
 - Web / Windows / iOS simulator → `http://localhost:3000`
 - Android emulator → `http://10.0.2.2:3000` (ตัว emulator เข้าถึง host เครื่องจริงผ่าน IP นี้เสมอ)
 - ถ้ารันบนมือถือจริง (ไม่ใช่ emulator) หรืออยากชี้ไป backend ที่ deploy แล้ว ไม่ต้องแก้โค้ด ระบุตอนรัน/build: `flutter run --dart-define=API_BASE_URL=http://192.168.1.20:3000`
-- ชี้ไป backend บน Azure VM (`172.197.163.62:3000`): `flutter run --dart-define-from-file=config/azure.json` หรือ `flutter build apk --release --dart-define-from-file=config/azure.json` (VM นี้ยังเป็น HTTP ธรรมดา Android อนุญาตเฉพาะที่อยู่นี้ใน `android/app/src/main/res/xml/network_security_config.xml` — เมื่อมี HTTPS แล้วให้ลบบรรทัด IP ออก)
+- ชี้ไป backend บน Azure VM (HTTPS ที่ `recipe-backend-psu.malaysiawest.cloudapp.azure.com`): `flutter run --dart-define-from-file=config/azure.json` หรือ `flutter build apk --release --dart-define-from-file=config/azure.json` (Android อนุญาต HTTP ธรรมดาเฉพาะ emulator/localhost ดู `android/app/src/main/res/xml/network_security_config.xml`)
 
 ## ทดสอบ
 

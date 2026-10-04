@@ -21,8 +21,16 @@ deploy_webhook_env_file: "{{ app_dir }}/webhook.env"
 deploy_request_file: "{{ app_dir }}/.deploy-request"
 tailscale_hostname: recipe-vm
 
+# HTTPS for the API. Caddy gets a Let's Encrypt certificate for this name, which must resolve to
+# the VM (Azure: Public IP -> Configuration -> DNS name label) with ports 80 and 443 open in the
+# network firewall. Leave empty to skip the proxy and serve plain HTTP on backend_port.
+api_domain: recipe-backend-psu.malaysiawest.cloudapp.azure.com
+backend_port: 3000
+
 # Optional host firewall (ufw). The network firewall in front of the VM is separate.
 manage_ufw: false
 ufw_open_ports:
-  - 3000  # backend API
+  - 80    # ACME challenge + redirect to HTTPS (reverse proxy)
+  - 443   # HTTPS API (reverse proxy)
+  - 3000  # backend API (not needed when the proxy is used)
   - 3001  # Grafana

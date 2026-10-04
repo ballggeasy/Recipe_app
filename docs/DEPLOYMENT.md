@@ -49,9 +49,23 @@ flutter run --dart-define=API_BASE_URL=https://api.example.com
 flutter build apk --release --dart-define=API_BASE_URL=https://api.example.com
 ```
 
-The shipped config for the Azure VM is `frontend/config/azure.json`: `flutter run --dart-define-from-file=config/azure.json`. The VM serves plain HTTP on port 3000, so Android only allows cleartext traffic to that IP (and to the emulator/localhost) through `network_security_config.xml`; browsers and iOS need HTTPS (put a TLS reverse proxy in front, then drop the IP from that file). The main Android manifest also declares the `INTERNET` permission now; it used to exist only for debug/profile builds, so a release APK could not reach any backend.
+The shipped config for the Azure VM is `frontend/config/azure.json` (HTTPS): `flutter run --dart-define-from-file=config/azure.json`. Android only allows plain HTTP to the emulator and localhost (`network_security_config.xml`), so a build pointing at an `http://` host other than those will not connect. The main Android manifest also declares the `INTERNET` permission now; it used to exist only for debug/profile builds, so a release APK could not reach any backend.
 
 The Android **release** build is still signed with the debug key (`frontend/android/app/build.gradle.kts`). Create a keystore and a `key.properties` before publishing to a store; this cannot be done in the repo.
+
+## HTTPS
+
+The API is served over HTTPS by **Caddy** on the VM (Ansible role `reverse_proxy`): Caddy gets a Let's Encrypt certificate for `api_domain`, renews it by itself and proxies to the backend on `127.0.0.1:3000`. It is enabled when `api_domain` is non-empty (`ansible/group_vars/recipe_vm.yml`); leave it empty to serve plain HTTP.
+
+What has to be true outside the repo:
+- `api_domain` resolves to the VM. On Azure: Public IP -> Configuration -> *DNS name label*, which gives `<label>.<region>.cloudapp.azure.com`; the public IP must be Static.
+- The network firewall allows TCP **80** (Let's Encrypt HTTP challenge and HTTP->HTTPS redirect) and **443**. Once HTTPS works, port 3000 can be closed there.
+
+What the role changes on the VM:
+- `/opt/recipe-backend/.env` gets `TRUST_PROXY=1` (the backend sees real client IPs, so rate limiting is per client instead of per proxy) and `BACKEND_BIND=127.0.0.1` (compose publishes the API on localhost only, so nobody can reach it around the proxy and forge `X-Forwarded-For`). Existing containers pick this up the next time compose recreates them (a deploy, or `docker compose up -d --force-recreate backend`).
+- Caddy runs as the `caddy` systemd service; `systemctl status caddy`, `journalctl -u caddy`.
+
+Check: `curl -sI https://<api_domain>/health` should return 200 with a certificate issued by Let's Encrypt.
 
 ## Health and monitoring
 

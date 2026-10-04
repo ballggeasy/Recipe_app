@@ -41,6 +41,22 @@
   register: app_env_file_content
   no_log: true
 
+# Behind the reverse proxy the backend must see real client IPs (rate limiting) and must not be
+# reachable around the proxy, because X-Forwarded-For is only trustworthy when it comes from Caddy.
+- name: Trust the reverse proxy and listen on localhost only
+  ansible.builtin.lineinfile:
+    path: "{{ app_env_file }}"
+    regexp: "^{{ item.key }}="
+    line: "{{ item.key }}={{ item.value }}"
+  loop:
+    - key: TRUST_PROXY
+      value: "1"
+    - key: BACKEND_BIND
+      value: 127.0.0.1
+  when: api_domain | length > 0
+  loop_control:
+    label: "{{ item.key }}"
+
 - name: Add missing settings
   ansible.builtin.lineinfile:
     path: "{{ app_env_file }}"
