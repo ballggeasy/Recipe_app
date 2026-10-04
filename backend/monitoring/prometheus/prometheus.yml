@@ -5,8 +5,12 @@ global:
 scrape_configs:
   - job_name: backend
     metrics_path: /metrics
-    static_configs:
-      - targets: ['backend:3000']
+    # `backend` resolves to every replica; scrape each one, not whichever the DNS answer lists first.
+    dns_sd_configs:
+      - names: ['backend']
+        type: A
+        port: 3000
+        refresh_interval: 15s
 
   - job_name: node
     static_configs:

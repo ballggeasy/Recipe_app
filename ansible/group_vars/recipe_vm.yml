@@ -27,6 +27,11 @@ tailscale_hostname: recipe-vm
 api_domain: recipe-backend-psu.malaysiawest.cloudapp.azure.com
 backend_port: 3000
 
+# Identical backend containers behind nginx (docker-compose). They share one SQLite file and the
+# uploads volume, so they all run on this VM. Node runs JavaScript on one thread, so about one
+# replica per CPU core is where more replicas stop adding throughput.
+backend_replicas: 2
+
 # Optional host firewall (ufw). The network firewall in front of the VM is separate.
 manage_ufw: false
 ufw_open_ports:

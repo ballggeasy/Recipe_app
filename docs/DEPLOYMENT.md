@@ -55,17 +55,38 @@ The Android **release** build is still signed with the debug key (`frontend/andr
 
 ## HTTPS
 
-The API is served over HTTPS by **Caddy** on the VM (Ansible role `reverse_proxy`): Caddy gets a Let's Encrypt certificate for `api_domain`, renews it by itself and proxies to the backend on `127.0.0.1:3000`. It is enabled when `api_domain` is non-empty (`ansible/group_vars/recipe_vm.yml`); leave it empty to serve plain HTTP.
+The API is served over HTTPS by **Caddy** on the VM (Ansible role `reverse_proxy`): Caddy gets a Let's Encrypt certificate for `api_domain`, renews it by itself and proxies to nginx (the load balancer, below) on `127.0.0.1:3000`. It is enabled when `api_domain` is non-empty (`ansible/group_vars/recipe_vm.yml`); leave it empty to serve plain HTTP.
 
 What has to be true outside the repo:
 - `api_domain` resolves to the VM. On Azure: Public IP -> Configuration -> *DNS name label*, which gives `<label>.<region>.cloudapp.azure.com`; the public IP must be Static.
 - The network firewall allows TCP **80** (Let's Encrypt HTTP challenge and HTTP->HTTPS redirect) and **443**. Once HTTPS works, port 3000 can be closed there.
 
 What the role changes on the VM:
-- `/opt/recipe-backend/.env` gets `TRUST_PROXY=1` (the backend sees real client IPs, so rate limiting is per client instead of per proxy) and `BACKEND_BIND=127.0.0.1` (compose publishes the API on localhost only, so nobody can reach it around the proxy and forge `X-Forwarded-For`). Existing containers pick this up the next time compose recreates them (a deploy, or `docker compose up -d --force-recreate backend`).
+- `/opt/recipe-backend/.env` gets `TRUST_PROXY=2` (the two proxies in front of the backend, Caddy and nginx; the backend sees real client IPs, so rate limiting is per client instead of per proxy) and `BACKEND_BIND=127.0.0.1` (compose publishes nginx on localhost only, so nobody can reach the API around the proxies and forge `X-Forwarded-For`). Existing containers pick this up the next time compose recreates them (a deploy, or `docker compose up -d --force-recreate nginx backend`).
 - Caddy runs as the `caddy` systemd service; `systemctl status caddy`, `journalctl -u caddy`.
 
 Check: `curl -sI https://<api_domain>/health` should return 200 with a certificate issued by Let's Encrypt.
+
+## Load balancing and concurrency
+
+```
+client --HTTPS--> Caddy (VM, :443) --> nginx (container, 127.0.0.1:3000) --> backend replica 1..N
+                                                                                  |  shared: SQLite file (WAL) + uploads volume
+```
+
+`backend/docker-compose.yml` runs `BACKEND_REPLICAS` identical `backend` containers (default 2, set by Ansible from `backend_replicas`) behind **nginx** (`backend/nginx/default.conf`):
+
+- **Balancing:** `least_conn`, so a replica stuck on a slow request stops getting new ones. nginx re-resolves the replica addresses every 10 seconds through Docker's DNS (and the deploy script reloads it after recreating the replicas), so replicas that a deploy restarts, or that you scale, join and leave without restarting nginx.
+- **Failure handling:** a replica that fails once is skipped for 5 seconds; a request that hits an unreachable replica or a 502/503/504 is retried once on another one. Only requests that are safe to repeat are retried, never a `POST`.
+- **Why replicas:** Node runs JavaScript on one thread, and the VM has 2 vCPUs, so two replicas use both cores and a deploy that recreates them one after the other keeps one serving. More replicas than cores adds memory use, not throughput.
+- **Database:** all replicas share one SQLite file on the `data` volume, which is why they must run on one host. The file is opened in WAL mode with a 5 second busy timeout (`database.config.ts`): readers do not block on a writer, and a second writer waits for the single write lock instead of failing with `SQLITE_BUSY`. Writes are still serialised, so this scales reads and CPU-bound work (bcrypt hashing, JSON), not write throughput. Going beyond one host needs a client/server database (PostgreSQL) and shared upload storage.
+- **Migrations and seeding** run once, before the replicas start: the `migrate` service runs `node dist/migrate.js` and the replicas wait for it (`service_completed_successfully`).
+- **Rate limits** are counted in each replica's memory, so a client that hits all N replicas can make up to N times the configured requests per minute. Keep that in mind when setting `RATE_LIMIT_PER_MINUTE` and `AUTH_RATE_LIMIT_PER_MINUTE`.
+- **Metrics:** Prometheus scrapes every replica separately (DNS service discovery on `backend`); the `instance` label tells them apart.
+
+Check which replica served a request: `docker compose -p recipe-backend logs nginx` shows `upstream=<container ip>:3000` for each request. Scale without touching Ansible: `BACKEND_REPLICAS=3 BACKEND_ENV_FILE=/opt/recipe-backend/.env docker compose -p recipe-backend --env-file /opt/recipe-backend/.env -f backend/docker-compose.yml up -d --no-build backend`, but set `backend_replicas` too, or the next Ansible run puts it back.
+
+Load test (k6, from your own machine, not from the VM): `backend/loadtest/README.md`. Do not point it at production with the default rate limits; they will answer 429.
 
 ## Health and monitoring
 
