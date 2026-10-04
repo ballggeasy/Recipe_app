@@ -68,7 +68,10 @@ void main() {
 
     test('leaves uploaded and unknown images alone', () {
       expect(RecipeImage.bundledPhotoFor(''), isNull);
-      expect(RecipeImage.bundledPhotoFor('http://host/uploads/abc.jpg'), isNull);
+      expect(
+        RecipeImage.bundledPhotoFor('http://host/uploads/abc.jpg'),
+        isNull,
+      );
     });
   });
 
