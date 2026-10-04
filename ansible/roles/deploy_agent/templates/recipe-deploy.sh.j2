@@ -61,6 +61,8 @@ deploy_revision() {
   git -C "$REPO_DIR" checkout --quiet --force --detach "$revision"
   compose up -d --no-build --remove-orphans --quiet-pull
   compose kill -s SIGHUP prometheus > /dev/null || true
+  # Recreated replicas have new addresses; make nginx re-read them now instead of at its next DNS refresh.
+  compose kill -s SIGHUP nginx > /dev/null || true
   is_ready
 }
 

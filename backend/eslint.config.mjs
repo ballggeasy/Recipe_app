@@ -17,6 +17,11 @@ export default tseslint.config(
     },
   },
   {
+    // k6 scripts run in k6's own runtime, which provides these globals.
+    files: ['loadtest/**/*.js'],
+    languageOptions: { globals: { __ENV: 'readonly', __VU: 'readonly', __ITER: 'readonly' } },
+  },
+  {
     files: ['test/**/*.ts'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',

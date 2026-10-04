@@ -89,6 +89,7 @@ check "exit code" 0 "$(run)"
 check "deployed revision recorded" aaa "$(state .deployed-revision)"
 check "uses the immutable sha tag" "up ghcr.io/example/recipe-backend:sha-aaa" "$(grep '^up ' "$FAKE/calls.log")"
 check "no previous revision yet" - "$(state .previous-revision)"
+check "nginx re-reads the recreated replicas" "docker compose -p recipe-backend --env-file $APP/.env -f $APP/repo/backend/docker-compose.yml kill -s SIGHUP nginx" "$(grep 'SIGHUP nginx' "$FAKE/calls.log")"
 
 echo "--- same image again does nothing"
 check "exit code" 0 "$(run)"

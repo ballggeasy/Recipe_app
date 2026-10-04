@@ -18,6 +18,8 @@ SQLite through TypeORM. The file lives at `DB_PATH` (default `./data/app.sqlite`
 3. Add it to the `migrations` array in `src/database/database.config.ts` (explicit list on purpose: same behaviour under ts-node, ts-jest and the compiled `dist/`).
 4. `npm test` — `test/migrations.spec.ts` fails if the entities and the migrations disagree (it asks TypeORM for pending schema changes after running all migrations), if a database made by the old `synchronize` stops upgrading cleanly, or if the hot queries lose their indexes.
 
+Concurrency: several backend replicas open this same file (see "Load balancing and concurrency" in DEPLOYMENT.md). It runs in WAL mode with a 5 second busy timeout (`database.config.ts`; `test/concurrency.spec.ts` covers it), so keep it on a local disk, never a network share. Migrations and the first-time seed run once in the `migrate` service (`src/migrate.ts`), not in each replica.
+
 SQLite note: `ALTER TABLE` is limited; changes it cannot express (dropping a column, changing a type) need the copy-table-and-rename pattern inside the migration.
 
 ## Backup and restore

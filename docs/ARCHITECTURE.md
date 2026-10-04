@@ -67,6 +67,6 @@ api_client.dart     base URL (API_BASE_URL), JWT header, error mapping, 401 → 
 
 ## Decisions worth knowing
 
-- **SQLite** is a deliberate fit for a single VM and one writer; moving to PostgreSQL would be a data-source change plus new migrations, not a rewrite.
+- **SQLite** is a deliberate fit for a single VM; moving to PostgreSQL would be a data-source change plus new migrations, not a rewrite. Several backend replicas share the one file (WAL mode) behind an nginx load balancer, which scales CPU-bound work and reads but not writes; see "Load balancing and concurrency" in DEPLOYMENT.md.
 - **`provider`** was kept (no state-management swap): the existing structure is consistent and well tested.
 - **Pull-based deploy**: nothing in GitHub can run code on the VM; it pulls images CI built from `main` after tests passed.

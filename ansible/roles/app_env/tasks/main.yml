@@ -41,21 +41,27 @@
   register: app_env_file_content
   no_log: true
 
-# Behind the reverse proxy the backend must see real client IPs (rate limiting) and must not be
-# reachable around the proxy, because X-Forwarded-For is only trustworthy when it comes from Caddy.
-- name: Trust the reverse proxy and listen on localhost only
+# The backend sits behind nginx (the load balancer in docker-compose) and, when HTTPS is on, behind
+# Caddy as well. It has to count exactly those proxies to see real client IPs (rate limiting), and
+# must not be reachable around them, because X-Forwarded-For is only trustworthy when it comes from them.
+- name: Trust the proxies in front of the backend
   ansible.builtin.lineinfile:
     path: "{{ app_env_file }}"
-    regexp: "^{{ item.key }}="
-    line: "{{ item.key }}={{ item.value }}"
-  loop:
-    - key: TRUST_PROXY
-      value: "1"
-    - key: BACKEND_BIND
-      value: 127.0.0.1
+    regexp: "^TRUST_PROXY="
+    line: "TRUST_PROXY={{ 2 if api_domain | length > 0 else 1 }}"
+
+- name: Listen on localhost only when Caddy is in front
+  ansible.builtin.lineinfile:
+    path: "{{ app_env_file }}"
+    regexp: "^BACKEND_BIND="
+    line: "BACKEND_BIND=127.0.0.1"
   when: api_domain | length > 0
-  loop_control:
-    label: "{{ item.key }}"
+
+- name: Set the number of backend replicas
+  ansible.builtin.lineinfile:
+    path: "{{ app_env_file }}"
+    regexp: "^BACKEND_REPLICAS="
+    line: "BACKEND_REPLICAS={{ backend_replicas }}"
 
 - name: Add missing settings
   ansible.builtin.lineinfile:
