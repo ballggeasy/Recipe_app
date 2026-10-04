@@ -52,7 +52,7 @@ void main() {
     recipeJson(name: 'ผัดกะเพรา', cookTimeMinutes: 15, difficulty: 'ง่าย'),
   );
 
-  testWidgets('shows the name, cook time, difficulty and emoji fallback', (
+  testWidgets('shows the name, cook time, difficulty and a placeholder icon', (
     tester,
   ) async {
     await pumpCard(tester, recipe);
@@ -60,10 +60,11 @@ void main() {
     expect(find.text('ผัดกะเพรา'), findsOneWidget);
     expect(find.text('15 นาที'), findsOneWidget);
     expect(find.text('ง่าย'), findsOneWidget);
+    expect(find.text('🍛'), findsNothing, reason: 'emoji is no longer shown');
     expect(
-      find.text('🍛'),
+      find.byIcon(Icons.restaurant_menu_rounded),
       findsOneWidget,
-      reason: 'recipe has no imageUrl, so the emoji is shown',
+      reason: 'recipe has no imageUrl, so the placeholder icon is shown',
     );
   });
 
