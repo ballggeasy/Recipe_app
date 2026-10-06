@@ -37,6 +37,7 @@ Backend environment variables (`backend/.env.example`; on the VM the file is `/o
 | `TRUST_PROXY` | no | off | Number of reverse proxies in front of the app. Set it when behind one, otherwise rate limiting sees every client as the proxy's IP. |
 | `RATE_LIMIT_PER_MINUTE` | no | `120` | Per client IP, per route. |
 | `AUTH_RATE_LIMIT_PER_MINUTE` | no | `10` | Login, register, change/reset password. |
+| `GOOGLE_CLIENT_IDS` | no | none | Comma-separated Google OAuth client IDs whose ID tokens `POST /auth/google` accepts (the audience). Use the **Web** client ID. Unset: the endpoint answers 503. Ansible: `google_client_ids`. See [Sign in with Google](#sign-in-with-google). |
 | `ALLOW_INSECURE_PASSWORD_RESET` | no | off | **Local development only.** See [SECURITY.md](SECURITY.md). |
 | `APP_REVISION` | – | `dev` | Set by the image build (commit SHA); shown by `/health`. |
 | `GRAFANA_ADMIN_PASSWORD` | yes (compose) | – | Grafana login for user `admin`. |
@@ -87,6 +88,31 @@ client --HTTPS--> Caddy (VM, :443) --> nginx (container, 127.0.0.1:3000) --> bac
 Check which replica served a request: `docker compose -p recipe-backend logs nginx` shows `upstream=<container ip>:3000` for each request. Scale without touching Ansible: `BACKEND_REPLICAS=3 BACKEND_ENV_FILE=/opt/recipe-backend/.env docker compose -p recipe-backend --env-file /opt/recipe-backend/.env -f backend/docker-compose.yml up -d --no-build backend`, but set `backend_replicas` too, or the next Ansible run puts it back.
 
 Load test (k6, from your own machine, not from the VM): `backend/loadtest/README.md`. Do not point it at production with the default rate limits; they will answer 429.
+
+## Sign in with Google
+
+The app sends the **ID token** the Google sign-in on the device returns to `POST /auth/google`. The backend verifies it with Google (signature, expiry, issuer and that the audience is one of `GOOGLE_CLIENT_IDS`), then:
+
+1. a user already linked to that Google account (`users.googleId`, the token's `sub`) signs in;
+2. otherwise a user with the same email is **linked** to it, if Google says the email is verified (an existing password account keeps its recipes, favourites and its password);
+3. otherwise a new user is created. It has a random password nobody knows, so `POST /auth/login` can never succeed for it.
+
+The response is the same as for a password login (an app JWT), so everything else works unchanged.
+
+Google Cloud project `cloud-project-451209` (console.cloud.google.com -> Google Auth Platform):
+
+| Client | Type | Used for |
+|--------|------|----------|
+| `Recipe App Web` | Web application | Its ID is the `GOOGLE_CLIENT_IDS` of the backend and the `GOOGLE_WEB_CLIENT_ID` of the app (`frontend/config/azure.json`). Authorized JavaScript origins: `http://localhost:8766` and `http://localhost` (the local web preview). Add the real origin when the web app is hosted. |
+| `Recipe App Android` | Android | Package `com.example.recipe_app` + the SHA-1 of the key that signs the APK (today the debug key: `61:17:8D:7E:69:37:CD:6B:0B:1D:28:00:5A:AC:6A:28:4B:AF:D8:3E`). The Android app asks Google for a token for the *Web* client ID; this client only tells Google the app is genuine. |
+
+- **A client ID is public**, not a secret. There is no client secret in the app or on the VM: only ID tokens are used.
+- **A different signing key needs a new Android client.** When the release build gets its own keystore (see above), create another Android client with that key's SHA-1, otherwise Google answers `DEVELOPER_ERROR` / config error on those builds.
+- **Testing mode:** while the OAuth consent screen's publishing status is *Testing*, only the listed test users can sign in (up to 100). Add them under Google Auth Platform -> Audience, or complete Branding and publish the app (basic scopes `openid email profile` need no Google verification).
+- The Flutter build gets the Web client ID from `--dart-define=GOOGLE_WEB_CLIENT_ID=...` (already in `config/azure.json`). Without it the app hides the Google button.
+- iOS is not set up (it needs an iOS client and its reversed client ID in `Info.plist`).
+
+Check that the VM accepts it: `curl -s -XPOST https://<api_domain>/auth/google -H 'content-type: application/json' -d '{"idToken":"x"}'` answers **401** when configured (the token is refused) and **503** when `GOOGLE_CLIENT_IDS` is missing.
 
 ## Health and monitoring
 

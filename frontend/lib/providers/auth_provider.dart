@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../models/user.dart';
 import '../services/auth_service.dart';
+import '../services/google_sign_in_service.dart';
 
 enum AuthStatus { unknown, loggedOut, loggedIn, guest }
 
@@ -10,8 +11,12 @@ enum AuthStatus { unknown, loggedOut, loggedIn, guest }
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
 
-  AuthProvider({AuthService? authService})
-    : _authService = authService ?? AuthService() {
+  /// ตัวเข้าสู่ระบบด้วย Google (หน้าจอใช้ตรง ๆ เพื่อแสดงปุ่ม/รับ token บนเว็บ)
+  final GoogleSignInService googleSignIn;
+
+  AuthProvider({AuthService? authService, GoogleSignInService? googleSignIn})
+    : _authService = authService ?? AuthService(),
+      googleSignIn = googleSignIn ?? PlatformGoogleSignInService() {
     _authService.onSessionExpired = _handleSessionExpired;
   }
 
@@ -96,6 +101,35 @@ class AuthProvider extends ChangeNotifier {
     return result.error;
   }
 
+  /// ล็อกอินด้วย Google ID token — คืนข้อความ error หรือ null ถ้าสำเร็จ
+  Future<String?> loginWithGoogle(String idToken) async {
+    _isLoading = true;
+    notifyListeners();
+
+    final result = await _authService.loginWithGoogle(idToken);
+    if (result.error == null) {
+      _currentUser = result.user;
+      _status = AuthStatus.loggedIn;
+    }
+
+    _isLoading = false;
+    notifyListeners();
+    return result.error;
+  }
+
+  /// (มือถือ) เปิดหน้าเลือกบัญชี Google แล้วล็อกอิน — คืนข้อความ error หรือ null ถ้าสำเร็จ
+  /// หรือผู้ใช้ยกเลิก (กรณียกเลิกสถานะยังเป็นเดิม)
+  Future<String?> signInWithGoogle() async {
+    final String? idToken;
+    try {
+      idToken = await googleSignIn.signIn();
+    } on GoogleSignInFailure catch (e) {
+      return e.message;
+    }
+    if (idToken == null) return null;
+    return loginWithGoogle(idToken);
+  }
+
   void continueAsGuest() {
     _status = AuthStatus.guest;
     _currentUser = null;
@@ -153,6 +187,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> logout() async {
     await _authService.logout();
+    await googleSignIn.signOut();
     _currentUser = null;
     _status = AuthStatus.loggedOut;
     notifyListeners();

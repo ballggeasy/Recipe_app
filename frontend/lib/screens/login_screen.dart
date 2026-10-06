@@ -11,6 +11,7 @@ import '../providers/auth_provider.dart';
 import '../widgets/common/app_button.dart';
 import '../widgets/common/app_text_field.dart';
 import '../widgets/common/tap_target.dart';
+import '../widgets/google_sign_in_section.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 
@@ -73,13 +74,6 @@ class _LoginScreenState extends State<LoginScreen> {
     context.read<AuthProvider>().continueAsGuest();
   }
 
-  void _comingSoon(String provider) {
-    _showMessage(
-      'เข้าสู่ระบบด้วย $provider ยังไม่รองรับในขณะนี้',
-      isError: false,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -98,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
               isLoading: auth.isLoading,
               onSubmit: _login,
               onGuest: _loginAsGuest,
-              onSocial: _comingSoon,
+              onMessage: _showMessage,
             );
 
             if (isWide) {
@@ -308,7 +302,7 @@ class _LoginForm extends StatelessWidget {
   final bool isLoading;
   final VoidCallback onSubmit;
   final VoidCallback onGuest;
-  final ValueChanged<String> onSocial;
+  final ValueChanged<String> onMessage;
 
   const _LoginForm({
     required this.emailController,
@@ -318,7 +312,7 @@ class _LoginForm extends StatelessWidget {
     required this.isLoading,
     required this.onSubmit,
     required this.onGuest,
-    required this.onSocial,
+    required this.onMessage,
   });
 
   @override
@@ -428,38 +422,7 @@ class _LoginForm extends StatelessWidget {
           onPressed: onSubmit,
           loading: isLoading,
         ),
-        const SizedBox(height: AppSpacing.lg),
-        Row(
-          children: [
-            Expanded(child: Divider(color: AppTheme.div(context))),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: Text(
-                'หรือ',
-                style: AppTypography.caption(
-                  color: AppTheme.txtSecondary(context),
-                ),
-              ),
-            ),
-            Expanded(child: Divider(color: AppTheme.div(context))),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        SocialLoginButton(
-          label: 'ดำเนินการต่อด้วย Google',
-          onTap: () => onSocial('Google'),
-          badge: const GoogleBadge(),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        SocialLoginButton(
-          label: 'ดำเนินการต่อด้วย GitHub',
-          onTap: () => onSocial('GitHub'),
-          badge: Icon(
-            Icons.code_rounded,
-            size: 18,
-            color: AppTheme.txtPrimary(context),
-          ),
-        ),
+        GoogleSignInSection(onMessage: onMessage),
         const SizedBox(height: AppSpacing.xl),
         AppButton.outline(
           label: 'ดูสูตรอาหารโดยไม่เข้าสู่ระบบ',
@@ -467,78 +430,6 @@ class _LoginForm extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.md),
       ],
-    );
-  }
-}
-
-/// ปุ่มล็อกอินโซเชียลแบบ placeholder — ใช้ร่วมกันระหว่างหน้า login และ register
-class SocialLoginButton extends StatelessWidget {
-  final String label;
-  final Widget badge;
-  final VoidCallback onTap;
-
-  const SocialLoginButton({
-    super.key,
-    required this.label,
-    required this.badge,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppTheme.surf(context),
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        child: Container(
-          height: 52,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: AppTheme.div(context)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              badge,
-              const SizedBox(width: AppSpacing.sm),
-              Text(
-                label,
-                style: AppTypography.bodyStrong(
-                  color: AppTheme.txtPrimary(context),
-                ).copyWith(fontSize: 14),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class GoogleBadge extends StatelessWidget {
-  const GoogleBadge({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 18,
-      height: 18,
-      alignment: Alignment.center,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        color: Color(0xFF4285F4),
-      ),
-      child: const Text(
-        'G',
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w800,
-          color: Colors.white,
-          height: 1,
-        ),
-      ),
     );
   }
 }

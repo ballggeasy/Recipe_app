@@ -5,6 +5,7 @@ import { PassportModule } from '@nestjs/passport';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { GoogleTokenVerifier } from './google-token-verifier';
 import { JwtStrategy } from './jwt.strategy';
 import { PasswordResetEnabledGuard } from './password-reset-enabled.guard';
 
@@ -22,6 +23,6 @@ import { PasswordResetEnabledGuard } from './password-reset-enabled.guard';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, PasswordResetEnabledGuard],
+  providers: [AuthService, GoogleTokenVerifier, JwtStrategy, PasswordResetEnabledGuard],
 })
 export class AuthModule {}

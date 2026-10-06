@@ -49,9 +49,15 @@ upstreams_seen() {
   dc logs --no-log-prefix --since "$1" nginx 2>&1 | grep 'GET /recipes ' | grep -o 'upstream=[0-9.:]*' | sort -u | wc -l
 }
 
-# 2. spread over every replica
-for _ in $(seq 1 30); do curl -fsS "http://localhost:$PORT/recipes" > /dev/null; done
-seen=$(upstreams_seen 2m)
+# 2. spread over every replica. nginx re-reads the replica addresses every 10 seconds, so a replica
+# that came up after nginx started can take that long to join: keep sending until all of them were hit.
+seen=0
+for _ in $(seq 1 12); do
+  for _ in $(seq 1 30); do curl -fsS "http://localhost:$PORT/recipes" > /dev/null; done
+  seen=$(upstreams_seen 2m)
+  [[ "$seen" == "$REPLICAS" ]] && break
+  sleep 3
+done
 [[ "$seen" == "$REPLICAS" ]] || { cleanup; fail "Requests reached $seen of $REPLICAS replicas"; }
 echo "OK: requests are spread over all $REPLICAS replicas"
 

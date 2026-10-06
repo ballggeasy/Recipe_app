@@ -32,6 +32,10 @@ backend_port: 3000
 # replica per CPU core is where more replicas stop adding throughput.
 backend_replicas: 2
 
+# Sign in with Google: the Web OAuth client ID (public, not a secret) whose ID tokens the backend
+# accepts. Leave empty to turn it off (POST /auth/google then answers 503).
+google_client_ids: "541568022253-k83qr75tqcq44boed4dsa6ps7qr73u5o.apps.googleusercontent.com"
+
 # Optional host firewall (ufw). The network firewall in front of the VM is separate.
 manage_ufw: false
 ufw_open_ports:

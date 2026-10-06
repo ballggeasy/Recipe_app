@@ -1,3 +1,4 @@
 {
-  "API_BASE_URL": "https://recipe-backend-psu.malaysiawest.cloudapp.azure.com"
+  "API_BASE_URL": "https://recipe-backend-psu.malaysiawest.cloudapp.azure.com",
+  "GOOGLE_WEB_CLIENT_ID": "541568022253-k83qr75tqcq44boed4dsa6ps7qr73u5o.apps.googleusercontent.com"
 }

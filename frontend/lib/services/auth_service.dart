@@ -49,6 +49,26 @@ class AuthService {
     }
   }
 
+  /// ส่ง Google ID token ให้ backend ตรวจกับ Google แล้วรับ JWT ของแอปกลับมา
+  /// (backend สร้างบัญชีให้ถ้ายังไม่มี หรือผูกกับบัญชีที่สมัครด้วยอีเมลเดียวกันไว้แล้ว)
+  Future<AuthResult> loginWithGoogle(String idToken) async {
+    try {
+      final data =
+          await _api.post(
+                '/auth/google',
+                auth: false,
+                body: {'idToken': idToken},
+              )
+              as Map<String, dynamic>;
+
+      final user = AppUser.fromApi(data['user'] as Map<String, dynamic>);
+      await _api.setToken(data['accessToken'] as String);
+      return AuthResult.success(user);
+    } on ApiException catch (e) {
+      return AuthResult.failure(e.message);
+    }
+  }
+
   /// [remember] = false: token ใช้ได้เฉพาะ session นี้ แต่จะไม่จำไว้เปิดแอปครั้งหน้า
   Future<AuthResult> login({
     required String email,
