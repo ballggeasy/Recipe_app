@@ -63,6 +63,13 @@
     regexp: "^BACKEND_REPLICAS="
     line: "BACKEND_REPLICAS={{ backend_replicas }}"
 
+- name: Accept Google ID tokens for the Web client ID
+  ansible.builtin.lineinfile:
+    path: "{{ app_env_file }}"
+    regexp: "^GOOGLE_CLIENT_IDS="
+    line: "GOOGLE_CLIENT_IDS={{ google_client_ids }}"
+  when: google_client_ids | length > 0
+
 - name: Add missing settings
   ansible.builtin.lineinfile:
     path: "{{ app_env_file }}"

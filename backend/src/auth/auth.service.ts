@@ -7,9 +7,11 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
 import { removeUploadedFile } from '../common/image-upload';
 import { User } from '../users/user.entity';
 import { UsersService } from '../users/users.service';
+import { GoogleTokenVerifier } from './google-token-verifier';
 
 export interface AuthResult {
   accessToken: string;
@@ -42,6 +44,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly googleTokenVerifier: GoogleTokenVerifier,
   ) {}
 
   private hashPassword(password: string): Promise<string> {
@@ -74,6 +77,40 @@ export class AuthService {
     const passwordMatches = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_PASSWORD_HASH);
     if (!user || !passwordMatches) {
       throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
+    }
+
+    return { accessToken: this.signToken(user), user: toSafeUser(user) };
+  }
+
+  /**
+   * Sign in with a Google ID token from the device. The token is verified with Google first; then:
+   * 1. a user already linked to this Google account signs in;
+   * 2. otherwise a user with the same (Google-verified) email gets linked to it, so someone who
+   *    registered with a password keeps their recipes and favourites;
+   * 3. otherwise a new user is created.
+   */
+  async loginWithGoogle(idToken: string): Promise<AuthResult> {
+    const identity = await this.googleTokenVerifier.verify(idToken);
+
+    let user = await this.usersService.findByGoogleId(identity.googleId);
+    if (!user) {
+      user = await this.usersService.findByEmail(identity.email);
+      if (user) {
+        user.googleId = identity.googleId;
+        if (!user.profileImageUrl && identity.picture) user.profileImageUrl = identity.picture;
+        user = await this.usersService.save(user);
+      } else {
+        // A Google-only account has no password: the hash is of a random value nobody knows, so
+        // /auth/login can never succeed for it.
+        const passwordHash = await this.hashPassword(randomBytes(32).toString('hex'));
+        user = await this.usersService.create({
+          email: identity.email,
+          passwordHash,
+          name: identity.name?.trim() || identity.email.split('@')[0],
+          googleId: identity.googleId,
+          profileImageUrl: identity.picture,
+        });
+      }
     }
 
     return { accessToken: this.signToken(user), user: toSafeUser(user) };

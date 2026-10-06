@@ -14,16 +14,27 @@ export class UsersService {
     return this.usersRepository.findOne({ where: { email: email.trim().toLowerCase() } });
   }
 
+  findByGoogleId(googleId: string): Promise<User | null> {
+    return this.usersRepository.findOne({ where: { googleId } });
+  }
+
   findById(id: string): Promise<User | null> {
     return this.usersRepository.findOne({ where: { id } });
   }
 
-  create(data: { email: string; passwordHash: string; name: string }): Promise<User> {
+  create(data: {
+    email: string;
+    passwordHash: string;
+    name: string;
+    googleId?: string;
+    profileImageUrl?: string | null;
+  }): Promise<User> {
     const user = this.usersRepository.create({
       email: data.email.trim().toLowerCase(),
       passwordHash: data.passwordHash,
       name: data.name.trim(),
-      profileImageUrl: null,
+      googleId: data.googleId ?? null,
+      profileImageUrl: data.profileImageUrl ?? null,
     });
     return this.usersRepository.save(user);
   }

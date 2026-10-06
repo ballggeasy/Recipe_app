@@ -9,6 +9,8 @@ import '../providers/auth_provider.dart';
 import '../widgets/common/app_button.dart';
 import '../widgets/common/app_text_field.dart';
 import '../widgets/common/tap_target.dart';
+import '../widgets/google_sign_in_section.dart';
+import '../widgets/social_login_button.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -111,6 +113,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               isLoading: auth.isLoading,
               onSubmit: _register,
               onSocial: _comingSoon,
+              onMessage: _showMessage,
             );
 
             if (isWide) {
@@ -177,6 +180,7 @@ class _RegisterForm extends StatelessWidget {
   final bool isLoading;
   final VoidCallback onSubmit;
   final ValueChanged<String> onSocial;
+  final ValueChanged<String> onMessage;
 
   const _RegisterForm({
     required this.nameController,
@@ -186,6 +190,7 @@ class _RegisterForm extends StatelessWidget {
     required this.isLoading,
     required this.onSubmit,
     required this.onSocial,
+    required this.onMessage,
   });
 
   @override
@@ -269,12 +274,9 @@ class _RegisterForm extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AppSpacing.lg),
-        SocialLoginButton(
-          label: 'ดำเนินการต่อด้วย Google',
-          onTap: () => onSocial('Google'),
-          badge: const GoogleBadge(),
-        ),
-        const SizedBox(height: AppSpacing.md),
+        GoogleSignInButton(onMessage: onMessage),
+        if (context.read<AuthProvider>().googleSignIn.isConfigured)
+          const SizedBox(height: AppSpacing.md),
         SocialLoginButton(
           label: 'ดำเนินการต่อด้วย GitHub',
           onTap: () => onSocial('GitHub'),

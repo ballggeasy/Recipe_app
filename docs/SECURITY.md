@@ -33,6 +33,7 @@ What protects the API today, what was deliberately left open, and what to do abo
 | 7 | Grafana is published on all interfaces by default (login required, sign-up disabled, password set by Ansible). | Changing the default could lock current users out of dashboards. | Set `GRAFANA_BIND=127.0.0.1` and use an SSH tunnel, or firewall port 3001. |
 | 8 | Image URLs in recipes/comments/reviews are free-form strings (a client may point at any host). | The app also uses external image URLs. | If it becomes a concern, restrict to `/uploads/...` and an allow-list of hosts. |
 | 9 | TLS terminates on the VM (Caddy, `docs/DEPLOYMENT.md#https`). The backend listens on localhost only, but the network firewall rules (Azure NSG) are set by hand, not by this repo. | Not manageable from the repo. | Once HTTPS works, close TCP 3000 in the network firewall and keep only 22, 80 and 443. Restrict 22 to known IPs if they are stable. |
+| 10 | **Linking by email can hand an account to someone who registered first.** Registration does not verify the email, so a person can register `victim@gmail.com` with their own password; when the victim later signs in with Google, they are linked to that account and the person who registered still knows its password. | Linking was chosen so that password users keep their data when they start using Google. | Verify emails at registration (needs SMTP, see item 1), or when linking to an account that has a password, replace that password with a random one. |
 
 ## Reporting
 

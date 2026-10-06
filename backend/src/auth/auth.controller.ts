@@ -20,6 +20,7 @@ import { AUTH_RATE_LIMIT } from '../common/rate-limit';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { GoogleLoginDto } from './dto/google-login.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -42,6 +43,14 @@ export class AuthController {
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto.email, dto.password);
+  }
+
+  /** Sign in (or sign up) with the ID token the Google sign-in on the device returned. */
+  @Throttle(AUTH_RATE_LIMIT)
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  googleLogin(@Body() dto: GoogleLoginDto) {
+    return this.authService.loginWithGoogle(dto.idToken);
   }
 
   // Both endpoints below are off unless ALLOW_INSECURE_PASSWORD_RESET=true (see the guard).
