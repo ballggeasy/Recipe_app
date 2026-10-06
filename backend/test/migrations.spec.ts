@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { DataSource, DataSourceOptions } from 'typeorm';
-import { databaseOptions, entities } from '../src/database/database.config';
+import { databaseOptions, entities, migrations } from '../src/database/database.config';
 
 const tableNames = async (ds: DataSource): Promise<string[]> =>
   (
@@ -85,6 +85,46 @@ describe('database migrations', () => {
       expect(pending.upQueries.map((q) => q.query)).toEqual([]);
       const applied = await upgraded.query('SELECT name FROM migrations');
       expect(applied.length).toBeGreaterThan(0);
+    } finally {
+      await closeAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('fill in nutrition for the official sample recipes that had none, and nothing else', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'recipe-migrations-'));
+    const file = join(dir, 'nutrition.sqlite');
+    const before = migrations.filter((m) => m.name !== 'AddOfficialRecipeNutrition1791400000000');
+    const insert = (id: string, name: string, isOfficial: boolean, nutrition: string | null) =>
+      `INSERT INTO recipes (id, name, emoji, category, country, cookTimeMinutes, difficulty, isOfficial, nutrition)
+       VALUES ('${id}', '${name}', '🍽️', 'c', 'c', 10, 'ง่าย', ${isOfficial ? 1 : 0}, ${nutrition ? `'${nutrition}'` : 'NULL'})`;
+    try {
+      const old = await open({ ...databaseOptions(), database: file, migrations: before });
+      await old.query(insert('tiramisu', 'ทีรามิสุ', true, null));
+      await old.query(
+        insert('takoyaki', 'ทาโคยากิ', true, '{"calories":1,"protein":1,"fat":1,"carbs":1,"sugar":1,"sodium":1}'),
+      );
+      await old.query(insert('copy', 'กิมจิจิเก', false, null));
+      await old.destroy();
+
+      const upgraded = await open({ ...databaseOptions(), database: file });
+      const nutritionOf = async (id: string) =>
+        JSON.parse((await upgraded.query(`SELECT nutrition FROM recipes WHERE id = '${id}'`))[0].nutrition ?? 'null');
+
+      expect(await nutritionOf('tiramisu')).toEqual({
+        calories: 1140,
+        protein: 18,
+        fat: 66,
+        carbs: 116,
+        sugar: 75,
+        sodium: 180,
+      });
+      expect((await nutritionOf('takoyaki')).calories).toBe(1);
+      expect(await nutritionOf('copy')).toBeNull();
+
+      await upgraded.undoLastMigration();
+      expect(await nutritionOf('tiramisu')).toBeNull();
+      expect((await nutritionOf('takoyaki')).calories).toBe(1);
     } finally {
       await closeAll();
       rmSync(dir, { recursive: true, force: true });

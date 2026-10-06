@@ -9,13 +9,19 @@ import { User } from '../users/user.entity';
 import { InitialSchema1790985600000 } from './migrations/1790985600000-InitialSchema';
 import { AddLookupIndexes1790985700000 } from './migrations/1790985700000-AddLookupIndexes';
 import { AddGoogleId1790985800000 } from './migrations/1790985800000-AddGoogleId';
+import { AddOfficialRecipeNutrition1791400000000 } from './migrations/1791400000000-AddOfficialRecipeNutrition';
 import { useImmediateTransactions } from './immediate-transactions';
 import { useSerializedTransactions } from './serialized-transactions';
 
 export const entities = [User, Recipe, Favorite, FavoriteFolder, Review, ReviewReply, Comment, MealPlanEntry];
 
 /** Listed explicitly (not globbed) so ts-node, ts-jest and the compiled dist/ all load the same set, in order. */
-export const migrations = [InitialSchema1790985600000, AddLookupIndexes1790985700000, AddGoogleId1790985800000];
+export const migrations = [
+  InitialSchema1790985600000,
+  AddLookupIndexes1790985700000,
+  AddGoogleId1790985800000,
+  AddOfficialRecipeNutrition1791400000000,
+];
 
 /**
  * Several backend replicas (docker-compose runs two by default, behind nginx) share this one SQLite
