@@ -6,9 +6,11 @@ import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// ข้อผิดพลาดจากการเรียก backend API — message เป็นภาษาที่แสดงผู้ใช้ได้เลย
+/// [statusCode] เป็น null เมื่อเชื่อมต่อ server ไม่ได้เลย (ไม่มี HTTP response)
 class ApiException implements Exception {
   final String message;
-  ApiException(this.message);
+  final int? statusCode;
+  ApiException(this.message, {this.statusCode});
 
   @override
   String toString() => message;
@@ -69,12 +71,20 @@ class ApiClient {
     return _token != null;
   }
 
+  /// [persist] = false ยังต้องลบ token เก่าที่เคยจำไว้ ไม่งั้นเปิดแอปครั้งหน้าจะกลับไปเป็นบัญชีเดิม
   Future<void> setToken(String token, {bool persist = true}) async {
     _token = token;
+    final prefs = await SharedPreferences.getInstance();
     if (persist) {
-      final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_tokenKey, token);
+    } else {
+      await prefs.remove(_tokenKey);
     }
+  }
+
+  /// เลิกใช้ token ใน session นี้แต่ยังจำไว้ในเครื่อง — เปิดแอปครั้งหน้าจะลอง restore ใหม่
+  void forgetTokenForSession() {
+    _token = null;
   }
 
   Future<void> clearToken() async {
@@ -206,9 +216,19 @@ class ApiClient {
     http.Response response, {
     required bool sentToken,
   }) async {
-    final dynamic decoded = response.body.isEmpty
-        ? null
-        : jsonDecode(response.body);
+    dynamic decoded;
+    try {
+      decoded = response.body.isEmpty ? null : jsonDecode(response.body);
+    } on FormatException {
+      // body ไม่ใช่ JSON (เช่น หน้า HTML จาก proxy) — แปลงเป็น ApiException เพราะ caller ทุกตัว catch แค่ชนิดนี้
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        throw ApiException(
+          'ข้อมูลจากเซิร์ฟเวอร์ไม่ถูกต้อง',
+          statusCode: response.statusCode,
+        );
+      }
+      decoded = null;
+    }
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return decoded;
@@ -225,6 +245,6 @@ class ApiClient {
       final m = decoded['message'];
       message = m is List ? m.join(', ') : m.toString();
     }
-    throw ApiException(message);
+    throw ApiException(message, statusCode: response.statusCode);
   }
 }

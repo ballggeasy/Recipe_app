@@ -14,6 +14,7 @@ import '../../providers/comment_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/recipe_actions.dart';
 import '../../utils/recipe_text.dart';
+import '../../utils/require_login.dart';
 import '../../widgets/community_dialogs.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
@@ -25,7 +26,7 @@ import '../../widgets/review/review_card.dart';
 import '../../widgets/comment/comment_tile.dart';
 import '../../widgets/add_to_folder_sheet.dart';
 import 'cooking_mode_screen.dart';
-import 'edit_recipe_screen.dart';
+import 'recipe_form_screen.dart';
 
 /// รายละเอียดสูตรอาหาร — ครบทุกฟีเจอร์ demo
 class DetailScreen extends StatefulWidget {
@@ -41,8 +42,10 @@ class _DetailScreenState extends State<DetailScreen> {
   String? _loadedForUserId;
   bool _loadedOnce = false;
 
+  /// ข้อมูลล่าสุดของสูตร (เช่น หลังแก้ไข) — ใช้ `read` เพราะถูกเรียกจาก callback ด้วย
+  /// (`watch` นอก build จะ assert ใน debug ทำให้ปุ่มโปรด/แชร์/ลบพัง) ส่วน build ฟัง RecipeProvider อยู่แล้ว
   Recipe get recipe {
-    return context.watch<RecipeProvider>().getById(widget.recipe.id) ??
+    return context.read<RecipeProvider>().getById(widget.recipe.id) ??
         widget.recipe;
   }
 
@@ -101,7 +104,7 @@ class _DetailScreenState extends State<DetailScreen> {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => EditRecipeScreen(recipe: recipe),
+                        builder: (_) => RecipeFormScreen(recipe: recipe),
                       ),
                     ),
                   ),
@@ -324,11 +327,24 @@ class _DetailScreenState extends State<DetailScreen> {
                       (r) => ReviewCard(
                         review: r,
                         isLiked: r.likedBy(currentUserId),
-                        onLike: () => reviewProvider.toggleLike(r.id),
+                        onLike: () {
+                          if (requireLogin(
+                            context,
+                            'เข้าสู่ระบบเพื่อกดถูกใจรีวิว',
+                          )) {
+                            reviewProvider.toggleLike(r.id);
+                          }
+                        },
                         onDelete: r.userId == currentUserId
                             ? () => _deleteOwnReview(reviewProvider, r.id)
                             : null,
                         onReport: () {
+                          if (!requireLogin(
+                            context,
+                            'เข้าสู่ระบบเพื่อรายงานรีวิว',
+                          )) {
+                            return;
+                          }
                           reviewProvider.reportReview(r.id);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('รายงานรีวิวแล้ว')),
@@ -518,6 +534,7 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 
   void _showReplyDialog(BuildContext context, String reviewId) {
+    if (!requireLogin(context, 'เข้าสู่ระบบเพื่อตอบกลับรีวิว')) return;
     final controller = TextEditingController();
     showDialog(
       context: context,

@@ -2,24 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/recipe.dart';
-import '../providers/auth_provider.dart';
 import '../providers/favorite_provider.dart';
 import '../providers/recipe_provider.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_typography.dart';
+import '../utils/require_login.dart';
 
 /// ให้ผู้ใช้เลือกโฟลเดอร์เพื่อเก็บสูตร — ถ้ายังไม่ล็อกอินจะบอกให้เข้าสู่ระบบ
 Future<void> showAddToFolderSheet(
   BuildContext context, {
   required Recipe recipe,
 }) {
-  final auth = context.read<AuthProvider>();
-  if (!auth.isLoggedIn) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('เข้าสู่ระบบเพื่อจัดสูตรเข้าโฟลเดอร์')),
-    );
+  if (!requireLogin(context, 'เข้าสู่ระบบเพื่อจัดสูตรเข้าโฟลเดอร์')) {
     return Future.value();
   }
 
@@ -130,11 +126,7 @@ Future<void> showPickFavoriteForFolderSheet(
   BuildContext context, {
   required String folderId,
 }) {
-  final auth = context.read<AuthProvider>();
-  if (!auth.isLoggedIn) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('เข้าสู่ระบบเพื่อจัดสูตรเข้าโฟลเดอร์')),
-    );
+  if (!requireLogin(context, 'เข้าสู่ระบบเพื่อจัดสูตรเข้าโฟลเดอร์')) {
     return Future.value();
   }
 

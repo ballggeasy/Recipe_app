@@ -11,6 +11,7 @@ import '../../providers/recipe_provider.dart';
 import '../../models/recipe.dart';
 import '../../models/meal_plan.dart';
 import '../../models/nutrition.dart';
+import '../../utils/require_login.dart';
 import '../../widgets/common/empty_state.dart';
 import '../recipe/detail_screen.dart';
 
@@ -58,7 +59,11 @@ class _MealPlannerScreenState extends State<MealPlannerScreen>
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'meal_planner_add_fab',
-        onPressed: () => _showAddMealDialog(context),
+        onPressed: () {
+          if (requireLogin(context, 'เข้าสู่ระบบเพื่อวางแผนมื้ออาหาร')) {
+            _showAddMealDialog(context);
+          }
+        },
         backgroundColor: AppTheme.prim(context),
         child: Icon(Icons.add_rounded, color: AppTheme.onAccent(context)),
       ),

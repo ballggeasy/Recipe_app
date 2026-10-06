@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:recipe_app/providers/auth_provider.dart';
 import 'package:recipe_app/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -38,6 +39,35 @@ void main() {
       expect(auth.isLoggedIn, isTrue);
       expect(auth.currentUser!.name, 'สมชาย');
     });
+
+    test(
+      'keeps the remembered login when the server cannot be reached, without using it this session',
+      () async {
+        SharedPreferences.setMockInitialValues({'auth_token': 'valid'});
+        final log = <http.Request>[];
+        final api = fakeApi({
+          'GET /auth/me': (_) => jsonResponse({'message': 'Bad Gateway'}, 502),
+          'GET /recipes': (_) => jsonResponse([]),
+        }, log: log);
+        final auth = AuthProvider(authService: AuthService(api: api));
+
+        await auth.init();
+
+        expect(auth.status, AuthStatus.loggedOut);
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          prefs.getString('auth_token'),
+          'valid',
+          reason: 'the next app start should try to restore it again',
+        );
+        await api.get('/recipes');
+        expect(
+          log.last.headers.containsKey('Authorization'),
+          isFalse,
+          reason: 'guest mode must not send requests as the remembered account',
+        );
+      },
+    );
 
     test('drops an expired token and logs out', () async {
       SharedPreferences.setMockInitialValues({'auth_token': 'expired'});

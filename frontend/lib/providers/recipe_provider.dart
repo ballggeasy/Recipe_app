@@ -35,6 +35,8 @@ class RecipeProvider extends ChangeNotifier {
   SourceFilter _selectedSource = SourceFilter.all;
   SortOption _sortOption = SortOption.ratingDesc;
   RecipeListMode _listMode = RecipeListMode.all;
+  // seed ของโหมดสุ่ม — สุ่มใหม่เฉพาะตอนผู้ใช้เลือกโหมดสุ่ม ไม่ใช่ทุกครั้งที่ filteredRecipes ถูกเรียก (ทุก rebuild)
+  int _randomSeed = 0;
   String? _selectedDietTag;
   int? _maxCookTime;
   String? _selectedDifficulty;
@@ -124,7 +126,7 @@ class RecipeProvider extends ChangeNotifier {
       case RecipeListMode.recommended:
         return list.where((r) => r.isRecommended).toList();
       case RecipeListMode.random:
-        final shuffled = [...list]..shuffle(Random());
+        final shuffled = [...list]..shuffle(Random(_randomSeed));
         return shuffled.take(6).toList();
       case RecipeListMode.seasonal:
         return list.where((r) => r.season != 'ตลอดปี').toList();
@@ -316,6 +318,7 @@ class RecipeProvider extends ChangeNotifier {
   }
 
   void updateListMode(RecipeListMode mode, {String? dietTag}) {
+    if (mode == RecipeListMode.random) _randomSeed = Random().nextInt(1 << 31);
     _listMode = mode;
     _selectedDietTag = dietTag;
     notifyListeners();

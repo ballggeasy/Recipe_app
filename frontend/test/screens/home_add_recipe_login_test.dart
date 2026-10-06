@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:recipe_app/providers/auth_provider.dart';
 import 'package:recipe_app/providers/recipe_provider.dart';
 import 'package:recipe_app/screens/home/home_screen.dart';
-import 'package:recipe_app/screens/recipe/add_recipe_screen.dart';
+import 'package:recipe_app/screens/recipe/recipe_form_screen.dart';
 import 'package:recipe_app/services/auth_service.dart';
 import 'package:recipe_app/services/favorite_service.dart';
 import 'package:recipe_app/services/recipe_service.dart';
@@ -71,7 +71,7 @@ void main() {
       AuthStatus.loggedOut,
       reason: 'the app shows the login screen',
     );
-    expect(find.byType(AddRecipeScreen), findsNothing);
+    expect(find.byType(RecipeFormScreen), findsNothing);
     expect(find.text('กรุณา Log in เพื่อแชร์ความอร่อย'), findsOneWidget);
   });
 
@@ -85,7 +85,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(auth.status, AuthStatus.loggedOut);
-    expect(find.byType(AddRecipeScreen), findsNothing);
+    expect(find.byType(RecipeFormScreen), findsNothing);
     expect(find.text('กรุณา Log in เพื่อแชร์ความอร่อย'), findsOneWidget);
   });
 
@@ -101,7 +101,7 @@ void main() {
     await tester.tap(find.text('เพิ่มสูตร'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(AddRecipeScreen), findsOneWidget);
+    expect(find.byType(RecipeFormScreen), findsOneWidget);
     expect(auth.status, AuthStatus.loggedIn);
     expect(find.text('กรุณา Log in เพื่อแชร์ความอร่อย'), findsNothing);
   });

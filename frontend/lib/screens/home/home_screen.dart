@@ -25,7 +25,7 @@ import '../../widgets/common/tap_target.dart';
 import '../../widgets/search/search_bar_widget.dart';
 import '../profile/profile_screen.dart';
 import '../recipe/detail_screen.dart';
-import '../recipe/add_recipe_screen.dart';
+import '../recipe/recipe_form_screen.dart';
 
 /// แสดงเมื่อผู้ที่ยังไม่ล็อกอินกดเพิ่มสูตร แล้วถูกพาไปหน้าล็อกอิน
 const addRecipeLoginMessage = 'กรุณา Log in เพื่อแชร์ความอร่อย';
@@ -85,7 +85,7 @@ class HomeScreen extends StatelessWidget {
           }
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const AddRecipeScreen()),
+            MaterialPageRoute(builder: (_) => const RecipeFormScreen()),
           );
         },
         backgroundColor: AppTheme.prim(context),

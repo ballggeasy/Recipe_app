@@ -81,6 +81,27 @@ void main() {
       expect(e.message, 'เกิดข้อผิดพลาด (500)');
     });
 
+    test('keeps the HTTP status code on the exception', () async {
+      final e = await errorFrom(jsonResponse({'message': 'ไม่พบ'}, 404));
+      expect(e.statusCode, 404);
+    });
+
+    test(
+      'turns a non-JSON error page (e.g. from a proxy) into an ApiException',
+      () async {
+        final e = await errorFrom(
+          http.Response('<html>Bad Gateway</html>', 502),
+        );
+        expect(e.message, 'เกิดข้อผิดพลาด (502)');
+        expect(e.statusCode, 502);
+      },
+    );
+
+    test('reports a non-JSON success body as invalid server data', () async {
+      final e = await errorFrom(http.Response('<html>login</html>', 200));
+      expect(e.message, 'ข้อมูลจากเซิร์ฟเวอร์ไม่ถูกต้อง');
+    });
+
     test('turns network failures into a friendly connection error', () async {
       final api = ApiClient.forTesting(
         MockClient((_) => throw http.ClientException('offline')),
@@ -220,6 +241,20 @@ void main() {
       await fakeApi({}).setToken('session-only', persist: false);
       expect(await fakeApi({}).loadToken(), isFalse);
     });
+
+    test(
+      'persist false also forgets a token remembered by an earlier login',
+      () async {
+        await fakeApi({}).setToken('remembered');
+        await fakeApi({}).setToken('session-only', persist: false);
+
+        expect(
+          await fakeApi({}).loadToken(),
+          isFalse,
+          reason: 'reopening the app must not sign back in as the old account',
+        );
+      },
+    );
 
     test('clearToken removes the stored token', () async {
       final api = fakeApi({});

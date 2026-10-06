@@ -219,6 +219,30 @@ void main() {
       expect(ids().first, 'carbonara');
     });
 
+    test(
+      'random mode keeps the same picks across rebuilds until it is chosen again',
+      () async {
+        final many = buildProvider(
+          extra: {
+            'GET /recipes': (_) => jsonResponse([
+              for (var i = 0; i < 20; i++)
+                recipeJson(id: 'r$i', name: 'สูตร $i'),
+            ]),
+          },
+        );
+        await many.init();
+        many.updateListMode(RecipeListMode.random);
+        Set<String> picks() => many.filteredRecipes.map((r) => r.id).toSet();
+        final first = picks();
+
+        expect(first, hasLength(6));
+        // filteredRecipes ถูกเรียกทุกครั้งที่หน้าจอ rebuild — สูตรที่สุ่มได้ต้องไม่เปลี่ยนเอง
+        for (var i = 0; i < 5; i++) {
+          expect(picks(), first);
+        }
+      },
+    );
+
     test('clearFilters resets everything', () {
       provider
         ..updateSearchQuery('xyz')
