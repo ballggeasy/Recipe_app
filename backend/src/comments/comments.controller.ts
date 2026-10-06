@@ -42,7 +42,12 @@ export class CommentsController {
 
   @UseGuards(JwtAuthGuard)
   @Post(':id/image')
-  @UseInterceptors(FileInterceptor('file', imageUploadOptions('comments', (req) => req.params.id)))
+  @UseInterceptors(
+    FileInterceptor(
+      'file',
+      imageUploadOptions('comments', (req) => req.params.id),
+    ),
+  )
   setImage(@Param('id') id: string, @UploadedFile() file: Express.Multer.File, @CurrentUser() user: User) {
     if (!file) {
       throw new BadRequestException('ไม่พบไฟล์รูปภาพ');
