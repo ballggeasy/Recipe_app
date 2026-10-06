@@ -1,9 +1,9 @@
 import { INestApplication } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { existsSync, readdirSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import { basename, join } from 'path';
 import request from 'supertest';
-import { uploadsRoot } from '../src/common/image-upload';
+import { removeUploadedFile, uploadsRoot } from '../src/common/image-upload';
 import { recipeSeeds } from '../src/seed/seed-data';
 import { createTestApp } from './helpers/create-test-app';
 
@@ -318,26 +318,28 @@ describe('Recipe API (e2e)', () => {
     });
   });
 
-  describe('avatar cleanup', () => {
-    it('never deletes files outside the uploads folder, even if profileImageUrl points there', async () => {
+  describe('upload cleanup', () => {
+    // Clients can no longer set profileImageUrl, but stored URLs still reach removeUploadedFile,
+    // so it must refuse anything that resolves outside the uploads folder.
+    it('never deletes files outside the uploads folder', async () => {
       const outside = join(uploadsRoot(), '..', `keep-me-${Date.now()}.txt`);
       writeFileSync(outside, 'important');
-      const { token } = await registerUser('traversal@example.com');
 
-      await http()
-        .patch('/auth/profile')
-        .set('Authorization', `Bearer ${token}`)
-        .send({ profileImageUrl: `/uploads/../${basename(outside)}` })
-        .expect(200);
-      await http()
-        .post('/auth/avatar')
-        .set('Authorization', `Bearer ${token}`)
-        .attach('file', Buffer.from('x'), { filename: 'me.png', contentType: 'image/png' })
-        .expect(201);
+      await removeUploadedFile(`/uploads/../${basename(outside)}`);
+      await removeUploadedFile(`/uploads/avatars/../../${basename(outside)}`);
 
-      await new Promise((r) => setTimeout(r, 50));
       expect(existsSync(outside)).toBe(true);
       rmSync(outside);
+    });
+
+    it('deletes a file inside the uploads folder', async () => {
+      mkdirSync(join(uploadsRoot(), 'avatars'), { recursive: true });
+      const inside = join(uploadsRoot(), 'avatars', `gone-${Date.now()}.png`);
+      writeFileSync(inside, 'x');
+
+      await removeUploadedFile(`/uploads/avatars/${basename(inside)}`);
+
+      expect(existsSync(inside)).toBe(false);
     });
   });
 });

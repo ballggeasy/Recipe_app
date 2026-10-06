@@ -140,9 +140,8 @@ export class AuthService {
     await this.usersService.save(user);
   }
 
-  async updateProfile(user: User, name?: string, profileImageUrl?: string): Promise<SafeUser> {
+  async updateProfile(user: User, name?: string): Promise<SafeUser> {
     if (name !== undefined) user.name = name.trim();
-    if (profileImageUrl !== undefined) user.profileImageUrl = profileImageUrl;
     const saved = await this.usersService.save(user);
     return toSafeUser(saved);
   }

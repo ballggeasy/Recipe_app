@@ -95,6 +95,39 @@ describe('several connections sharing one database file', () => {
     }
   });
 
+  it("runs one process's simultaneous transactions one after another instead of failing", async () => {
+    // TypeORM shares one SQLite connection per DataSource, so two transactions started at the same
+    // moment both sent BEGIN on it ("cannot start a transaction within a transaction").
+    const ds = await open(join(dir, 'app.sqlite'));
+    await ds.query('CREATE TABLE counter_test (n INTEGER NOT NULL)');
+
+    const results = await Promise.allSettled(
+      [1, 2, 3, 4, 5].map((n) =>
+        ds.transaction(async (manager) => {
+          await manager.query('INSERT INTO counter_test (n) VALUES (?)', [n]);
+          await new Promise((resolve) => setTimeout(resolve, 20));
+          if (n === 3) throw new Error('rolled back on purpose');
+        }),
+      ),
+    );
+
+    expect(results.map((r) => r.status)).toEqual(['fulfilled', 'fulfilled', 'rejected', 'fulfilled', 'fulfilled']);
+    // The failed one's ROLLBACK only undid its own insert.
+    expect(await ds.query('SELECT n FROM counter_test ORDER BY n')).toEqual([{ n: 1 }, { n: 2 }, { n: 4 }, { n: 5 }]);
+  });
+
+  it('lets a transaction start another one inside it without waiting for itself', async () => {
+    const ds = await open(join(dir, 'app.sqlite'));
+    await ds.query('CREATE TABLE counter_test (n INTEGER NOT NULL)');
+
+    await ds.transaction(async (outer) => {
+      await outer.query('INSERT INTO counter_test (n) VALUES (1)');
+      await outer.transaction(async (inner) => inner.query('INSERT INTO counter_test (n) VALUES (2)'));
+    });
+
+    expect(await ds.query('SELECT n FROM counter_test ORDER BY n')).toEqual([{ n: 1 }, { n: 2 }]);
+  });
+
   it('does not fail a transaction that reads first when another connection commits a write meanwhile', async () => {
     // TypeORM's save() starts a transaction and loads the existing row before writing. With a plain
     // `BEGIN` SQLite then refuses the write at once (SQLITE_BUSY, the busy timeout does not apply

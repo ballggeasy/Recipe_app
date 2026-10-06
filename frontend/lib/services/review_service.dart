@@ -27,7 +27,8 @@ class ReviewService {
               body: {
                 'rating': rating,
                 'content': content,
-                'imageUrls': imageUrls,
+                // ไม่ส่งรายการว่าง: รีวิวซ้ำจะแก้รีวิวเดิม และรายการว่างจะลบรูปที่แนบไว้แล้วทิ้ง
+                if (imageUrls.isNotEmpty) 'imageUrls': imageUrls,
               },
             )
             as Map<String, dynamic>;

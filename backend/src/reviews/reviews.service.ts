@@ -35,22 +35,29 @@ export class ReviewsService {
     return review;
   }
 
+  /**
+   * One review per user per recipe: posting again updates that user's existing review instead of
+   * adding another, so nobody can stuff a recipe's average. Likes, replies and photos stay; photos
+   * are only replaced when the request sends `imageUrls`.
+   *
+   * The lookup and the write share one transaction, and every transaction starts with
+   * BEGIN IMMEDIATE (database/immediate-transactions.ts), so two concurrent posts, even on
+   * different replicas, can't both miss the existing row. There is no unique index because the
+   * seeded reviews all share userId 'seed'.
+   */
   async create(recipeId: string, dto: CreateReviewDto, user: User): Promise<Review> {
     await this.recipesService.assertExists(recipeId);
 
-    // Insert and recompute the recipe's rating together, so the stored average always matches the reviews.
+    // Save and recompute the recipe's rating together, so the stored average always matches the reviews.
     return this.reviewsRepository.manager.transaction(async (manager) => {
       const reviews = manager.getRepository(Review);
-      const review = await reviews.save(
-        reviews.create({
-          recipeId,
-          userId: user.id,
-          userName: user.name,
-          rating: dto.rating,
-          content: dto.content,
-          imageUrls: dto.imageUrls ?? [],
-        }),
-      );
+      const existing = await reviews.findOne({ where: { recipeId, userId: user.id } });
+      const draft = existing ?? reviews.create({ recipeId, userId: user.id, imageUrls: [] });
+      draft.userName = user.name;
+      draft.rating = dto.rating;
+      draft.content = dto.content;
+      if (dto.imageUrls !== undefined) draft.imageUrls = dto.imageUrls;
+      const review = await reviews.save(draft);
 
       // AVG/COUNT in SQL instead of loading every review of the recipe into memory.
       const aggregate = await reviews

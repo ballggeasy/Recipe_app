@@ -145,6 +145,74 @@ describe('Favorites, reviews, comments, meal plan and profile (e2e)', () => {
       expect(list.body[0]).toMatchObject({ content: 'ok', userId: fan2.id }); // newest first
     });
 
+    it('keeps one review per user: posting again updates it instead of adding another', async () => {
+      const cook = await registerUser('review-once-cook@example.com');
+      const fan = await registerUser('review-once-fan@example.com');
+      const recipeId = await createRecipe(cook.token);
+
+      const first = await http()
+        .post(`/recipes/${recipeId}/reviews`)
+        .set(bearer(fan.token))
+        .send({ rating: 1, content: 'first try' })
+        .expect(201);
+      await http().post(`/reviews/${first.body.id}/like`).set(bearer(cook.token)).expect(201);
+
+      const second = await http()
+        .post(`/recipes/${recipeId}/reviews`)
+        .set(bearer(fan.token))
+        .send({ rating: 5, content: 'much better second time' })
+        .expect(201);
+
+      expect(second.body.id).toBe(first.body.id);
+      expect(second.body.likedByUserIds).toEqual([cook.id]); // likes survive the edit
+      const list = await http().get(`/recipes/${recipeId}/reviews`).expect(200);
+      expect(list.body).toHaveLength(1);
+      expect(list.body[0]).toMatchObject({ rating: 5, content: 'much better second time' });
+      const recipe = await http().get(`/recipes/${recipeId}`).expect(200);
+      expect(recipe.body).toMatchObject({ reviewCount: 1, rating: 5 });
+    });
+
+    it('accepts reviews from different users posted at the same moment', async () => {
+      const cook = await registerUser('review-burst-cook@example.com');
+      const recipeId = await createRecipe(cook.token);
+      const fans = await Promise.all([1, 2, 3, 4, 5].map((i) => registerUser(`review-burst-fan${i}@example.com`)));
+
+      const results = await Promise.all(
+        fans.map((fan, i) =>
+          http()
+            .post(`/recipes/${recipeId}/reviews`)
+            .set(bearer(fan.token))
+            .send({ rating: i + 1, content: `fan ${i + 1}` }),
+        ),
+      );
+
+      expect(results.map((r) => r.status)).toEqual([201, 201, 201, 201, 201]);
+      const recipe = await http().get(`/recipes/${recipeId}`).expect(200);
+      expect(recipe.body).toMatchObject({ reviewCount: 5, rating: 3 });
+    });
+
+    it('does not create duplicates when the same user posts several reviews at once', async () => {
+      const cook = await registerUser('review-race-cook@example.com');
+      const fan = await registerUser('review-race-fan@example.com');
+      const recipeId = await createRecipe(cook.token);
+
+      const results = await Promise.all(
+        [1, 2, 3, 4, 5].map((rating) =>
+          http()
+            .post(`/recipes/${recipeId}/reviews`)
+            .set(bearer(fan.token))
+            .send({ rating, content: `try ${rating}` }),
+        ),
+      );
+
+      expect(results.map((r) => r.status)).toEqual([201, 201, 201, 201, 201]);
+      const list = await http().get(`/recipes/${recipeId}/reviews`).expect(200);
+      expect(list.body).toHaveLength(1);
+      const recipe = await http().get(`/recipes/${recipeId}`).expect(200);
+      expect(recipe.body.reviewCount).toBe(1);
+      expect(recipe.body.rating).toBe(list.body[0].rating);
+    });
+
     it('toggles a like, adds a reply and flags a review', async () => {
       const cook = await registerUser('review-social-cook@example.com');
       const fan = await registerUser('review-social-fan@example.com');
@@ -384,6 +452,28 @@ describe('Favorites, reviews, comments, meal plan and profile (e2e)', () => {
         .attach('file', Buffer.from('not an image'), { filename: 'a.txt', contentType: 'text/plain' })
         .expect(400);
       await http().post('/auth/avatar').set(bearer(token)).expect(400); // no file at all
+    });
+
+    it("rejects 'constructor' and other Object prototype names as a MIME type", async () => {
+      const { token } = await registerUser('profile-proto-mime@example.com');
+      for (const contentType of ['constructor', 'toString', '__proto__']) {
+        await http()
+          .post('/auth/avatar')
+          .set(bearer(token))
+          .attach('file', Buffer.from('x'), { filename: 'a.png', contentType })
+          .expect(400);
+      }
+    });
+
+    it('does not let the profile endpoint set the avatar URL', async () => {
+      const { token } = await registerUser('profile-url@example.com');
+      await http()
+        .patch('/auth/profile')
+        .set(bearer(token))
+        .send({ profileImageUrl: '/uploads/avatars/someone-else.jpg' })
+        .expect(400); // unknown field, rejected by the global ValidationPipe
+      const me = await http().get('/auth/me').set(bearer(token)).expect(200);
+      expect(me.body.profileImageUrl).toBeNull();
     });
 
     it('requires a token for every account endpoint', async () => {
