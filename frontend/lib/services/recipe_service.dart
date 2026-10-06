@@ -26,7 +26,8 @@ class RecipeService {
     required String difficulty,
     required int servings,
     required List<String> ingredients,
-    required List<IngredientItem> ingredientItems,
+    // ฟอร์มในแอปส่งส่วนผสมเป็นข้อความอย่างเดียว — แบบแยกช่องมีเฉพาะสูตรตัวอย่างจาก seed
+    List<IngredientItem> ingredientItems = const [],
     required List<String> steps,
     String? tips,
     String? platingTips,

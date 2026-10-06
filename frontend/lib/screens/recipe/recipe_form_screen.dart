@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/ingredient.dart';
 import '../../models/recipe.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_theme.dart';
@@ -36,6 +35,7 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
   final _tipsController = TextEditingController();
   final _platingController = TextEditingController();
   final _stepsController = TextEditingController();
+  final _ingredientsController = TextEditingController();
   final _videoController = TextEditingController();
 
   String _category = 'อาหารจานเดียว';
@@ -47,10 +47,6 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
   int _servings = 2;
   final List<String> _selectedDietTags = [];
   XFile? _image; // รูปที่เพิ่งเลือก — อัปโหลดตอนกดบันทึก (null = ใช้รูปเดิม)
-
-  final List<_IngredientControllers> _ingredientControllers = [
-    _IngredientControllers(),
-  ];
 
   bool get _isEditing => widget.recipe != null;
 
@@ -74,28 +70,12 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
     _servings = recipe.servings;
     _selectedDietTags.addAll(recipe.dietTags);
 
-    // สูตรเก่าบางสูตรมีแต่วัตถุดิบแบบข้อความ — ใส่ทั้งบรรทัดไว้ในช่องชื่อวัตถุดิบ
-    final items = recipe.ingredientItems.isNotEmpty
-        ? recipe.ingredientItems
-        : recipe.ingredients
-              .map((i) => IngredientItem(name: i, amount: '', unit: ''))
-              .toList();
-    if (items.isNotEmpty) {
-      for (final c in _ingredientControllers) {
-        c.dispose();
-      }
-      _ingredientControllers
-        ..clear()
-        ..addAll(
-          items.map(
-            (i) => _IngredientControllers(
-              amount: i.amount,
-              unit: i.unit,
-              name: i.name,
-            ),
-          ),
-        );
-    }
+    // ส่วนผสมเก็บเป็นข้อความบรรทัดละอย่าง — สูตรเก่าที่มีแต่แบบแยกช่อง (ปริมาณ/หน่วย/ชื่อ) แปลงเป็นข้อความให้
+    _ingredientsController.text =
+        (recipe.ingredients.isNotEmpty
+                ? recipe.ingredients
+                : recipe.ingredientItems.map((i) => i.display))
+            .join('\n');
   }
 
   @override
@@ -106,9 +86,7 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
     _platingController.dispose();
     _stepsController.dispose();
     _videoController.dispose();
-    for (final c in _ingredientControllers) {
-      c.dispose();
-    }
+    _ingredientsController.dispose();
     super.dispose();
   }
 
@@ -290,30 +268,13 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
             _FormSection(
               title: 'ส่วนผสม',
               children: [
-                ..._ingredientControllers.asMap().entries.map(
-                  (e) => Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: _IngredientRow(
-                      // key ผูกกับแถว ไม่ใช่ตำแหน่ง — ลบแถวกลางแล้ว focus ของช่องที่พิมพ์อยู่จะไม่ไปติดแถวถัดไป
-                      key: ObjectKey(e.value),
-                      index: e.key,
-                      controllers: e.value,
-                      onRemove: _ingredientControllers.length > 1
-                          ? () => setState(() {
-                              _ingredientControllers.removeAt(e.key).dispose();
-                            })
-                          : null,
-                    ),
-                  ),
-                ),
-                AppButton.ghost(
-                  label: 'เพิ่มวัตถุดิบ',
-                  icon: Icons.add_rounded,
-                  fullWidth: false,
-                  size: AppButtonSize.small,
-                  onPressed: () => setState(
-                    () => _ingredientControllers.add(_IngredientControllers()),
-                  ),
+                AppTextField(
+                  controller: _ingredientsController,
+                  maxLines: 6,
+                  hint: 'พิมพ์ 1 บรรทัดต่อ 1 อย่าง เช่น ไก่ 1 กิโลกรัม',
+                  label: 'ส่วนผสม (แยกบรรทัด) *',
+                  validator: (v) =>
+                      v?.trim().isEmpty == true ? 'กรุณากรอกส่วนผสม' : null,
                 ),
               ],
             ),
@@ -396,9 +357,10 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
         .split('\n')
         .where((s) => s.trim().isNotEmpty)
         .toList();
-    final items = _ingredientControllers
-        .map((c) => c.toItem())
-        .where((i) => i.name.trim().isNotEmpty)
+    final ingredients = _ingredientsController.text
+        .split('\n')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
         .toList();
     final name = _nameController.text.trim();
     final emoji = _emojiController.text.trim().isEmpty
@@ -425,8 +387,9 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
           difficulty: _difficulty,
           servings: _servings,
           steps: steps,
-          ingredients: items.map((i) => i.display).toList(),
-          ingredientItems: items,
+          ingredients: ingredients,
+          // ล้างแบบแยกช่องของเดิมทิ้ง ไม่งั้นหน้ารายละเอียด (ซึ่งแสดงแบบแยกช่องก่อน) จะยังโชว์ค่าเก่า
+          ingredientItems: const [],
           tips: tips,
           platingTips: platingTips,
           dietTags: List.of(_selectedDietTags),
@@ -450,7 +413,7 @@ class _RecipeFormScreenState extends State<RecipeFormScreen> {
         difficulty: _difficulty,
         servings: _servings,
         steps: steps,
-        items: items,
+        ingredients: ingredients,
         tips: tips,
         platingTips: platingTips,
         dietTags: _selectedDietTags,
@@ -549,90 +512,6 @@ class _NumberField extends StatelessWidget {
       keyboardType: TextInputType.number,
       decoration: InputDecoration(labelText: label),
       onChanged: (v) => onChanged(int.tryParse(v) ?? value),
-    );
-  }
-}
-
-/// เก็บ TextEditingController ของแถววัตถุดิบแต่ละแถว — คงค่าที่พิมพ์ไว้ตลอดแม้ parent rebuild
-class _IngredientControllers {
-  final TextEditingController amount;
-  final TextEditingController unit;
-  final TextEditingController name;
-
-  _IngredientControllers({
-    String amount = '',
-    String unit = 'กรัม',
-    String name = '',
-  }) : amount = TextEditingController(text: amount),
-       unit = TextEditingController(text: unit),
-       name = TextEditingController(text: name);
-
-  IngredientItem toItem() =>
-      IngredientItem(name: name.text, amount: amount.text, unit: unit.text);
-
-  void dispose() {
-    amount.dispose();
-    unit.dispose();
-    name.dispose();
-  }
-}
-
-class _IngredientRow extends StatelessWidget {
-  final int index;
-  final _IngredientControllers controllers;
-  final VoidCallback? onRemove;
-
-  const _IngredientRow({
-    super.key,
-    required this.index,
-    required this.controllers,
-    this.onRemove,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(
-          flex: 2,
-          child: TextFormField(
-            controller: controllers.amount,
-            decoration: const InputDecoration(
-              hintText: 'ปริมาณ',
-              isDense: true,
-            ),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: TextFormField(
-            controller: controllers.unit,
-            decoration: const InputDecoration(hintText: 'หน่วย', isDense: true),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          flex: 3,
-          child: TextFormField(
-            controller: controllers.name,
-            decoration: InputDecoration(
-              hintText: 'วัตถุดิบ ${index + 1}',
-              isDense: true,
-            ),
-          ),
-        ),
-        if (onRemove != null)
-          IconButton(
-            tooltip: 'ลบวัตถุดิบนี้',
-            icon: Icon(
-              Icons.remove_circle_outline_rounded,
-              size: 20,
-              color: AppTheme.error(context),
-            ),
-            onPressed: onRemove,
-          ),
-      ],
     );
   }
 }
