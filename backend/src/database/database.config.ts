@@ -10,6 +10,7 @@ import { InitialSchema1790985600000 } from './migrations/1790985600000-InitialSc
 import { AddLookupIndexes1790985700000 } from './migrations/1790985700000-AddLookupIndexes';
 import { AddGoogleId1790985800000 } from './migrations/1790985800000-AddGoogleId';
 import { useImmediateTransactions } from './immediate-transactions';
+import { useSerializedTransactions } from './serialized-transactions';
 
 export const entities = [User, Recipe, Favorite, FavoriteFolder, Review, ReviewReply, Comment, MealPlanEntry];
 
@@ -31,6 +32,7 @@ const BUSY_TIMEOUT_MS = 5000;
  */
 export function databaseOptions(): SqliteConnectionOptions {
   useImmediateTransactions();
+  useSerializedTransactions();
   return {
     type: 'sqlite',
     database: process.env.DB_PATH ?? './data/app.sqlite',

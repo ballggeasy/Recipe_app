@@ -78,6 +78,8 @@ class ReviewProvider extends ChangeNotifier {
       }
       if (epoch != _authEpoch) return (error: null, imageError: imageError);
       final list = _reviewsByRecipe.putIfAbsent(recipeId, () => []);
+      // ผู้ใช้มีรีวิวได้หนึ่งรีวิวต่อสูตร: รีวิวซ้ำ backend จะแก้รีวิวเดิม (id เดิม) ไม่ใช่เพิ่มใหม่
+      list.removeWhere((r) => r.id == review.id);
       list.insert(0, review);
       notifyListeners();
       return (error: null, imageError: imageError);
