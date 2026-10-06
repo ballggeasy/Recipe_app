@@ -36,8 +36,8 @@ abstract class GoogleSignInService {
   /// (เว็บ) ID token ที่ได้หลังผู้ใช้กดปุ่มของ Google
   Stream<String> get idTokens;
 
-  /// (เว็บ) ปุ่ม "Sign in with Google" ของ Google
-  Widget buildGoogleButton();
+  /// (เว็บ) ปุ่ม "Sign in with Google" ของ Google กว้าง [width] px (Google จำกัด 200–400) และ [dark] = ธีมมืด
+  Widget buildGoogleButton({required double width, required bool dark});
 
   /// (มือถือ) เปิดหน้าเลือกบัญชี Google แล้วคืน ID token — null ถ้าผู้ใช้ยกเลิก
   /// throw [GoogleSignInFailure] ถ้าล้มเหลวด้วยเหตุอื่น
@@ -84,7 +84,7 @@ class PlatformGoogleSignInService implements GoogleSignInService {
   }
 
   @override
-  Widget buildGoogleButton() {
+  Widget buildGoogleButton({required double width, required bool dark}) {
     return FutureBuilder<void>(
       future: _ensureInitialized(),
       builder: (context, snapshot) {
@@ -96,7 +96,7 @@ class PlatformGoogleSignInService implements GoogleSignInService {
         if (snapshot.connectionState != ConnectionState.done) {
           return const SizedBox(height: 44);
         }
-        return web_button.renderGoogleButton();
+        return web_button.renderGoogleButton(width: width, dark: dark);
       },
     );
   }

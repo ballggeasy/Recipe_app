@@ -15,6 +15,10 @@ import '../widgets/google_sign_in_section.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 
+/// ความกว้างสูงสุดของฟอร์มล็อกอิน/สมัครสมาชิก ปุ่มทุกปุ่มจึงกว้างเท่ากัน
+/// (ปุ่ม Google ที่ Google วาดเองบนเว็บกว้างได้สูงสุด 400 px)
+const kAuthFormMaxWidth = 400.0;
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -128,7 +132,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       horizontal: AppSpacing.xl,
                       vertical: AppSpacing.xl,
                     ),
-                    child: form,
+                    // ฟอร์มกว้างไม่เกิน kAuthFormMaxWidth ตรงกลางจอ (ปุ่ม Google บนเว็บกว้างได้สูงสุดเท่านี้)
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: kAuthFormMaxWidth,
+                        ),
+                        child: form,
+                      ),
+                    ),
                   ),
                 ],
               ),

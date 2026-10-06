@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,6 +9,7 @@ import 'package:recipe_app/screens/login_screen.dart';
 import 'package:recipe_app/services/auth_service.dart';
 import 'package:recipe_app/theme/app_theme.dart';
 import 'package:recipe_app/widgets/common/app_button.dart';
+import 'package:recipe_app/widgets/social_login_button.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/fake_api.dart';
@@ -129,6 +132,29 @@ void main() {
       expect(auth.currentUser?.email, 'somchai@example.com');
     });
 
+    testWidgets('shows a spinner on the button while Google is working', (
+      tester,
+    ) async {
+      google.signInGate = Completer<void>();
+      await pumpLogin(tester);
+
+      await tester.ensureVisible(googleButton);
+      await tester.tap(googleButton);
+      await tester.pump();
+
+      expect(find.text('กำลังเข้าสู่ระบบ…'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      // A second tap while it is working does not start another sign-in.
+      await tester.tap(find.byType(GoogleSignInFace));
+      await tester.pump();
+      expect(google.signInCalls, 1);
+
+      google.signInGate!.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('กำลังเข้าสู่ระบบ…'), findsNothing);
+    });
+
     testWidgets('does nothing when the user cancels the account chooser', (
       tester,
     ) async {
@@ -174,41 +200,44 @@ void main() {
       expect(auth.status, AuthStatus.unknown);
     });
 
-    testWidgets(
-      'on the web, uses the Google button and logs in with its token',
-      (tester) async {
-        google = FakeGoogleSignIn(usesGoogleButton: true);
-        auth = AuthProvider(
-          googleSignIn: google,
-          authService: AuthService(
-            api: fakeApi({
-              'POST /auth/google': (_) => jsonResponse({
-                'accessToken': 'app-jwt',
-                'user': {
-                  'id': 'u1',
-                  'email': 'somchai@example.com',
-                  'name': 'สมชาย',
-                  'profileImageUrl': null,
-                },
-              }),
+    testWidgets('on the web, uses the Google button and logs in with its token', (
+      tester,
+    ) async {
+      google = FakeGoogleSignIn(usesGoogleButton: true);
+      auth = AuthProvider(
+        googleSignIn: google,
+        authService: AuthService(
+          api: fakeApi({
+            'POST /auth/google': (_) => jsonResponse({
+              'accessToken': 'app-jwt',
+              'user': {
+                'id': 'u1',
+                'email': 'somchai@example.com',
+                'name': 'สมชาย',
+                'profileImageUrl': null,
+              },
             }),
-          ),
-        );
-        await pumpLogin(tester);
+          }),
+        ),
+      );
+      await pumpLogin(tester);
 
-        expect(find.byKey(const Key('google-web-button')), findsOneWidget);
-        expect(
-          googleButton,
-          findsNothing,
-          reason: 'Google draws its own button',
-        );
+      expect(find.byKey(const Key('google-web-button')), findsOneWidget);
+      // What the user sees is our own 52 px button; Google's real one sits invisibly on top of it.
+      expect(googleButton, findsOneWidget);
+      expect(
+        tester.getSize(find.byType(GoogleSignInFace)).height,
+        GoogleSignInFace.height,
+      );
+      // Google only allows 200-400 px: as wide as the form, up to that.
+      expect(google.requestedWidth, inInclusiveRange(200, 400));
+      expect(google.requestedDark, isFalse);
 
-        google.emitWebToken('good-token');
-        await tester.pumpAndSettle();
+      google.emitWebToken('good-token');
+      await tester.pumpAndSettle();
 
-        expect(auth.status, AuthStatus.loggedIn);
-      },
-    );
+      expect(auth.status, AuthStatus.loggedIn);
+    });
   });
 
   test(
