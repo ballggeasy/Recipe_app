@@ -131,6 +131,34 @@ describe('database migrations', () => {
     }
   });
 
+  it('fill in nutrition for the sample community recipes, never for a real user recipe', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'recipe-migrations-'));
+    const file = join(dir, 'community.sqlite');
+    const before = migrations.filter((m) => m.name !== 'AddSampleCommunityRecipeNutrition1791500000000');
+    const insert = (id: string, name: string, uploaderId: string | null) =>
+      `INSERT INTO recipes (id, name, emoji, category, country, cookTimeMinutes, difficulty, isOfficial, uploaderId)
+       VALUES ('${id}', '${name}', '🍽️', 'c', 'c', 10, 'ง่าย', 0, ${uploaderId ? `'${uploaderId}'` : 'NULL'})`;
+    try {
+      const old = await open({ ...databaseOptions(), database: file, migrations: before });
+      await old.query(insert('sample', 'หมูผัดเปรี้ยวหวาน', null));
+      await old.query(insert('mine', 'หมูผัดเปรี้ยวหวาน', 'user-1'));
+      await old.destroy();
+
+      const upgraded = await open({ ...databaseOptions(), database: file });
+      const nutritionOf = async (id: string) =>
+        JSON.parse((await upgraded.query(`SELECT nutrition FROM recipes WHERE id = '${id}'`))[0].nutrition ?? 'null');
+
+      expect((await nutritionOf('sample')).calories).toBe(565);
+      expect(await nutritionOf('mine')).toBeNull();
+
+      await upgraded.undoLastMigration();
+      expect(await nutritionOf('sample')).toBeNull();
+    } finally {
+      await closeAll();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('are idempotent: booting twice runs nothing the second time', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'recipe-migrations-'));
     const file = join(dir, 'twice.sqlite');
