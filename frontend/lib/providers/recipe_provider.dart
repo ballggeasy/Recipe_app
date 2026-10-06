@@ -203,6 +203,32 @@ class RecipeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// โหลดรายการสูตรใหม่โดยไม่ขึ้นสถานะกำลังโหลด — ใช้ดึงค่าโภชนาการที่ backend ประเมินเสร็จทีหลัง
+  /// (backend ให้ AI ประเมินเองหลังเพิ่มสูตรหรือเปลี่ยนรูป ราว 10 วินาที) ถ้าโหลดไม่ได้ก็คงรายการเดิม
+  Future<void> refreshQuietly() async {
+    try {
+      _allRecipes = await _recipeService.fetchAll();
+      notifyListeners();
+    } on ApiException {
+      // คงรายการเดิม
+    }
+  }
+
+  /// ให้ AI ประเมินโภชนาการของสูตรนี้ใหม่ทันที (เฉพาะสูตรของตัวเอง) — คืน error message ถ้าไม่สำเร็จ
+  Future<String?> estimateNutrition(String id) async {
+    try {
+      final updated = await _recipeService.estimateNutrition(id);
+      final index = _allRecipes.indexWhere((r) => r.id == id);
+      if (index != -1) {
+        _allRecipes[index] = updated;
+        notifyListeners();
+      }
+      return null;
+    } on ApiException catch (e) {
+      return e.message;
+    }
+  }
+
   /// เรียกทุกครั้งที่สถานะล็อกอินเปลี่ยน — favorites และประวัติค้นหาเป็นของบัญชีนั้นเท่านั้น
   /// ล้างรายการเก่าทันที แล้วค่อยโหลดของบัญชีใหม่ (โหลดไม่สำเร็จ = ว่าง ไม่ยืมของบัญชีก่อน)
   /// คำตอบที่กลับมาช้าจากบัญชีก่อนหน้าจะถูกทิ้ง

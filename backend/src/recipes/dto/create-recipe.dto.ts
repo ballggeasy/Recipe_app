@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
+  IsIn,
   IsInt,
   IsNumber,
   IsOptional,
@@ -61,6 +62,11 @@ class NutritionInfoDto implements NutritionInfo {
   @Min(0)
   @Max(MAX_NUTRIENT)
   sodium: number;
+
+  /** Sent back unchanged by the app when it saves a recipe whose values came from the AI estimate. */
+  @IsOptional()
+  @IsIn(['ai'])
+  source?: 'ai';
 }
 
 export class CreateRecipeDto {

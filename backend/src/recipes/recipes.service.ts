@@ -1,17 +1,29 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BeforeApplicationShutdown, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { readFile } from 'fs/promises';
+import { IsNull, Repository } from 'typeorm';
 import { Recipe } from './recipe.entity';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { UpdateRecipeDto } from './dto/update-recipe.dto';
 import { User } from '../users/user.entity';
-import { removeUploadedFile } from '../common/image-upload';
+import { MAX_IMAGE_BYTES, removeUploadedFile, uploadedFilePath } from '../common/image-upload';
+import { NutritionEstimator } from '../nutrition/nutrition-estimator';
+
+/** What an AI nutrition estimate is based on; when one of these changes, the estimate is redone. */
+function estimateInputs(recipe: Recipe): string {
+  return JSON.stringify([recipe.name, recipe.servings, recipe.ingredients, recipe.imageUrl]);
+}
 
 @Injectable()
-export class RecipesService {
+export class RecipesService implements BeforeApplicationShutdown {
+  private readonly logger = new Logger(RecipesService.name);
+  /** Background estimates still running, awaited on shutdown so none writes to a closed database. */
+  private readonly pendingEstimates = new Set<Promise<void>>();
+
   constructor(
     @InjectRepository(Recipe)
     private readonly recipesRepository: Repository<Recipe>,
+    private readonly nutritionEstimator: NutritionEstimator,
   ) {}
 
   findAll(): Promise<Recipe[]> {
@@ -34,7 +46,7 @@ export class RecipesService {
     return recipe;
   }
 
-  create(dto: CreateRecipeDto, user: User): Promise<Recipe> {
+  async create(dto: CreateRecipeDto, user: User): Promise<Recipe> {
     const recipe = this.recipesRepository.create({
       ...dto,
       imageUrl: dto.imageUrl ?? '',
@@ -54,7 +66,9 @@ export class RecipesService {
       uploaderId: user.id,
       uploaderName: user.name,
     });
-    return this.recipesRepository.save(recipe);
+    const saved = await this.recipesRepository.save(recipe);
+    this.estimateInBackground(saved);
+    return saved;
   }
 
   async update(id: string, dto: UpdateRecipeDto, user: User): Promise<Recipe> {
@@ -62,8 +76,11 @@ export class RecipesService {
     if (recipe.uploaderId !== user.id) {
       throw new ForbiddenException('แก้ไขได้เฉพาะสูตรที่คุณอัปโหลดเอง');
     }
+    const inputsBefore = estimateInputs(recipe);
     Object.assign(recipe, dto);
-    return this.recipesRepository.save(recipe);
+    const saved = await this.recipesRepository.save(recipe);
+    if (estimateInputs(saved) !== inputsBefore) this.estimateInBackground(saved);
+    return saved;
   }
 
   async remove(id: string, user: User): Promise<void> {
@@ -98,7 +115,89 @@ export class RecipesService {
     recipe.imageUrls = [imageUrl];
     const saved = await this.recipesRepository.save(recipe);
     previous.filter((url) => url !== imageUrl).forEach((url) => void removeUploadedFile(url));
+    this.estimateInBackground(saved);
     return saved;
+  }
+
+  /** Owner asks for a fresh AI estimate now (e.g. the automatic one failed); replaces hand-entered values too. */
+  async estimateNutrition(id: string, user: User): Promise<Recipe> {
+    const recipe = await this.findOne(id);
+    if (recipe.uploaderId !== user.id) {
+      throw new ForbiddenException('ประเมินได้เฉพาะสูตรที่คุณอัปโหลดเอง');
+    }
+    return this.saveNutritionEstimate(recipe);
+  }
+
+  /**
+   * Estimates nutrition from the recipe's photo (when there is one) and ingredients and stores it.
+   * [image] overrides the stored photo, for recipes whose image only exists in the app.
+   * If the recipe's name, servings, ingredients or photo change while the model is answering, the
+   * estimate is dropped, since it no longer describes the recipe (the change starts its own estimate).
+   */
+  async saveNutritionEstimate(recipe: Recipe, image?: Buffer): Promise<Recipe> {
+    const inputs = estimateInputs(recipe);
+    const nutrition = await this.nutritionEstimator.estimate({
+      name: recipe.name,
+      servings: recipe.servings,
+      ingredients: recipe.ingredients,
+      image: image ?? (await this.loadImage(recipe.imageUrl)),
+    });
+    const current = await this.findOne(recipe.id);
+    if (estimateInputs(current) !== inputs) return current;
+    current.nutrition = nutrition;
+    return this.recipesRepository.save(current);
+  }
+
+  /** Recipes the backfill job should estimate: those without nutrition, or every recipe with [all]. */
+  findForNutritionBackfill(all: boolean): Promise<Recipe[]> {
+    return this.recipesRepository.find({ where: all ? {} : { nutrition: IsNull() }, order: { createdAt: 'ASC' } });
+  }
+
+  /** Resolves once the background estimates started so far have finished (or failed). */
+  async settleEstimates(): Promise<void> {
+    await Promise.allSettled([...this.pendingEstimates]);
+  }
+
+  /** Nest calls this before closing the database connection, so no estimate writes to a closed one. */
+  beforeApplicationShutdown(): Promise<void> {
+    return this.settleEstimates();
+  }
+
+  /**
+   * Fire-and-forget estimate after a recipe is created or its photo/ingredients change, so the meal
+   * planner has numbers without anyone asking. Hand-entered nutrition is never overwritten here.
+   */
+  private estimateInBackground(recipe: Recipe): void {
+    if (!this.nutritionEstimator.isEnabled) return;
+    if (recipe.nutrition && recipe.nutrition.source !== 'ai') return;
+    const task = this.saveNutritionEstimate(recipe)
+      .then(() => undefined)
+      .catch((error) => {
+        this.logger.warn(
+          `Nutrition estimate for ${recipe.id} failed: ${error instanceof Error ? error.message : error}`,
+        );
+      })
+      .finally(() => this.pendingEstimates.delete(task));
+    this.pendingEstimates.add(task);
+  }
+
+  /** The recipe photo: an upload is read from disk, a remote URL fetched; null when unavailable. */
+  private async loadImage(imageUrl: string): Promise<Buffer | undefined> {
+    if (!imageUrl) return undefined;
+    try {
+      const path = uploadedFilePath(imageUrl);
+      if (path) return await readFile(path);
+      if (!/^https?:\/\//.test(imageUrl)) return undefined;
+      const response = await fetch(imageUrl, {
+        headers: { 'User-Agent': 'RecipeApp/1.0 (nutrition estimate)' },
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!response.ok) return undefined;
+      const bytes = Buffer.from(await response.arrayBuffer());
+      return bytes.length <= MAX_IMAGE_BYTES ? bytes : undefined;
+    } catch {
+      return undefined; // estimate from the ingredients alone
+    }
   }
 
   /**

@@ -13,6 +13,8 @@ export interface NutritionInfo {
   carbs: number;
   sugar: number;
   sodium: number;
+  /** `'ai'` when the values are an AI estimate (see NutritionEstimator); absent when entered by hand or seeded. */
+  source?: 'ai';
 }
 
 @Index('IDX_recipes_created', ['createdAt'])

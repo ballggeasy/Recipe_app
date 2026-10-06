@@ -4,6 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { CreateRecipeDto } from '../src/recipes/dto/create-recipe.dto';
 import { Recipe } from '../src/recipes/recipe.entity';
 import { RecipesService } from '../src/recipes/recipes.service';
+import { NutritionEstimator } from '../src/nutrition/nutrition-estimator';
 import { User } from '../src/users/user.entity';
 
 const mockRemoveUploadedFile = jest.fn(async (_url: string) => undefined);
@@ -46,7 +47,12 @@ describe('RecipesService', () => {
     };
 
     const moduleRef = await Test.createTestingModule({
-      providers: [RecipesService, { provide: getRepositoryToken(Recipe), useValue: repo }],
+      providers: [
+        RecipesService,
+        { provide: getRepositoryToken(Recipe), useValue: repo },
+        // AI estimates are covered by nutrition.e2e-spec.ts; off here so no background work runs.
+        { provide: NutritionEstimator, useValue: { isEnabled: false } },
+      ],
     }).compile();
 
     service = moduleRef.get(RecipesService);

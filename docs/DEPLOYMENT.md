@@ -37,6 +37,10 @@ Backend environment variables (`backend/.env.example`; on the VM the file is `/o
 | `TRUST_PROXY` | no | off | Number of reverse proxies in front of the app. Set it when behind one, otherwise rate limiting sees every client as the proxy's IP. |
 | `RATE_LIMIT_PER_MINUTE` | no | `120` | Per client IP, per route. |
 | `AUTH_RATE_LIMIT_PER_MINUTE` | no | `10` | Login, register, change/reset password. |
+| `AI_API_KEY` | no | none | Key for the AI gateway that estimates nutrition from a recipe's photo and ingredients. Unset: no estimates, and `POST /recipes/:id/nutrition/estimate` answers 503. See [AI nutrition estimates](#ai-nutrition-estimates). |
+| `AI_BASE_URL` | no | `https://ai.psu.blue/v1` | OpenAI-compatible base URL (PSU dotBlue AI). |
+| `NUTRITION_MODEL` | no | `openai/gpt-6-luna` | Vision model used for the estimate. |
+| `AI_RATE_LIMIT_PER_MINUTE` | no | `5` | Manual re-estimates per client per minute (each is a paid model call). |
 | `GOOGLE_CLIENT_IDS` | no | none | Comma-separated Google OAuth client IDs whose ID tokens `POST /auth/google` accepts (the audience). Use the **Web** client ID. Unset: the endpoint answers 503. Ansible: `google_client_ids`. See [Sign in with Google](#sign-in-with-google). |
 | `ALLOW_INSECURE_PASSWORD_RESET` | no | off | **Local development only.** See [SECURITY.md](SECURITY.md). |
 | `APP_REVISION` | – | `dev` | Set by the image build (commit SHA); shown by `/health`. |
@@ -113,6 +117,16 @@ Google Cloud project `cloud-project-451209` (console.cloud.google.com -> Google 
 - iOS is not set up (it needs an iOS client and its reversed client ID in `Info.plist`).
 
 Check that the VM accepts it: `curl -s -XPOST https://<api_domain>/auth/google -H 'content-type: application/json' -d '{"idToken":"x"}'` answers **401** when configured (the token is refused) and **503** when `GOOGLE_CLIENT_IDS` is missing.
+
+## AI nutrition estimates
+
+The backend asks a vision model (through PSU dotBlue AI's OpenAI-compatible API) for the nutrition of one serving, from the recipe photo plus its ingredients and servings, and stores it in `recipes.nutrition` with `"source": "ai"`. The meal planner adds these up per day/week.
+
+- **When:** in the background after a recipe is created, gets a new photo, or changes name/servings/ingredients, but never over nutrition the cook typed in (no `source`). The owner can re-run it with `POST /recipes/:id/nutrition/estimate`.
+- **Model choice (2026-10-07):** `openai/gpt-6-luna`, about 10 s per estimate, a small fraction of the key's 1,000 daily credits. `gpt-5.6-luna` gave nearly the same numbers at twice the credit rate. `gpt-4o-mini` answered about 600 kcal for most dishes. GLM models take no images, and the Qwen models and `psu-gemma` timed out or failed.
+- **Photos are shrunk to 512 px JPEG before sending**, because the gateway counts inline base64 as text tokens (a 700 KB photo counted as 545k tokens).
+- **Backfill** recipes without nutrition: `docker compose exec backend node dist/estimate-nutrition.js`. The sample recipes' Wikimedia image URLs no longer load and their photos only ship in the app, so copy them in as `<recipe id>.jpg` and add `--photos <dir>`; `--all` re-estimates every recipe.
+- The key is set by hand in `/opt/recipe-backend/.env` (`AI_API_KEY=...`); it is not in Ansible.
 
 ## Health and monitoring
 

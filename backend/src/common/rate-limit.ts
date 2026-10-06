@@ -19,3 +19,8 @@ export const DEFAULT_RATE_LIMIT = { limit: fromEnv('RATE_LIMIT_PER_MINUTE', 120)
 export const AUTH_RATE_LIMIT = {
   default: { limit: fromEnv('AUTH_RATE_LIMIT_PER_MINUTE', 10), ttl: WINDOW_MS },
 };
+
+/** Endpoints that call a paid AI model on every request. Use as `@Throttle(AI_RATE_LIMIT)`. */
+export const AI_RATE_LIMIT = {
+  default: { limit: fromEnv('AI_RATE_LIMIT_PER_MINUTE', 5), ttl: WINDOW_MS },
+};
