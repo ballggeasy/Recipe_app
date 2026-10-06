@@ -10,6 +10,7 @@ import { InitialSchema1790985600000 } from './migrations/1790985600000-InitialSc
 import { AddLookupIndexes1790985700000 } from './migrations/1790985700000-AddLookupIndexes';
 import { AddGoogleId1790985800000 } from './migrations/1790985800000-AddGoogleId';
 import { AddOfficialRecipeNutrition1791400000000 } from './migrations/1791400000000-AddOfficialRecipeNutrition';
+import { AddSampleCommunityRecipeNutrition1791500000000 } from './migrations/1791500000000-AddSampleCommunityRecipeNutrition';
 import { useImmediateTransactions } from './immediate-transactions';
 import { useSerializedTransactions } from './serialized-transactions';
 
@@ -21,6 +22,7 @@ export const migrations = [
   AddLookupIndexes1790985700000,
   AddGoogleId1790985800000,
   AddOfficialRecipeNutrition1791400000000,
+  AddSampleCommunityRecipeNutrition1791500000000,
 ];
 
 /**
