@@ -17,6 +17,7 @@ import 'package:recipe_app/services/meal_plan_service.dart';
 import 'package:recipe_app/services/recipe_service.dart';
 import 'package:recipe_app/services/review_service.dart';
 import 'package:recipe_app/theme/app_theme.dart';
+import 'package:recipe_app/utils/feature_flags.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/fake_api.dart';
@@ -102,7 +103,36 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  group('recipe detail', () {
+  testWidgets(
+    'while AI estimates are switched off, the owner sees no AI button and nothing reloads',
+    (tester) async {
+      expect(aiNutritionEnabled, isFalse, reason: 'off by default for now');
+      var listCalls = 0;
+      await pumpWith(
+        tester,
+        Builder(
+          builder: (context) => DetailScreen(
+            recipe: context.read<RecipeProvider>().getById('mine')!,
+          ),
+        ),
+        routes: {
+          'GET /recipes': (_) {
+            listCalls++;
+            return jsonResponse([_mine()]);
+          },
+        },
+      );
+
+      expect(find.text('ข้อมูลโภชนาการ (ต่อ 1 เสิร์ฟ)'), findsNothing);
+      expect(find.text('ประเมินด้วย AI'), findsNothing);
+      expect(listCalls, 1);
+    },
+  );
+
+  group('recipe detail with AI estimates switched on', () {
+    setUp(() => aiNutritionEnabled = true);
+    tearDown(() => aiNutritionEnabled = false);
+
     testWidgets(
       'the owner can ask the AI for nutrition and sees it marked as an estimate',
       (tester) async {

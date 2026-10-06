@@ -11,6 +11,7 @@ import '../../providers/recipe_provider.dart';
 import '../../models/recipe.dart';
 import '../../models/meal_plan.dart';
 import '../../models/nutrition.dart';
+import '../../utils/feature_flags.dart';
 import '../../utils/require_login.dart';
 import '../../widgets/common/empty_state.dart';
 import '../recipe/detail_screen.dart';
@@ -34,7 +35,7 @@ class _MealPlannerScreenState extends State<MealPlannerScreen>
     _tabController = TabController(length: 3, vsync: this);
     // สูตรที่เพิ่งเพิ่มอาจยังไม่มีค่าโภชนาการตอนโหลดรายการ (AI ประเมินต่อที่ backend) — ดึงใหม่ให้ยอดรวมครบ
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!mounted || !aiNutritionEnabled) return;
       final recipes = context.read<RecipeProvider>();
       if (recipes.allRecipes.any((r) => r.nutrition == null)) {
         recipes.refreshQuietly();
