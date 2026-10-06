@@ -10,7 +10,6 @@ import '../widgets/common/app_button.dart';
 import '../widgets/common/app_text_field.dart';
 import '../widgets/common/tap_target.dart';
 import '../widgets/google_sign_in_section.dart';
-import '../widgets/social_login_button.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -88,13 +87,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     Navigator.of(context).pop();
   }
 
-  void _comingSoon(String provider) {
-    _showMessage(
-      'สมัครสมาชิกด้วย $provider ยังไม่รองรับในขณะนี้',
-      isError: false,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -112,7 +104,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
               confirmController: _confirmController,
               isLoading: auth.isLoading,
               onSubmit: _register,
-              onSocial: _comingSoon,
               onMessage: _showMessage,
             );
 
@@ -160,7 +151,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       horizontal: AppSpacing.xl,
                       vertical: AppSpacing.xl,
                     ),
-                    child: form,
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: kAuthFormMaxWidth,
+                        ),
+                        child: form,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -179,7 +177,6 @@ class _RegisterForm extends StatelessWidget {
   final TextEditingController confirmController;
   final bool isLoading;
   final VoidCallback onSubmit;
-  final ValueChanged<String> onSocial;
   final ValueChanged<String> onMessage;
 
   const _RegisterForm({
@@ -189,7 +186,6 @@ class _RegisterForm extends StatelessWidget {
     required this.confirmController,
     required this.isLoading,
     required this.onSubmit,
-    required this.onSocial,
     required this.onMessage,
   });
 
@@ -257,35 +253,7 @@ class _RegisterForm extends StatelessWidget {
           onPressed: onSubmit,
           loading: isLoading,
         ),
-        const SizedBox(height: AppSpacing.lg),
-        Row(
-          children: [
-            Expanded(child: Divider(color: AppTheme.div(context))),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: Text(
-                'หรือ',
-                style: AppTypography.caption(
-                  color: AppTheme.txtSecondary(context),
-                ),
-              ),
-            ),
-            Expanded(child: Divider(color: AppTheme.div(context))),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        GoogleSignInButton(onMessage: onMessage),
-        if (context.read<AuthProvider>().googleSignIn.isConfigured)
-          const SizedBox(height: AppSpacing.md),
-        SocialLoginButton(
-          label: 'ดำเนินการต่อด้วย GitHub',
-          onTap: () => onSocial('GitHub'),
-          badge: Icon(
-            Icons.code_rounded,
-            size: 18,
-            color: AppTheme.txtPrimary(context),
-          ),
-        ),
+        GoogleSignInSection(onMessage: onMessage),
         const SizedBox(height: AppSpacing.md),
       ],
     );

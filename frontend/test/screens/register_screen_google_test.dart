@@ -66,6 +66,13 @@ void main() {
     expect(auth.status, AuthStatus.loggedIn);
   });
 
+  testWidgets('offers Google but no GitHub', (tester) async {
+    await pumpRegister(tester, FakeGoogleSignIn());
+
+    expect(find.text('ดำเนินการต่อด้วย Google'), findsOneWidget);
+    expect(find.textContaining('GitHub'), findsNothing);
+  });
+
   testWidgets('has no Google button without a client ID', (tester) async {
     await pumpRegister(tester, FakeGoogleSignIn(isConfigured: false));
 

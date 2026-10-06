@@ -16,6 +16,9 @@ class FakeGoogleSignIn implements GoogleSignInService {
   /// ถ้าตั้งไว้ [signIn] จะ throw ข้อความนี้
   String? failureToThrow;
 
+  /// ถ้าตั้งไว้ [signIn] จะรอจนกว่า completer นี้เสร็จ (ไว้ทดสอบสถานะกำลังเข้าสู่ระบบ)
+  Completer<void>? signInGate;
+
   int signInCalls = 0;
   int signOutCalls = 0;
 
@@ -33,13 +36,25 @@ class FakeGoogleSignIn implements GoogleSignInService {
   @override
   Stream<String> get idTokens => _tokens.stream;
 
+  /// ขนาดที่หน้าจอขอปุ่มมาครั้งล่าสุด (ให้เทสต์ตรวจ)
+  double? requestedWidth;
+  bool? requestedDark;
+
   @override
-  Widget buildGoogleButton() =>
-      const SizedBox(key: Key('google-web-button'), width: 200, height: 44);
+  Widget buildGoogleButton({required double width, required bool dark}) {
+    requestedWidth = width;
+    requestedDark = dark;
+    return SizedBox(
+      key: const Key('google-web-button'),
+      width: width,
+      height: 40,
+    );
+  }
 
   @override
   Future<String?> signIn() async {
     signInCalls++;
+    await signInGate?.future;
     final failure = failureToThrow;
     if (failure != null) throw GoogleSignInFailure(failure);
     return tokenToReturn;
