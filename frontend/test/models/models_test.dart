@@ -21,6 +21,10 @@ void main() {
       },
     );
 
+    test('rounds decimal calories instead of failing to parse', () {
+      expect(NutritionInfo.fromJson({'calories': 350.6}).calories, 351);
+    });
+
     test('forServings scales every value and leaves 1 serving unchanged', () {
       const n = NutritionInfo(
         calories: 101,
@@ -105,6 +109,8 @@ void main() {
       expect(review.replies.single.userName, 'สมศรี');
       expect(review.imageUrls, isEmpty);
       expect(review.isReported, isFalse);
+      expect(review.createdAt.isUtc, isFalse);
+      expect(review.replies.single.createdAt.isUtc, isFalse);
     });
   });
 
@@ -134,6 +140,10 @@ void main() {
       expect(comment.replies.single.id, 'c2');
       expect(comment.replies.single.replies, isEmpty);
       expect(comment.imageUrl, isNull);
+      // เวลาจาก backend เป็น UTC — ต้องแสดงตามเวลาเครื่อง
+      expect(comment.createdAt.isUtc, isFalse);
+      expect(comment.createdAt.toUtc(), DateTime.utc(2026, 3, 1));
+      expect(comment.replies.single.createdAt.isUtc, isFalse);
     });
   });
 
@@ -149,6 +159,18 @@ void main() {
       expect(entry.mealType, MealType.dinner);
       expect(entry.servings, 1);
       expect(entry.date, DateTime(2026, 9, 26));
+    });
+
+    test('shows a UTC date from the backend in local time', () {
+      final entry = MealPlanEntry.fromApi({
+        'id': 'm1',
+        'recipeId': 'r1',
+        'date': '2026-09-25T23:30:00.000Z',
+        'mealType': 'breakfast',
+      });
+
+      expect(entry.date.isUtc, isFalse);
+      expect(entry.date.toUtc(), DateTime.utc(2026, 9, 25, 23, 30));
     });
   });
 

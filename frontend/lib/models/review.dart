@@ -38,7 +38,7 @@ class Review {
     userName: json['userName'] as String,
     rating: (json['rating'] as num).toDouble(),
     content: json['content'] as String,
-    createdAt: DateTime.parse(json['createdAt'] as String),
+    createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
     imageUrls: (json['imageUrls'] as List?)?.cast<String>() ?? const [],
     likedByUserIds:
         (json['likedByUserIds'] as List?)?.cast<String>() ?? const [],
@@ -69,6 +69,6 @@ class ReviewReply {
     userId: json['userId'] as String,
     userName: json['userName'] as String,
     content: json['content'] as String,
-    createdAt: DateTime.parse(json['createdAt'] as String),
+    createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
   );
 }

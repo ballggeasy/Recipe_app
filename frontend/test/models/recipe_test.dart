@@ -162,6 +162,50 @@ void main() {
     });
 
     test(
+      'copyWith keeps the uploader so the owner can still edit the recipe',
+      () {
+        final edited = Recipe.fromApi({
+          'id': 'r',
+          'name': 'เดิม',
+          'emoji': '🍳',
+          'category': 'ทอด',
+          'country': 'ไทย',
+          'cookTimeMinutes': 10,
+          'difficulty': 'ง่าย',
+          'isOfficial': false,
+          'uploaderId': 'u1',
+        }).copyWith(name: 'ใหม่');
+
+        expect(edited.name, 'ใหม่');
+        expect(edited.uploaderId, 'u1');
+      },
+    );
+
+    test('copyWith keeps tips unless told otherwise, and null clears them', () {
+      final recipe = Recipe(
+        id: 'r',
+        name: 'ไข่เจียว',
+        imageUrl: '',
+        category: 'ทอด',
+        cookTimeMinutes: 5,
+        difficulty: 'ง่าย',
+        ingredients: const [],
+        steps: const [],
+        country: 'ไทย',
+        tips: 'ใช้ไฟกลาง',
+        platingTips: 'เสิร์ฟกับข้าวสวย',
+      );
+
+      final untouched = recipe.copyWith(name: 'ไข่เจียวหมูสับ');
+      expect(untouched.tips, 'ใช้ไฟกลาง');
+      expect(untouched.platingTips, 'เสิร์ฟกับข้าวสวย');
+
+      final cleared = recipe.copyWith(tips: null, platingTips: null);
+      expect(cleared.tips, isNull);
+      expect(cleared.platingTips, isNull);
+    });
+
+    test(
       'matchesQuery checks the name and both ingredient lists, case-insensitively',
       () {
         final recipe = build();

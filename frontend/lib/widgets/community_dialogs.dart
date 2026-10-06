@@ -8,6 +8,7 @@ import '../providers/comment_provider.dart';
 import '../providers/review_provider.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
+import '../utils/require_login.dart';
 import 'common/app_text_field.dart';
 
 const _maxImageBytes = 5 * 1024 * 1024;
@@ -16,6 +17,9 @@ Future<void> showReviewComposer(
   BuildContext context, {
   required String recipeId,
 }) {
+  if (!requireLogin(context, 'เข้าสู่ระบบเพื่อเขียนรีวิว')) {
+    return Future.value();
+  }
   return showDialog<void>(
     context: context,
     builder: (_) => _ReviewComposer(recipeId: recipeId),
@@ -27,6 +31,9 @@ Future<void> showCommentComposer(
   required String recipeId,
   String? parentId,
 }) {
+  if (!requireLogin(context, 'เข้าสู่ระบบเพื่อแสดงความคิดเห็น')) {
+    return Future.value();
+  }
   return showDialog<void>(
     context: context,
     builder: (_) => _CommentComposer(recipeId: recipeId, parentId: parentId),

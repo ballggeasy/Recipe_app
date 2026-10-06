@@ -107,8 +107,14 @@ class AuthService {
     try {
       final data = await _api.get('/auth/me') as Map<String, dynamic>;
       return AppUser.fromApi(data);
-    } on ApiException {
-      await logout();
+    } on ApiException catch (e) {
+      // ลบ token เฉพาะเมื่อ backend ปฏิเสธ (401) — ถ้าแค่ต่อ server ไม่ได้ ให้จำไว้ลองใหม่ตอนเปิดแอปครั้งหน้า
+      // แต่ไม่ใช้ใน session นี้ ไม่งั้นโหมดผู้เยี่ยมชมจะยิง request ในนามบัญชีที่จำไว้
+      if (e.statusCode == 401) {
+        await logout();
+      } else {
+        _api.forgetTokenForSession();
+      }
       return null;
     }
   }

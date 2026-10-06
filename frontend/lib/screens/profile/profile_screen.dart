@@ -12,6 +12,7 @@ import '../../services/api_client.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
 import '../../widgets/common/tap_target.dart';
+import '../recipe/my_recipes_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -170,7 +171,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (confirmed != true || !mounted) return;
 
-    await context.read<AuthProvider>().deleteAccount();
+    try {
+      await context.read<AuthProvider>().deleteAccount();
+    } on ApiException catch (e) {
+      // เดิมไม่ได้ catch — ลบไม่สำเร็จ (เช่น เน็ตหลุด) ผู้ใช้จะไม่รู้เลย
+      if (!mounted) return;
+      _showMessage(e.message, isError: true);
+    }
   }
 
   Future<void> _logout() async {
@@ -250,6 +257,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    'สูตรอาหาร',
+                    style: AppTypography.overline(
+                      color: AppTheme.txtSecondary(context),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _SectionCard(
+                    children: [
+                      _ProfileTile(
+                        icon: Icons.menu_book_outlined,
+                        label: 'สูตรของฉัน',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const MyRecipesScreen(),
+                          ),
+                        ),
+                        showDivider: false,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
                   Text(
                     'บัญชี',
                     style: AppTypography.overline(
