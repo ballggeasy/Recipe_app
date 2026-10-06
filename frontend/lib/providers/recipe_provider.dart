@@ -5,7 +5,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/recipe.dart';
-import '../models/ingredient.dart';
 import '../models/nutrition.dart';
 import '../services/api_client.dart';
 import '../services/favorite_service.dart';
@@ -366,7 +365,7 @@ class RecipeProvider extends ChangeNotifier {
     required String difficulty,
     required int servings,
     required List<String> steps,
-    required List<IngredientItem> items,
+    required List<String> ingredients,
     String? tips,
     String? platingTips,
     List<String> dietTags = const [],
@@ -385,8 +384,7 @@ class RecipeProvider extends ChangeNotifier {
         prepTimeMinutes: prepTime,
         difficulty: difficulty,
         servings: servings,
-        ingredients: items.map((i) => i.display).toList(),
-        ingredientItems: items,
+        ingredients: ingredients,
         steps: steps,
         tips: tips,
         platingTips: platingTips,

@@ -14,6 +14,7 @@ import 'package:recipe_app/services/auth_service.dart';
 import 'package:recipe_app/services/favorite_service.dart';
 import 'package:recipe_app/services/recipe_service.dart';
 import 'package:recipe_app/theme/app_theme.dart';
+import 'package:recipe_app/widgets/common/app_text_field.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/fake_api.dart';
@@ -33,6 +34,8 @@ Map<String, dynamic> _myRecipeJson() => {
   'uploaderName': 'สมชาย',
   'servings': 3,
   'steps': ['นึ่งข้าวเหนียว', 'ราดกะทิ'],
+  'ingredients': ['ข้าวเหนียว 200 กรัม', 'มะม่วง 1 ลูก'],
+  // แบบแยกช่องจากเวอร์ชันก่อน — บันทึกครั้งถัดไปต้องล้างทิ้ง
   'ingredientItems': [
     {'name': 'ข้าวเหนียว', 'amount': '200', 'unit': 'กรัม'},
     {'name': 'มะม่วง', 'amount': '1', 'unit': 'ลูก'},
@@ -59,6 +62,10 @@ void main() {
       'POST /auth/login': (_) =>
           jsonResponse({'accessToken': 'tok', 'user': _me}),
       // backend ตอบสูตรที่บันทึกแล้วกลับมา — สะท้อน body ที่ส่งไปเพื่อเช็คได้ว่าแอปอัปเดตตาม
+      'POST /recipes': (req) => jsonResponse({
+        ...recipeJson(id: 'new', isOfficial: false),
+        'uploaderId': 'u1',
+      }, 201),
       'PATCH /recipes/mine': (req) => jsonResponse({
         ..._myRecipeJson(),
         ...jsonDecode(req.body) as Map<String, dynamic>,
@@ -94,6 +101,12 @@ void main() {
 
   Recipe mine() => recipes.getById('mine')!;
 
+  // AppTextField วาด label ไว้นอก TextFormField จึงหาจาก AppTextField ที่มี label นั้น
+  Finder fieldLabelled(String label) => find.descendant(
+    of: find.widgetWithText(AppTextField, label),
+    matching: find.byType(TextFormField),
+  );
+
   testWidgets('edit mode fills in every field of the recipe', (tester) async {
     await setUpProviders();
     await pump(tester, RecipeFormScreen(recipe: mine()));
@@ -106,8 +119,7 @@ void main() {
       reason: 'a category outside the list must not assert',
     );
     expect(find.text('นึ่งข้าวเหนียว\nราดกะทิ'), findsOneWidget);
-    expect(find.text('มะม่วง'), findsOneWidget);
-    expect(find.text('200'), findsOneWidget);
+    expect(find.text('ข้าวเหนียว 200 กรัม\nมะม่วง 1 ลูก'), findsOneWidget);
     expect(find.text('ใช้มะม่วงน้ำดอกไม้'), findsOneWidget);
     expect(find.text('โรยงาคั่ว'), findsOneWidget);
     expect(find.text('https://example.com/v'), findsOneWidget);
@@ -152,6 +164,10 @@ void main() {
         find.widgetWithText(TextFormField, 'ใช้มะม่วงน้ำดอกไม้'),
         '',
       );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'ข้าวเหนียว 200 กรัม\nมะม่วง 1 ลูก'),
+        'ข้าวเหนียว 300 กรัม\n\n  มะม่วง 2 ลูก  ',
+      );
       final save = find.text('บันทึกการแก้ไข');
       await tester.ensureVisible(save);
       await tester.tap(save);
@@ -163,7 +179,13 @@ void main() {
       expect(body['tips'], isNull);
       expect(body['platingTips'], 'โรยงาคั่ว');
       expect(body['steps'], ['นึ่งข้าวเหนียว', 'ราดกะทิ']);
-      expect(body['ingredientItems'], hasLength(2));
+      expect(body['ingredients'], ['ข้าวเหนียว 300 กรัม', 'มะม่วง 2 ลูก']);
+      expect(
+        body['ingredientItems'],
+        isEmpty,
+        reason:
+            'the detail screen shows structured items first, so old ones must go',
+      );
       expect(body['category'], 'ขนมไทย');
       expect(body['servings'], 3);
 
@@ -176,6 +198,45 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'an older recipe with only structured ingredients is shown as text, one per line',
+    (tester) async {
+      await setUpProviders();
+      final old = Recipe.fromApi({..._myRecipeJson(), 'ingredients': []});
+      await pump(tester, RecipeFormScreen(recipe: old));
+
+      expect(find.text('200 กรัม ข้าวเหนียว\n1 ลูก มะม่วง'), findsOneWidget);
+    },
+  );
+
+  testWidgets('a new recipe sends its ingredients as plain text lines', (
+    tester,
+  ) async {
+    await setUpProviders();
+    await pump(tester, const RecipeFormScreen());
+
+    await tester.enterText(fieldLabelled('ชื่อเมนู *'), 'ไก่ทอดหาดใหญ่');
+    await tester.enterText(
+      fieldLabelled('ส่วนผสม (แยกบรรทัด) *'),
+      'ไก่ 1 กิโลกรัม\nกระเทียมเจียว',
+    );
+    await tester.enterText(
+      fieldLabelled('ขั้นตอน (แยกบรรทัด) *'),
+      'หมักไก่\nทอด',
+    );
+    final save = find.text('บันทึกสูตร');
+    await tester.ensureVisible(save);
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+
+    final post = log.singleWhere(
+      (r) => r.method == 'POST' && r.url.path == '/recipes',
+    );
+    final body = jsonDecode(post.body) as Map<String, dynamic>;
+    expect(body['ingredients'], ['ไก่ 1 กิโลกรัม', 'กระเทียมเจียว']);
+    expect(body['ingredientItems'], isEmpty);
+  });
 
   testWidgets("someone else's recipe can't be edited", (tester) async {
     await setUpProviders();

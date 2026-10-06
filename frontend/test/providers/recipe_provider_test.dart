@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:recipe_app/models/ingredient.dart';
 import 'package:recipe_app/providers/recipe_provider.dart';
 import 'package:recipe_app/services/api_client.dart';
 import 'package:recipe_app/services/favorite_service.dart';
@@ -76,7 +75,7 @@ void main() {
     difficulty: 'ง่าย',
     servings: 1,
     steps: const ['ผัด'],
-    items: const [IngredientItem(name: 'ข้าว', amount: '1', unit: 'จาน')],
+    ingredients: const ['ข้าวสวย 1 จาน'],
     image: image,
   );
 
