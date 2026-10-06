@@ -71,6 +71,14 @@ class RecipeService {
 
   Future<void> delete(String id) => _api.delete('/recipes/$id');
 
+  /// ให้ AI ประเมินโภชนาการต่อเสิร์ฟจากรูปและส่วนผสมทันที (เฉพาะเจ้าของสูตร) — ใช้เวลาราว 10 วินาที
+  Future<Recipe> estimateNutrition(String id) async {
+    final data =
+        await _api.post('/recipes/$id/nutrition/estimate')
+            as Map<String, dynamic>;
+    return Recipe.fromApi(data);
+  }
+
   /// อัปโหลดรูปเมนูให้สูตรที่ตัวเองเป็นเจ้าของ — backend แทนที่รูปเดิมและคืนสูตรที่อัปเดตแล้ว
   Future<Recipe> uploadImage(String id, XFile file) async {
     final data =

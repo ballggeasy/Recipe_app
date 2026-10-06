@@ -7,6 +7,9 @@ class NutritionInfo {
   final double sugar;
   final double sodium;
 
+  /// `'ai'` = ค่าที่ AI ประเมินจากรูปและส่วนผสม, null = เจ้าของสูตรกรอกเอง (หรือสูตรตัวอย่าง)
+  final String? source;
+
   const NutritionInfo({
     this.calories = 0,
     this.protein = 0,
@@ -14,7 +17,10 @@ class NutritionInfo {
     this.carbs = 0,
     this.sugar = 0,
     this.sodium = 0,
+    this.source,
   });
+
+  bool get isAiEstimate => source == 'ai';
 
   /// คำนวณโภชนาการตามจำนวนเสิร์ฟ
   NutritionInfo forServings(int servings) {
@@ -26,6 +32,7 @@ class NutritionInfo {
       carbs: carbs * servings,
       sugar: sugar * servings,
       sodium: sodium * servings,
+      source: source,
     );
   }
 
@@ -36,6 +43,8 @@ class NutritionInfo {
     'carbs': carbs,
     'sugar': sugar,
     'sodium': sodium,
+    // ส่งกลับไปตอนบันทึกฟอร์ม เพื่อให้ backend รู้ว่ายังเป็นค่าจาก AI (ประเมินใหม่ได้เมื่อส่วนผสมเปลี่ยน)
+    'source': ?source,
   };
 
   factory NutritionInfo.fromJson(Map<String, dynamic> json) => NutritionInfo(
@@ -46,5 +55,6 @@ class NutritionInfo {
     carbs: (json['carbs'] as num?)?.toDouble() ?? 0,
     sugar: (json['sugar'] as num?)?.toDouble() ?? 0,
     sodium: (json['sodium'] as num?)?.toDouble() ?? 0,
+    source: json['source'] as String?,
   );
 }

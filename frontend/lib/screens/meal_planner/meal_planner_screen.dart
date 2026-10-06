@@ -32,6 +32,14 @@ class _MealPlannerScreenState extends State<MealPlannerScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    // สูตรที่เพิ่งเพิ่มอาจยังไม่มีค่าโภชนาการตอนโหลดรายการ (AI ประเมินต่อที่ backend) — ดึงใหม่ให้ยอดรวมครบ
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final recipes = context.read<RecipeProvider>();
+      if (recipes.allRecipes.any((r) => r.nutrition == null)) {
+        recipes.refreshQuietly();
+      }
+    });
   }
 
   @override
@@ -220,7 +228,12 @@ class _DailyView extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
-        _NutritionSummary(nutrition: nutrition, title: 'สารอาหารวันนี้'),
+        _NutritionSummary(
+          nutrition: nutrition,
+          title: 'สารอาหารวันนี้',
+          entries: entries,
+          recipes: recipes,
+        ),
         const SizedBox(height: AppSpacing.lg),
         if (entries.isEmpty)
           const Padding(
@@ -295,7 +308,12 @@ class _WeeklyView extends StatelessWidget {
           ).copyWith(fontSize: 16),
         ),
         const SizedBox(height: AppSpacing.md),
-        _NutritionSummary(nutrition: nutrition, title: 'สารอาหารสัปดาห์นี้'),
+        _NutritionSummary(
+          nutrition: nutrition,
+          title: 'สารอาหารสัปดาห์นี้',
+          entries: entries,
+          recipes: recipes,
+        ),
         const SizedBox(height: AppSpacing.lg),
         ...List.generate(7, (i) {
           final day = weekStart.add(Duration(days: i));
@@ -448,10 +466,28 @@ class _NutritionSummary extends StatelessWidget {
   final NutritionInfo nutrition;
   final String title;
 
-  const _NutritionSummary({required this.nutrition, required this.title});
+  /// มื้อที่รวมอยู่ในยอดนี้ — ใช้บอกว่ามีมื้อไหนไม่ได้นับ และตัวเลขมาจาก AI หรือไม่
+  final List<MealPlanEntry> entries;
+  final List<Recipe> recipes;
+
+  const _NutritionSummary({
+    required this.nutrition,
+    required this.title,
+    required this.entries,
+    required this.recipes,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final byId = {for (final r in recipes) r.id: r};
+    final planned = entries.map((e) => byId[e.recipeId]).whereType<Recipe>();
+    final missing = planned.where((r) => r.nutrition == null).length;
+    final fromAi = planned.any((r) => r.nutrition?.isAiEstimate ?? false);
+    final notes = [
+      if (missing > 0) '$missing มื้อยังไม่มีข้อมูลโภชนาการ จึงยังไม่ได้นับรวม',
+      if (fromAi) 'บางเมนูเป็นค่าประมาณจาก AI',
+    ];
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.base),
       decoration: BoxDecoration(
@@ -479,6 +515,15 @@ class _NutritionSummary extends StatelessWidget {
               _NutItem('🍞', '${nutrition.carbs.toStringAsFixed(0)}g', 'คาร์บ'),
             ],
           ),
+          for (final note in notes) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              note,
+              style: AppTypography.caption(
+                color: AppTheme.txtSecondary(context),
+              ),
+            ),
+          ],
         ],
       ),
     );

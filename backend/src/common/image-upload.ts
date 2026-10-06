@@ -62,14 +62,20 @@ export function uploadedFileUrl(subdir: string, filename: string): string {
 }
 
 /**
- * Best-effort delete of a previously uploaded file given its `/uploads/...` URL path.
+ * Disk path of a file saved under the uploads folder, given its `/uploads/...` URL path, or null.
  * The path may come from data a client once sent (e.g. `profileImageUrl` via PATCH /auth/profile),
- * so anything that resolves outside the uploads folder, like `/uploads/../data/app.sqlite`, is ignored.
+ * so anything that resolves outside the uploads folder, like `/uploads/../data/app.sqlite`, is null.
  */
-export function removeUploadedFile(urlPath: string): Promise<void> {
-  if (!urlPath.startsWith('/uploads/')) return Promise.resolve();
+export function uploadedFilePath(urlPath: string): string | null {
+  if (!urlPath.startsWith('/uploads/')) return null;
   const root = resolve(uploadsRoot());
   const target = resolve(root, urlPath.slice('/uploads/'.length));
-  if (!target.startsWith(root + sep)) return Promise.resolve();
+  return target.startsWith(root + sep) ? target : null;
+}
+
+/** Best-effort delete of a previously uploaded file given its `/uploads/...` URL path (see {@link uploadedFilePath}). */
+export function removeUploadedFile(urlPath: string): Promise<void> {
+  const target = uploadedFilePath(urlPath);
+  if (!target) return Promise.resolve();
   return unlink(target).catch(() => undefined);
 }

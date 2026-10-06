@@ -41,6 +41,7 @@ class _DetailScreenState extends State<DetailScreen> {
   int _imageIndex = 0;
   String? _loadedForUserId;
   bool _loadedOnce = false;
+  bool _estimatingNutrition = false;
 
   /// ข้อมูลล่าสุดของสูตร (เช่น หลังแก้ไข) — ใช้ `read` เพราะถูกเรียกจาก callback ด้วย
   /// (`watch` นอก build จะ assert ใน debug ทำให้ปุ่มโปรด/แชร์/ลบพัง) ส่วน build ฟัง RecipeProvider อยู่แล้ว
@@ -62,6 +63,12 @@ class _DetailScreenState extends State<DetailScreen> {
       if (context.read<AuthProvider>().currentUser?.id != userId) return;
       context.read<ReviewProvider>().loadForRecipe(recipeId);
       context.read<CommentProvider>().loadForRecipe(recipeId);
+      // สูตรของตัวเองที่เพิ่งเพิ่ม/เปลี่ยนรูป: backend ให้ AI ประเมินโภชนาการต่อเอง อาจเสร็จแล้วหลังโหลดรายการ
+      if (userId != null &&
+          recipe.uploaderId == userId &&
+          recipe.nutrition == null) {
+        context.read<RecipeProvider>().refreshQuietly();
+      }
     });
   }
 
@@ -301,11 +308,38 @@ class _DetailScreenState extends State<DetailScreen> {
                       icon: Icons.restaurant_menu_rounded,
                     ),
                   ],
-                  if (recipe.nutrition != null) ...[
+                  // คนอื่นเห็นส่วนนี้เมื่อมีข้อมูลแล้ว เจ้าของสูตรเห็นเสมอเพื่อสั่งให้ AI ประเมิน
+                  if (recipe.nutrition != null || isOwner) ...[
                     const SizedBox(height: AppSpacing.xl),
-                    const SectionHeader(title: 'ข้อมูลโภชนาการ (ต่อ 1 เสิร์ฟ)'),
+                    SectionHeader(
+                      title: 'ข้อมูลโภชนาการ (ต่อ 1 เสิร์ฟ)',
+                      actionLabel: isOwner && !_estimatingNutrition
+                          ? (recipe.nutrition == null
+                                ? 'ประเมินด้วย AI'
+                                : 'ประเมินใหม่')
+                          : null,
+                      onAction: isOwner && !_estimatingNutrition
+                          ? () => _estimateNutrition(provider, recipe.id)
+                          : null,
+                    ),
                     const SizedBox(height: AppSpacing.md),
-                    _NutritionGrid(nutrition: recipe.nutrition!),
+                    if (_estimatingNutrition)
+                      _NutritionNote(
+                        text: 'AI กำลังประเมินจากรูปและส่วนผสม…',
+                        busy: true,
+                      )
+                    else if (recipe.nutrition != null) ...[
+                      _NutritionGrid(nutrition: recipe.nutrition!),
+                      if (recipe.nutrition!.isAiEstimate)
+                        const _NutritionNote(
+                          text:
+                              'ค่าประมาณจาก AI โดยดูจากรูปและส่วนผสม อาจคลาดเคลื่อนได้',
+                        ),
+                    ] else
+                      const _NutritionNote(
+                        text:
+                            'ยังไม่มีข้อมูลโภชนาการ — AI จะประเมินให้เองหลังเพิ่มรูปหรือแก้ส่วนผสม หรือกด "ประเมินด้วย AI"',
+                      ),
                   ],
                   const SizedBox(height: AppSpacing.xxl),
                   SectionHeader(
@@ -459,6 +493,18 @@ class _DetailScreenState extends State<DetailScreen> {
       return;
     }
     Navigator.pop(context);
+  }
+
+  Future<void> _estimateNutrition(RecipeProvider provider, String id) async {
+    setState(() => _estimatingNutrition = true);
+    final error = await provider.estimateNutrition(id);
+    if (!mounted) return;
+    setState(() => _estimatingNutrition = false);
+    if (error != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
+    }
   }
 
   Future<void> _deleteOwnReview(ReviewProvider reviews, String reviewId) async {
@@ -709,6 +755,37 @@ class _RecipeVideo extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// ข้อความเล็กใต้หัวข้อโภชนาการ (ที่มาของตัวเลข / สถานะการประเมิน)
+class _NutritionNote extends StatelessWidget {
+  final String text;
+  final bool busy;
+
+  const _NutritionNote({required this.text, this.busy = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = AppTheme.txtSecondary(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.sm),
+      child: Row(
+        children: [
+          if (busy)
+            const SizedBox.square(
+              dimension: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            Icon(Icons.auto_awesome_outlined, size: 16, color: color),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(text, style: AppTypography.caption(color: color)),
+          ),
+        ],
       ),
     );
   }

@@ -21,6 +21,20 @@ void main() {
       },
     );
 
+    test(
+      'keeps the AI source through scaling and sends it back, but only when set',
+      () {
+        final ai = NutritionInfo.fromJson({'calories': 500, 'source': 'ai'});
+        expect(ai.isAiEstimate, isTrue);
+        expect(ai.forServings(2).isAiEstimate, isTrue);
+        expect(ai.toJson()['source'], 'ai');
+
+        final typed = NutritionInfo.fromJson({'calories': 500});
+        expect(typed.isAiEstimate, isFalse);
+        expect(typed.toJson().containsKey('source'), isFalse);
+      },
+    );
+
     test('rounds decimal calories instead of failing to parse', () {
       expect(NutritionInfo.fromJson({'calories': 350.6}).calories, 351);
     });
