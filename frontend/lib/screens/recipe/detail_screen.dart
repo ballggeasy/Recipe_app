@@ -12,6 +12,7 @@ import '../../providers/recipe_provider.dart';
 import '../../providers/review_provider.dart';
 import '../../providers/comment_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../utils/feature_flags.dart';
 import '../../utils/recipe_actions.dart';
 import '../../utils/recipe_text.dart';
 import '../../utils/require_login.dart';
@@ -64,7 +65,8 @@ class _DetailScreenState extends State<DetailScreen> {
       context.read<ReviewProvider>().loadForRecipe(recipeId);
       context.read<CommentProvider>().loadForRecipe(recipeId);
       // สูตรของตัวเองที่เพิ่งเพิ่ม/เปลี่ยนรูป: backend ให้ AI ประเมินโภชนาการต่อเอง อาจเสร็จแล้วหลังโหลดรายการ
-      if (userId != null &&
+      if (aiNutritionEnabled &&
+          userId != null &&
           recipe.uploaderId == userId &&
           recipe.nutrition == null) {
         context.read<RecipeProvider>().refreshQuietly();
@@ -83,6 +85,7 @@ class _DetailScreenState extends State<DetailScreen> {
     final comments = commentProvider.getTopLevelComments(recipe.id);
     final currentUserId = auth.currentUser?.id;
     final isOwner = currentUserId != null && recipe.uploaderId == currentUserId;
+    final canEstimateNutrition = isOwner && aiNutritionEnabled;
 
     return Scaffold(
       body: CustomScrollView(
@@ -308,17 +311,17 @@ class _DetailScreenState extends State<DetailScreen> {
                       icon: Icons.restaurant_menu_rounded,
                     ),
                   ],
-                  // คนอื่นเห็นส่วนนี้เมื่อมีข้อมูลแล้ว เจ้าของสูตรเห็นเสมอเพื่อสั่งให้ AI ประเมิน
-                  if (recipe.nutrition != null || isOwner) ...[
+                  // ทุกคนเห็นส่วนนี้เมื่อมีข้อมูลแล้ว เจ้าของสูตรเห็นเสมอ (เมื่อเปิด AI) เพื่อสั่งให้ AI ประเมิน
+                  if (recipe.nutrition != null || canEstimateNutrition) ...[
                     const SizedBox(height: AppSpacing.xl),
                     SectionHeader(
                       title: 'ข้อมูลโภชนาการ (ต่อ 1 เสิร์ฟ)',
-                      actionLabel: isOwner && !_estimatingNutrition
+                      actionLabel: canEstimateNutrition && !_estimatingNutrition
                           ? (recipe.nutrition == null
                                 ? 'ประเมินด้วย AI'
                                 : 'ประเมินใหม่')
                           : null,
-                      onAction: isOwner && !_estimatingNutrition
+                      onAction: canEstimateNutrition && !_estimatingNutrition
                           ? () => _estimateNutrition(provider, recipe.id)
                           : null,
                     ),
