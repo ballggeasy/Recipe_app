@@ -159,4 +159,6 @@ compose เดียวกันรัน monitoring stack ด้วย:
 | Prometheus | `127.0.0.1:9090` บน VM เท่านั้น — ใช้ `ssh -L 9090:localhost:9090 <user>@<vm>` | เก็บ metrics 15 วัน |
 | node-exporter | ภายใน network ของ compose | CPU / RAM / disk ของ VM |
 
+Prometheus scrape แต่ละ replica แยกกัน (label `instance` = IP:port ของ container นั้น). Panel **Backend up**, **Requests / s by replica**, **p95 latency by replica** และ **Backend memory (RSS)** แสดงแยกตาม replica ใช้ดูว่า nginx กระจาย traffic เท่ากันไหม; panel อื่นรวมทุก replica เป็นค่าเดียว.
+
 เปลี่ยน port Grafana ด้วย `GRAFANA_PORT` ในไฟล์ env. แก้ `monitoring/prometheus/prometheus.yml` หรือ dashboard JSON แล้ว push — VM จะ reload Prometheus ตอน deploy และ Grafana โหลด dashboard ใหม่เองภายใน 30 วินาที.
