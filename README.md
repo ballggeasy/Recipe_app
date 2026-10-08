@@ -47,6 +47,8 @@ flutter run
 - ถ้ารันบนมือถือจริง (ไม่ใช่ emulator) หรืออยากชี้ไป backend ที่ deploy แล้ว ไม่ต้องแก้โค้ด ระบุตอนรัน/build: `flutter run --dart-define=API_BASE_URL=http://192.168.1.20:3000`
 - ชี้ไป backend บน Azure VM (HTTPS ที่ `recipe-backend-psu.malaysiawest.cloudapp.azure.com`): `flutter run --dart-define-from-file=config/azure.json` หรือ `flutter build apk --release --dart-define-from-file=config/azure.json` (Android อนุญาต HTTP ธรรมดาเฉพาะ emulator/localhost ดู `android/app/src/main/res/xml/network_security_config.xml`)
 
+**APK สำเร็จรูป:** workflow `Frontend` build release APK ที่ชี้ไป backend บน Azure ทุกครั้งที่ push/เปิด PR โหลดได้จากหน้า run นั้นใน GitHub Actions หัวข้อ Artifacts (`recipe-app-release-apk`, เก็บไว้ 90 วัน) ยังไม่มี release keystore runner จึงเซ็นด้วย debug key ที่สร้างใหม่ทุกครั้ง ผลคือ (1) ปุ่ม Google sign-in ใช้ไม่ได้ เพราะ SHA-1 ไม่ตรงกับ Android client ที่ลงทะเบียนไว้ ให้ล็อกอินด้วยอีเมล/รหัสผ่านแทน (2) ติดตั้ง APK จาก run ใหม่ทับตัวเก่าไม่ได้ ต้องถอนแอปเดิมก่อน
+
 ## ทดสอบ
 
 ```bash
