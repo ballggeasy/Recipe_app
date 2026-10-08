@@ -47,6 +47,8 @@ flutter run
 - ถ้ารันบนมือถือจริง (ไม่ใช่ emulator) หรืออยากชี้ไป backend ที่ deploy แล้ว ไม่ต้องแก้โค้ด ระบุตอนรัน/build: `flutter run --dart-define=API_BASE_URL=http://192.168.1.20:3000`
 - ชี้ไป backend บน Azure VM (HTTPS ที่ `recipe-backend-psu.malaysiawest.cloudapp.azure.com`): `flutter run --dart-define-from-file=config/azure.json` หรือ `flutter build apk --release --dart-define-from-file=config/azure.json` (Android อนุญาต HTTP ธรรมดาเฉพาะ emulator/localhost ดู `android/app/src/main/res/xml/network_security_config.xml`)
 
+**APK สำเร็จรูป:** workflow `Frontend` build debug APK ที่ชี้ไป backend บน Azure ทุกครั้งที่ push/เปิด PR โหลดได้จากหน้า run นั้นใน GitHub Actions หัวข้อ Artifacts (`recipe-app-debug-apk`, เก็บไว้ 90 วัน) ปุ่ม Google sign-in ใน APK นี้ใช้ไม่ได้ เพราะ runner เซ็นด้วย debug key ใหม่ทุกครั้ง SHA-1 จึงไม่ตรงกับ Android client ที่ลงทะเบียนไว้ ให้ล็อกอินด้วยอีเมล/รหัสผ่านแทน
+
 ## ทดสอบ
 
 ```bash
