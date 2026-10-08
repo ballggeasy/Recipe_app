@@ -33,7 +33,7 @@ jobs:
       - run: flutter test
 
   build:
-    name: Build Android debug APK
+    name: Build Android release APK
     # Proves the app compiles for a real target, which analyze and the widget tests do not,
     # and keeps the APK as a run artifact so it can be installed on a phone.
     runs-on: ubuntu-latest
@@ -54,9 +54,10 @@ jobs:
           cache: true
       - run: flutter pub get
       # Without the Azure config the app falls back to 10.0.2.2, which only an emulator can reach.
-      - run: flutter build apk --debug --dart-define-from-file=config/azure.json
+      # Release is signed with the runner's debug key (android/app/build.gradle.kts) until there is a keystore.
+      - run: flutter build apk --release --dart-define-from-file=config/azure.json
       - uses: actions/upload-artifact@v4
         with:
-          name: recipe-app-debug-apk
-          path: frontend/build/app/outputs/flutter-apk/app-debug.apk
+          name: recipe-app-release-apk
+          path: frontend/build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
