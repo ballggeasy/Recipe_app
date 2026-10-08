@@ -112,7 +112,7 @@ Google Cloud project `cloud-project-451209` (console.cloud.google.com -> Google 
 
 - **A client ID is public**, not a secret. There is no client secret in the app or on the VM: only ID tokens are used.
 - **A different signing key needs a new Android client.** When the release build gets its own keystore (see above), create another Android client with that key's SHA-1, otherwise Google answers `DEVELOPER_ERROR` / config error on those builds.
-- **Testing mode:** while the OAuth consent screen's publishing status is *Testing*, only the listed test users can sign in (up to 100). Add them under Google Auth Platform -> Audience, or complete Branding and publish the app (basic scopes `openid email profile` need no Google verification).
+- **Published (In production):** any Google account can sign in. While the status was *Testing*, only the listed test users could. Publishing needs the Branding page complete: app name, support email, the home page `https://ballggeasy.github.io/Recipe_app/` and privacy policy `https://ballggeasy.github.io/Recipe_app/privacy.html` (both from `site/`, deployed by the `Pages` workflow), with `ballggeasy.github.io` as an authorized domain. The basic scopes `openid email profile` need no Google verification. Do not upload a logo: that requires brand verification, and until then the consent screen shows the domain instead of the app name.
 - The Flutter build gets the Web client ID from `--dart-define=GOOGLE_WEB_CLIENT_ID=...` (already in `config/azure.json`). Without it the app hides the Google button.
 - iOS is not set up (it needs an iOS client and its reversed client ID in `Info.plist`).
 
