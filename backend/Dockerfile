@@ -1,7 +1,7 @@
 # Build stage: compile TypeScript to dist/
 # Debian 13 (trixie), not 12 (bookworm): the sqlite3 6 prebuilt binary needs glibc >= 2.38 and a GCC 13
 # libstdc++, which bookworm (glibc 2.36) lacks, so the module fails to load there.
-FROM node:22-trixie-slim AS build
+FROM node:25-trixie-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -10,7 +10,7 @@ COPY src ./src
 RUN npm run build
 
 # Runtime stage: production deps + compiled output only
-FROM node:22-trixie-slim
+FROM node:25-trixie-slim
 ENV NODE_ENV=production \
     PORT=3000 \
     DB_PATH=/app/data/app.sqlite
